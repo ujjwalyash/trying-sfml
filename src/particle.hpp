@@ -4,8 +4,12 @@
 
 class Particle{
     private:
+
+        int m_id;
+
         sf::Vector2f m_old_pos;
         sf::Vector2f m_curr_pos;
+        sf::Vector2f m_constraint_pos_update;
 
         sf::Vector2f m_acc;
 
@@ -14,7 +18,7 @@ class Particle{
         float m_mass;
         
     public:
-        Particle();
+        Particle(int id);
 
         void set_pos(sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos);
         void set_acc(sf::Vector2<float> acc);
@@ -23,10 +27,15 @@ class Particle{
         sf::Vector2<float> get_old_pos() const;
         float get_radius() const;
         float get_mass() const;
+        int get_id() const;
+        float calculate_total_energy(float dt);
 
+        void add_constraint_update(sf::Vector2f movement);
+        void handle_constraint_update();
+        
         void step(float dt);
         void handle_boundary_constraint();
-        void bounce(float wall, int axis, sf::Vector2f new_pos);
+        void reflect(float wall, int axis, int sign);
         sf::CircleShape& get_shape();
 };
 
