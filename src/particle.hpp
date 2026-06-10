@@ -18,6 +18,7 @@ class Particle{
         sf::CircleShape m_body_shape{};
         float m_radius;
         float m_mass;
+        float m_sqrt_mass;
         
     public:
         Particle(int id, float radius, float mass);
@@ -29,10 +30,11 @@ class Particle{
         sf::Vector2<float> get_old_pos() const;
         float get_radius() const;
         float get_mass() const;
+        float get_sqrt_mass() const;
         int get_id() const;
         float calculate_total_energy(float dt);
 
-        void add_spring_acc(sf::Vector2f movement);
+        void add_spring_acc(sf::Vector2f spring_acc);
         
         void step(float dt);
         void handle_boundary_spring();

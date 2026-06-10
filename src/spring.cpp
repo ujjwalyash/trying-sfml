@@ -1,10 +1,12 @@
 #include "spring.hpp"
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <SFML/Graphics/Vertex.hpp>
+#include <SFML/System/Vector2.hpp>
 #include <cassert>
+#include <cmath>
 // #include <iostream>
 
-Constraint::Constraint(Particle& p1, Particle& p2, float len): m_p1(p1), m_p2(p2){
+Constraint::Constraint(Particle& p1, Particle& p2, float len, float spring_const): m_p1(p1), m_p2(p2){
 
     // this is too late refs cant exist without initialization hence
     // initialization needs to be done before constructor body starts
@@ -13,7 +15,9 @@ Constraint::Constraint(Particle& p1, Particle& p2, float len): m_p1(p1), m_p2(p2
     
     assert(len > p1.get_radius() + p2.get_radius());
     m_natural_length = len;
-    m_spring_constant = 1000;
+    m_spring_constant = spring_const;
+
+    m_damping_constant = sqrt(m_spring_constant);
 }
 
 std::array<sf::Vertex, 2> Constraint::get_line(){
@@ -34,22 +38,36 @@ float Constraint::calculate_total_energy(){
     return 0.5f * m_spring_constant * (deformation * deformation);
 }
 
-void Constraint::calculate_deformation(){
+void Constraint::calculate_spring_force(float dt){
 
     sf::Vector2f rel_pos = m_p2.get_curr_pos() - m_p1.get_curr_pos();
+
     float rel_pos_length = rel_pos.length();
     float deformation = rel_pos_length - m_natural_length;
 
     float m1 = m_p1.get_mass();
     float m2 = m_p2.get_mass();
 
+    calculate_damping_force(rel_pos, m1, m2, m_p1.get_sqrt_mass(), m_p2.get_sqrt_mass(), dt);
+
     m_p1.add_spring_acc(deformation * (rel_pos/rel_pos_length) * (m_spring_constant/m1));
     m_p2.add_spring_acc(deformation * (-rel_pos/rel_pos_length) * (m_spring_constant/m2));
 }
 
-void handle_all_springs(std::vector<Constraint> &springs){
+void Constraint::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2, float dt){
+
+    sf::Vector2f v1_along_spring = (m_p1.get_curr_pos() - m_p1.get_old_pos()).projectedOnto(vec_along_spring);
+    sf::Vector2f v2_along_spring = (m_p2.get_curr_pos() - m_p2.get_old_pos()).projectedOnto(-vec_along_spring);
+
+    sf::Vector2f vel_com = (m1*v1_along_spring + m2*v2_along_spring)/(m1+m2);
+
+    m_p1.add_spring_acc(-2.f*sqrt_m1*m_damping_constant * (v1_along_spring-vel_com)/dt);
+    m_p2.add_spring_acc(-2.f*sqrt_m2*m_damping_constant * (v2_along_spring-vel_com)/dt);
+}
+
+void handle_all_springs(std::vector<Constraint> &springs, float dt){
 
     for(Constraint spring: springs){
-        spring.calculate_deformation();
+        spring.calculate_spring_force(dt);
     }
 }

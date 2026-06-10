@@ -1,4 +1,5 @@
 #include "particle.hpp"
+#include <SFML/System/Vector2.hpp>
 #include <algorithm>
 #include <cmath>
 #include <vector>
@@ -9,11 +10,12 @@ float max_x = 1920;
 
 float restitution = 0.8;
 float coefficient_friction = 0;
-float viscosity = 5;
+float viscosity = 0.02 * 20; // *10 be viscosity is only applied at point masses which have small radius so we scale it
 
 Particle::Particle(int id, float radius, float mass){
     m_radius = radius;
     m_mass = mass;
+    m_sqrt_mass = sqrt(mass);
     m_id = id;
     m_body_shape.setRadius(m_radius); 
     m_body_shape.setOrigin({m_radius, m_radius}); 
@@ -39,9 +41,8 @@ float Particle::get_radius() const{
     return m_radius;
 }
 
-float Particle::get_mass() const{
-    return m_mass;
-}
+float Particle::get_mass() const{ return m_mass; }
+float Particle::get_sqrt_mass() const{ return m_sqrt_mass; }
 
 int Particle::get_id() const{
     return m_id;
@@ -63,10 +64,10 @@ void Particle::add_spring_acc(sf::Vector2f spring_acc){
 
 void Particle::step(float dt){
 
-    float damping_factor = fmax(0.f, 1-(viscosity*dt)/(m_mass));
-
+    float damping_factor = fmax(0.f, 1-(viscosity*m_radius*dt)/(m_mass));
+    
     sf::Vector2f new_pos;
-    new_pos = m_curr_pos + damping_factor*(m_curr_pos - m_old_pos) + (m_acc+m_spring_acc)*dt*dt;
+    new_pos = m_curr_pos + damping_factor*(m_curr_pos-m_old_pos) + (m_acc+m_spring_acc)*dt*dt;
     m_spring_acc.x = 0; m_spring_acc.y = 0;
 
     m_old_pos = m_curr_pos;
