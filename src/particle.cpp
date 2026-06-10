@@ -51,7 +51,8 @@ void Particle::set_acc(sf::Vector2<float> acc){
 
 float Particle::calculate_total_energy(float dt){
     float vel = ((m_curr_pos-m_old_pos)/dt).length();
-    return 0.5f*m_mass*(vel*vel) + m_mass*m_acc.y*(max_y-m_curr_pos.y);
+    return 0.5f*m_mass*(vel*vel) 
+        + m_mass*m_acc.y*(max_y-m_curr_pos.y) + m_mass*m_acc.x*(max_y-m_curr_pos.x);
 }
 
 void Particle::add_constraint_update(sf::Vector2f movement){

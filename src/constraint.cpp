@@ -1,4 +1,6 @@
 #include "constraint.hpp"
+#include <SFML/Graphics/RectangleShape.hpp>
+#include <SFML/Graphics/Vertex.hpp>
 // #include <iostream>
 
 Constraint::Constraint(Particle& p1, Particle& p2, float len): m_p1(p1), m_p2(p2){
@@ -9,6 +11,16 @@ Constraint::Constraint(Particle& p1, Particle& p2, float len): m_p1(p1), m_p2(p2
     // m_p2 = p2;
  
     m_natural_length = len;
+}
+
+std::array<sf::Vertex, 2> Constraint::get_line(){
+    std::array<sf::Vertex, 2> line =
+    {
+        sf::Vertex{m_p1.get_curr_pos()},
+        sf::Vertex{m_p2.get_curr_pos()}
+    };
+
+    return line;
 }
 
 // returns the total (by p1 + by p2) length to be moved by p1 and p2

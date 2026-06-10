@@ -12,6 +12,8 @@ class Constraint{
     public:
         Constraint(Particle& p1, Particle& p2, float len);
 
+        std::array<sf::Vertex, 2> get_line();
+
         void calculate_deformation();
         void apply_deformation_to_particles();
 };
