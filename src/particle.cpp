@@ -9,6 +9,7 @@ float max_x = 1920;
 
 float restitution = 0.8;
 float coefficient_friction = 0;
+float viscosity = 5;
 
 Particle::Particle(int id, float radius, float mass){
     m_radius = radius;
@@ -62,8 +63,10 @@ void Particle::add_spring_acc(sf::Vector2f spring_acc){
 
 void Particle::step(float dt){
 
+    float damping_factor = fmax(0.f, 1-(viscosity*dt)/(m_mass));
+
     sf::Vector2f new_pos;
-    new_pos = 2.f*m_curr_pos - m_old_pos + (m_acc+m_spring_acc)*dt*dt;
+    new_pos = m_curr_pos + damping_factor*(m_curr_pos - m_old_pos) + (m_acc+m_spring_acc)*dt*dt;
     m_spring_acc.x = 0; m_spring_acc.y = 0;
 
     m_old_pos = m_curr_pos;

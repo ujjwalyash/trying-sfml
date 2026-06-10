@@ -17,11 +17,11 @@ int main()
 	sf::Vector2<float> old_pos, vel, curr_pos, acc;
 	for(int i = 0; i < num_particles; i++){
 		old_pos.x = 200; old_pos.y = 30*(num_particles-i);
-		vel.x = 200*i*0; vel.y = 100*(1-2*i);
+		vel.x = 200*i; vel.y = 20*i;
 		curr_pos.x = vel.x*dt + old_pos.x; curr_pos.y = vel.y*dt + old_pos.y;
-		acc.x = +0, acc.y = +0;
+		acc.x = +70, acc.y = +70;
 
-		particles.push_back(Particle(i+1, 10, 10+(i==1)*1000));
+		particles.push_back(Particle(i+1, 10, 1+(i==1)*1000));
 		particles[i].set_pos(old_pos, curr_pos);
 		particles[i].set_acc(acc);
 	}
