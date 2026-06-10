@@ -1,23 +1,24 @@
 #include "particle.hpp"
 #include <algorithm>
 #include <cmath>
+#include <vector>
 
 // params
 float max_y = 1080;
 float max_x = 1920;
 
-float restitution = 0.6;
+float restitution = 0.8;
 float coefficient_friction = 0;
 
-Particle::Particle(int id){
-    m_radius = 20;
-    m_mass = 10;
+Particle::Particle(int id, float radius, float mass){
+    m_radius = radius;
+    m_mass = mass;
     m_id = id;
     m_body_shape.setRadius(m_radius); 
     m_body_shape.setOrigin({m_radius, m_radius}); 
     m_body_shape.setFillColor(sf::Color::White);
 
-    m_constraint_pos_update = {0, 0};
+    m_spring_acc = {0, 0};
 }
 
 void Particle::set_pos(sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos){
@@ -55,27 +56,23 @@ float Particle::calculate_total_energy(float dt){
         + m_mass*m_acc.y*(max_y-m_curr_pos.y) + m_mass*m_acc.x*(max_y-m_curr_pos.x);
 }
 
-void Particle::add_constraint_update(sf::Vector2f movement){
-    m_constraint_pos_update += movement;
-}
-
-void Particle::handle_constraint_update(){
-    m_curr_pos += m_constraint_pos_update;
-    m_constraint_pos_update = {0, 0};
+void Particle::add_spring_acc(sf::Vector2f spring_acc){
+    m_spring_acc += spring_acc;
 }
 
 void Particle::step(float dt){
 
     sf::Vector2f new_pos;
-    new_pos = 2.f*m_curr_pos - m_old_pos + m_acc*dt*dt;
+    new_pos = 2.f*m_curr_pos - m_old_pos + (m_acc+m_spring_acc)*dt*dt;
+    m_spring_acc.x = 0; m_spring_acc.y = 0;
 
     m_old_pos = m_curr_pos;
     m_curr_pos = new_pos;
 
-    handle_boundary_constraint();
+    handle_boundary_spring();
 }
 
-void Particle::handle_boundary_constraint(){
+void Particle::handle_boundary_spring(){
     if(m_curr_pos.x + m_radius > max_x)
         reflect(max_x, 0, 1);
     else if(m_curr_pos.x - m_radius < 0)
@@ -101,24 +98,36 @@ void Particle::reflect(float wall, int axis, int sign){
 }
 
 // function will sort particles inplace according to x coord -- particles list is permuted
+// DO NOT SORT, since stl sort swaps elements the reference to these variables will be ruined
+// eg if a spring hold refernces to 2 points, then after sorting the swaps make now change the underlying points which are refernced
 void handle_all_collisions(std::vector<Particle>& particles){
 
-    std::sort(particles.begin(), particles.end(), 
-    [](Particle const& p1, Particle const& p2)->bool{
-        return (p1.get_curr_pos()).x < (p2.get_curr_pos()).x;
+    // we can have arrays of values ie a single array for x coords of all particles and then just sort the indicies and work
+
+    std::vector<Particle*> sorted_particles;
+    // if i dont use reference here i would just be storing the temp addresses of the copies made by for loop
+    for(Particle &p: particles){
+        sorted_particles.push_back(&p);
+    }
+
+    // do we really need to sort the whole thing ?? not much would have changed in a single time step -- very few inversions present
+    std::sort(sorted_particles.begin(), sorted_particles.end(), 
+    [](Particle *p1, Particle *p2)->bool{
+        return ((*p1).get_curr_pos()).x < ((*p2).get_curr_pos()).x;
     });
 
-    int num_particles = particles.size();
+    int num_particles = sorted_particles.size();
     for(int i=0; i < num_particles; i++){
         
-        Particle& p1 = particles[i];
+        Particle& p1 = *sorted_particles[i];
         for(int j=i+1; j < num_particles; j++){
             
-            Particle& p2 = particles[j];
+            Particle& p2 = *sorted_particles[j];
 
             if(p2.get_curr_pos().x - p2.get_radius() > p1.get_curr_pos().x + p1.get_radius())
                 break;
 
+            // PASSING REFS TO COPY OF p1 and p2 wont affect the actual objects
             handle_two_body_collision(p1, p2);
         }
 
@@ -150,17 +159,17 @@ void handle_two_body_collision(Particle& p1, Particle& p2){
     sf::Vector2f p1_vel_perp_loc = p1_vel_before_collision - p1_vel_along_loc; float p1_vel_perp_loc_length = p1_vel_perp_loc.length();
     sf::Vector2f p2_vel_perp_loc = p2_vel_before_collision - p2_vel_along_loc; float p2_vel_perp_loc_length = p2_vel_perp_loc.length();
     
-    float c1 = (m1*restitution-m2)/(m1+m2);
-    float c2 = (1+restitution)*(m1/(m1+m2));
+    float c1 = (m1-m2*restitution)/(m1+m2);
+    float c2 = (1+restitution)*(m2/(m1+m2));
     sf::Vector2f impulse_along_loc = (c1*p1_vel_along_loc + c2*p2_vel_along_loc) - p1_vel_along_loc;
-    
+
     float magnitude_impulse_friction = fmin(coefficient_friction*impulse_along_loc.length(), p1_vel_perp_loc_length);
     sf::Vector2f impulse_perp_loc = -magnitude_impulse_friction*p1_vel_perp_loc/(p1_vel_perp_loc_length != 0 ? p1_vel_perp_loc_length  : 1.f);
     sf::Vector2f p1_vel_after_collision = p1_vel_before_collision + impulse_along_loc + impulse_perp_loc;
     
-    c1 = (m2*restitution-m1)/(m1+m2);
-    c2 = (1+restitution)*(m2/(m1+m2));
-    impulse_along_loc = (c1*p2_vel_along_loc + c2*p1_vel_along_loc) - p2_vel_along_loc;
+    c1 = (1+restitution)*(m1/(m1+m2));
+    c2 = (m2-m1*restitution)/(m1+m2);
+    impulse_along_loc = (c1*p1_vel_along_loc + c2*p2_vel_along_loc) - p2_vel_along_loc;
 
     magnitude_impulse_friction = fmin(coefficient_friction*impulse_along_loc.length(), p2_vel_perp_loc.length());
     impulse_perp_loc = -magnitude_impulse_friction*p2_vel_perp_loc/(p2_vel_perp_loc_length != 0 ? p2_vel_perp_loc_length  : 1.f);

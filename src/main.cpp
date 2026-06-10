@@ -2,7 +2,7 @@
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include "particle.hpp"
-#include "constraint.hpp"
+#include "spring.hpp"
 #include <iostream>
 
 int main()
@@ -16,20 +16,20 @@ int main()
 	std::vector<Particle> particles;
 	sf::Vector2<float> old_pos, vel, curr_pos, acc;
 	for(int i = 0; i < num_particles; i++){
-		old_pos.x = 200; old_pos.y = 100*(num_particles-i);
-		vel.x = 200*(1-2*i); vel.y = 0;
+		old_pos.x = 200; old_pos.y = 30*(num_particles-i);
+		vel.x = 200*i*0; vel.y = 100*(1-2*i);
 		curr_pos.x = vel.x*dt + old_pos.x; curr_pos.y = vel.y*dt + old_pos.y;
-		acc.x = 0, acc.y = +0;
+		acc.x = +0, acc.y = +0;
 
-		particles.push_back(Particle(i+1));
+		particles.push_back(Particle(i+1, 10, 10+(i==1)*1000));
 		particles[i].set_pos(old_pos, curr_pos);
 		particles[i].set_acc(acc);
 	}
 
-	int num_constraints = 1;
-	std::vector<Constraint> contraints;
-	Constraint c1(particles[0], particles[1], 100.f);
-	contraints.push_back(c1);
+	int num_springs = 1;
+	std::vector<Constraint> springs;
+	Constraint c1(particles[0], particles[1], 30.f);
+	springs.push_back(c1);
 
 	sf::RenderWindow window( sf::VideoMode( { 1920, 1080 } ), "SFML works!", sf::State::Fullscreen);
 	window.setFramerateLimit(fps);
@@ -68,19 +68,20 @@ int main()
 
 		window.clear();
 		// window.draw( shape );
+		handle_all_springs(springs);
 		for(int i = 0; i < num_particles; i++){
 			particles[i].step(dt);
 		}
 		handle_all_collisions(particles);
-		handle_all_constraints(contraints);
 		
 		for(int i = 0; i < num_particles; i++){
-			// particles[i].handle_boundary_constraint();
+			// particles[i].handle_boundary_spring();
 			total_energy += particles[i].calculate_total_energy(dt);
 			window.draw(particles[i].get_shape());
 		}
-		for(int i = 0; i < num_constraints; i++){
-			std::array line = contraints[i].get_line();
+		for(int i = 0; i < num_springs; i++){
+			std::array line = springs[i].get_line();
+			total_energy += springs[i].calculate_total_energy();
 		    window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
 		}
 		
