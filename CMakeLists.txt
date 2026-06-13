@@ -19,10 +19,10 @@ FetchContent_MakeAvailable(SFML)
 
 add_executable(main 
                     src/main.cpp
-                    src/particle.hpp
                     src/particle.cpp
-                    src/spring.hpp
                     src/spring.cpp
+                    src/creature.cpp
+                    src/muscle.cpp
 )
 target_compile_features(main PRIVATE cxx_std_26)
 target_link_libraries(main PRIVATE SFML::Graphics)

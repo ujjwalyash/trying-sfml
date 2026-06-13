@@ -11,12 +11,14 @@ class Particle{
         sf::Vector2f m_curr_pos;
         
         sf::Vector2f m_spring_acc;
+        sf::Vector2f m_buoyancy_acc;
         sf::Vector2f m_acc;
 
         // this circle shape is 344 bytes ?? try to do something for this -- maybe do not hold the shapes and create just one circle and modify
                                                                                     // it according to points before rendering
         sf::CircleShape m_body_shape{};
         float m_radius;
+        float m_cube_radius;
         float m_mass;
         float m_sqrt_mass;
         
@@ -37,7 +39,7 @@ class Particle{
         void add_spring_acc(sf::Vector2f spring_acc);
         
         void step(float dt);
-        void handle_boundary_spring();
+        void handle_boundary();
         void reflect(float wall, int axis, int sign);
         sf::CircleShape& get_shape();
 };

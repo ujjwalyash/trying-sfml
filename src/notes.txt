@@ -1,0 +1,2 @@
+the springs constant and the weight of the particles at the ends should be comparable
+else very fast oscillations / really streched springs both bad for stability

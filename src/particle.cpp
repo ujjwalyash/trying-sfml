@@ -1,4 +1,4 @@
-#include "particle.hpp"
+#include "headers/particle.hpp"
 #include <SFML/System/Vector2.hpp>
 #include <algorithm>
 #include <cmath>
@@ -8,20 +8,26 @@
 float max_y = 1080;
 float max_x = 1920;
 
+sf::Vector2f gravity = {6, 8};
+float buoyancy_const = 4.f/3 * 3.141 * 15; // DO NOT MAKE DENSITY 1000
+
 float restitution = 0.8;
 float coefficient_friction = 0;
-float viscosity = 0.02 * 20; // *10 be viscosity is only applied at point masses which have small radius so we scale it
+float viscosity = 0.02 * 20; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
 
-Particle::Particle(int id, float radius, float mass){
-    m_radius = radius;
-    m_mass = mass;
-    m_sqrt_mass = sqrt(mass);
-    m_id = id;
+Particle::Particle(int id, float radius, float mass)
+    :m_id(id),
+     m_spring_acc({0, 0}),
+     m_radius(radius),
+     m_cube_radius(radius*radius*radius),
+     m_mass(mass),
+     m_sqrt_mass(sqrt(mass))
+{
     m_body_shape.setRadius(m_radius); 
     m_body_shape.setOrigin({m_radius, m_radius}); 
     m_body_shape.setFillColor(sf::Color::White);
 
-    m_spring_acc = {0, 0};
+    m_buoyancy_acc = -buoyancy_const*(m_cube_radius)*gravity/m_mass;
 }
 
 void Particle::set_pos(sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos){
@@ -55,7 +61,7 @@ void Particle::set_acc(sf::Vector2<float> acc){
 float Particle::calculate_total_energy(float dt){
     float vel = ((m_curr_pos-m_old_pos)/dt).length();
     return 0.5f*m_mass*(vel*vel) 
-        + m_mass*m_acc.y*(max_y-m_curr_pos.y) + m_mass*m_acc.x*(max_y-m_curr_pos.x);
+        + m_mass*(m_acc.y+gravity.y)*(max_y-m_curr_pos.y) + m_mass*(m_acc.x+gravity.x)*(max_y-m_curr_pos.x);
 }
 
 void Particle::add_spring_acc(sf::Vector2f spring_acc){
@@ -67,16 +73,17 @@ void Particle::step(float dt){
     float damping_factor = fmax(0.f, 1-(viscosity*m_radius*dt)/(m_mass));
     
     sf::Vector2f new_pos;
-    new_pos = m_curr_pos + damping_factor*(m_curr_pos-m_old_pos) + (m_acc+m_spring_acc)*dt*dt;
+    sf::Vector2f net_acc = m_acc + gravity + m_buoyancy_acc + m_spring_acc;
+    new_pos = m_curr_pos + damping_factor*(m_curr_pos-m_old_pos) + net_acc*dt*dt;
     m_spring_acc.x = 0; m_spring_acc.y = 0;
 
     m_old_pos = m_curr_pos;
     m_curr_pos = new_pos;
 
-    handle_boundary_spring();
+    handle_boundary();
 }
 
-void Particle::handle_boundary_spring(){
+void Particle::handle_boundary(){
     if(m_curr_pos.x + m_radius > max_x)
         reflect(max_x, 0, 1);
     else if(m_curr_pos.x - m_radius < 0)

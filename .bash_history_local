@@ -1,3 +1,17 @@
 ./run.sh 
 clear
 ./run.sh 
+gdb -tui ./build/bin/main
+./run.sh 
+clear
+./run.sh 
+gdb -tui ./build/bin/main
+./run.sh 
+gdb -tui ./build/bin/main
+./run.sh 
+gdb -tui ./build/bin/main
+./run.sh 
+clear
+./run.sh ./run.sh 
+clear
+./run.sh 

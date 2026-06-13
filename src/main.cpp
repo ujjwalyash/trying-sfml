@@ -2,51 +2,35 @@
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Clock.hpp>
-#include <cmath>
-#include <cstdint>
 #include <vector>
-#include "particle.hpp"
-#include "spring.hpp"
+#include "headers/particle.hpp"
+#include "headers/spring.hpp"
+#include "headers/creature.hpp"
+#include "headers/muscle.hpp"
 // #include <iostream>
 
 int main()
 {	
-	int num_particles = 8;
+	// simulation params
 	int fps = 60;
-	int num_iterations = 8;
+	int num_iterations = 16;
 	float dt = 1.f/(fps*num_iterations);
 	bool paused = true;
 	bool step = false;
 
+	int num_particles = 0; 
 	std::vector<Particle> particles;
-	sf::Vector2<float> old_pos, vel, curr_pos, acc;
-	std::vector<float> x_coords{200, 200, 230, 230, 230, 230, 230, 230};
-	std::vector<float> y_coords{200, 230, 230, 200, 160, 120, 80, 40};
-	std::vector<float> mass{1,1,1,1,0.8,0.6,0.4,0.2};
-	for(int i = 0; i < num_particles; i++){
-		old_pos.x = x_coords[i]; old_pos.y = y_coords[i];
-		// old_pos.x = 200; old_pos.y = 30*(num_particles-i);
-		vel.x = 0.3*i; vel.y = 0.4*i;
-		curr_pos.x = vel.x*dt + old_pos.x; curr_pos.y = vel.y*dt + old_pos.y;
-		acc.x = +40, acc.y = +60;
+	int num_springs = 0;
+	std::vector<Spring> springs;
+	int num_muscles = 0;
+	// you cant keep copy of same spring in two arrays if you modify
+	// one you would need to modify the other too
+	// so muscles will not be present in springs hence 
+	// we need to WRITE THE SAME THING TWICE for Muscles too
+	std::vector<Muscle> muscles;
+	Creature creature = create_creature_muscle_sperm(num_particles, particles, num_springs, springs, num_muscles, muscles, dt);
 
-		particles.push_back(Particle(i+1, 1, mass[i]));
-		particles[i].set_pos(old_pos, curr_pos);
-		particles[i].set_acc(acc);
-	}
-
-	int num_springs = 10;
-	std::vector<Constraint> springs;
-	springs.push_back(Constraint(particles[0], particles[1], 30.f, 1e2));
-	springs.push_back(Constraint(particles[1], particles[2], 30.f, 1e2));
-	springs.push_back(Constraint(particles[2], particles[3], 30.f, 1e2));
-	springs.push_back(Constraint(particles[3], particles[0], 30.f, 1e2));
-	springs.push_back(Constraint(particles[2], particles[0], 30.f * sqrt(2), 1e5));
-	springs.push_back(Constraint(particles[1], particles[3], 30.f * sqrt(2), 1e5));
-	springs.push_back(Constraint(particles[3], particles[4], 40.f, 1e2));
-	springs.push_back(Constraint(particles[4], particles[5], 40.f, 1e2));
-	springs.push_back(Constraint(particles[5], particles[6], 40.f, 1e2));
-	springs.push_back(Constraint(particles[6], particles[7], 40.f, 1e2));
+	std::vector<float> observation;
 
 	sf::RenderWindow window( sf::VideoMode( { 1920, 1080 } ), "SFML works!", sf::State::Fullscreen);
 	window.setFramerateLimit(fps);
@@ -84,21 +68,8 @@ int main()
 		step = false;
 
 		float total_energy = 0;
-
-		window.clear();
-		clock.restart();
-
-		for(int iter = 0; iter < num_iterations; iter++){
-			handle_all_springs(springs, dt);
-			for(int i = 0; i < num_particles; i++){
-				particles[i].step(dt/2);
-			}
-			handle_all_collisions(particles);
-		}
-
-		clock.stop();
-		time_taken = time_taken*0.9 + clock.getElapsedTime().asMicroseconds()/9.f;
 		
+		window.clear();
 		for(int i = 0; i < num_particles; i++){
 			// particles[i].handle_boundary_spring();
 			total_energy += particles[i].calculate_total_energy(dt);
@@ -107,7 +78,12 @@ int main()
 		for(int i = 0; i < num_springs; i++){
 			std::array line = springs[i].get_line();
 			total_energy += springs[i].calculate_total_energy();
-		    window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
+			window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
+		}
+		for(int i = 0; i < num_muscles; i++){
+			std::array line = muscles[i].get_line();
+			total_energy += muscles[i].calculate_total_energy();
+			window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
 		}
 					
 		sf::Text text(font);
@@ -119,5 +95,22 @@ int main()
 		window.draw(text);
 
 		window.display();
+		
+		// physics calc start /////////////
+		clock.restart();
+		
+		for(int iter = 0; iter < num_iterations; iter++){
+			creature.act(muscles, observation);
+			handle_all_muscles(muscles, dt);
+			handle_all_springs(springs, dt);
+			for(int i = 0; i < num_particles; i++){
+				particles[i].step(dt);
+			}			
+			handle_all_collisions(particles);
+		}
+		
+		// physics calc end ///////////////
+		clock.stop();
+		time_taken = time_taken*0.9 + clock.getElapsedTime().asMicroseconds()/9.f;
 	}
 }
