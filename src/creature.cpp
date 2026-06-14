@@ -1,21 +1,71 @@
 #include "headers/creature.hpp"
 #include "headers/muscle.hpp"
+#include <cassert>
 #include <vector>
 
-void Neural_Net::forward(std::vector<float>& current_activations, std::vector<float>& observation){
-
-    int n = current_activations.size();
-    for(int i = 0; i < n; i++){
-        current_activations[i] += 1.f/(60*16) * (1 - 2*(i%2));
-
-        if(current_activations[i] > 1) current_activations[i] = 0;
-        if(current_activations[i] < 0) current_activations[i] = 1;
+Neural_Net::Neural_Net(std::vector<int> layer_sizes)
+    :m_layer_sizes(layer_sizes.begin(), layer_sizes.end())
+{
+    int num_matrics = layer_sizes.size()-1;
+    for(int i = 0; i < num_matrics; i++){
+        int in_sz = layer_sizes[i];
+        int out_sz = layer_sizes[i+1];
+        m_weights.push_back(MatrixXd::Random(in_sz, out_sz));
+        m_biases.push_back(MatrixXd::Random(1, out_sz));
     }
 }
 
-Creature::Creature(std::vector<int> muscle_index)
+Neural_Net::Neural_Net(std::vector<MatrixXd>& layers, std::vector<VectorXd>& biases)
+    :m_weights(layers.begin(), layers.end()),
+     m_biases(biases.begin(), biases.end())
+{
+    for(MatrixXd m: m_weights){
+        m_layer_sizes.push_back(m.rows());
+    }
+    m_layer_sizes.push_back(m_weights.back().cols());
+}
+
+void Neural_Net::forward(std::vector<float>& current_activations, std::vector<float>& observation){
+
+    VectorXd activation(m_layer_sizes[0]);
+    assert(m_layer_sizes[0] == (int)(current_activations.size() + observation.size()));
+    int ind = 0;
+    for(float a: current_activations){
+        activation(0, ind) = 2*a-1;
+        ind++;
+    }
+    for(float o: observation){
+        activation(0, ind) = o;
+        ind++;
+    }
+
+    for(int layer_no = 0; layer_no < (int)m_weights.size()-1; layer_no++){
+        activation = activation * m_weights[layer_no] + m_biases[layer_no];
+        activation = activation.cwiseMax(0);
+    }
+    activation = activation * m_weights[m_weights.size()-1];
+    // approximate sigmoid as x/(1+|x|)
+    activation = 0.5f*(1.f + (activation.array()/(1.f+activation.array().abs())));
+    
+    for(int i = 0; i < (int)current_activations.size(); i++){
+        current_activations[i] = activation(0, i);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<int> layer_sizes)
     :m_muscle_index(muscle_index.begin(), muscle_index.end()),
-    m_current_activations(m_muscle_index.size(), 0)
+    m_current_activations(m_muscle_index.size(), 0),
+    m_brain(layer_sizes),
+    m_sensing_points(sensing_points.begin(), sensing_points.end())
+{}
+
+Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXd>& layers, std::vector<VectorXd>& biases)
+    :m_muscle_index(muscle_index.begin(), muscle_index.end()),
+    m_current_activations(m_muscle_index.size(), 0),
+    m_brain(layers, biases),
+    m_sensing_points(sensing_points.begin(), sensing_points.end())
 {}
 
 void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation){
@@ -25,135 +75,21 @@ void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation
     }
 }
 
-void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){
-    
-    // Back to a clean 23 Particles: No weird outriggers needed anymore
-    num_particles = 23;
-    particles.clear();
-    springs.clear();
-    
-    sf::Vector2<float> old_pos, vel, curr_pos, acc;
-
-    // --- 1. DEFINE BIOLOGICAL PROPERTIES (Mass, Radius, Initial Positions) ---
-    std::vector<float> x_coords(num_particles);
-    std::vector<float> y_coords(num_particles);
-    std::vector<float> mass(num_particles);
-    std::vector<float> radius(num_particles);
-
-    // [Capsid Head Core] - Heavy, dense center of mass (Keeps it oriented)
-    x_coords[0] = 300.0f; y_coords[0] = 140.0f; mass[0] = 6.0f; radius[0] = 1.5f;
-
-    // [Slim Capsid Outer Loop] - Clean, streamlined bacteriophage head profile
-    x_coords[1] = 300.0f; y_coords[1] = 110.0f; mass[1] = 0.3f; radius[1] = 1.8f; // Top Apex
-    x_coords[2] = 312.0f; y_coords[2] = 125.0f; mass[2] = 0.3f; radius[2] = 1.8f; // Top-Right
-    x_coords[3] = 312.0f; y_coords[3] = 155.0f; mass[3] = 0.8f; radius[3] = 1.5f; // Bottom-Right Base
-    x_coords[4] = 300.0f; y_coords[4] = 165.0f; mass[4] = 1.0f; radius[4] = 1.5f; // Neck Center
-    x_coords[5] = 288.0f; y_coords[5] = 155.0f; mass[5] = 0.8f; radius[5] = 1.5f; // Bottom-Left Base
-    x_coords[6] = 288.0f; y_coords[6] = 125.0f; mass[6] = 0.3f; radius[6] = 1.8f; // Top-Left
-
-    // [Central Sheath & Baseplate Trunk] - High-density vertical backbone (Sinking ballast)
-    x_coords[7] = 300.0f; y_coords[7] = 190.0f; mass[7] = 5.0f; radius[7] = 1.2f; // Mid Sheath
-    x_coords[8] = 300.0f; y_coords[8] = 220.0f; mass[8] = 6.0f; radius[8] = 1.2f; // Baseplate Center
-    x_coords[9] = 292.0f; y_coords[9] = 220.0f; mass[9] = 2.0f; radius[9] = 1.2f; // Left Hip Joint
-    x_coords[10]= 308.0f; y_coords[10]= 220.0f; mass[10]= 2.0f; radius[10]= 1.2f; // Right Hip Joint
-
-    // [Special Muscle Insertion Points - Legs] - Tucked tight to hips for clean look
-    x_coords[11] = 295.0f; y_coords[11] = 210.0f; mass[11] = 0.3f; radius[11] = 1.0f; 
-    x_coords[12] = 295.0f; y_coords[12] = 230.0f; mass[12] = 0.3f; radius[12] = 1.0f; 
-    x_coords[13] = 305.0f; y_coords[13] = 210.0f; mass[13] = 0.3f; radius[13] = 1.0f; 
-    x_coords[14] = 305.0f; y_coords[14] = 230.0f; mass[14] = 0.3f; radius[14] = 1.0f; 
-
-    // [Tail Fibers / Moving Legs] - Low mass, high radius (Highly buoyant swimming paddles)
-    // Outer Leg Pair
-    x_coords[15] = 272.0f; y_coords[15] = 240.0f; mass[15] = 0.4f; radius[15] = 1.4f; // Left Knee 1
-    x_coords[16] = 255.0f; y_coords[16] = 270.0f; mass[16] = 0.1f; radius[16] = 2.2f; // Left Tip 1
-    x_coords[17] = 328.0f; y_coords[17] = 240.0f; mass[17] = 0.4f; radius[17] = 1.4f; // Right Knee 1
-    x_coords[18] = 345.0f; y_coords[18] = 270.0f; mass[18] = 0.1f; radius[18] = 2.2f; // Right Tip 1
-    // Inner Leg Pair
-    x_coords[19] = 282.0f; y_coords[19] = 245.0f; mass[19] = 0.4f; radius[19] = 1.4f; // Left Knee 2
-    x_coords[20] = 268.0f; y_coords[20] = 285.0f; mass[20] = 0.1f; radius[20] = 2.2f; // Left Tip 2
-    x_coords[21] = 318.0f; y_coords[21] = 245.0f; mass[21] = 0.4f; radius[21] = 1.4f; // Right Knee 2
-    x_coords[22] = 332.0f; y_coords[22] = 285.0f; mass[22] = 0.1f; radius[22] = 2.2f; // Right Tip 2
-
-    // --- 2. INITIALIZE PARTICLES ---
-    for(int i = 0; i < num_particles; i++){
-        old_pos.x = x_coords[i];
-        old_pos.y = y_coords[i];
-        
-        vel.x = 0.1f * i; 
-        vel.y = 0.1f * i;
-        
-        curr_pos.x = vel.x * dt + old_pos.x; 
-        curr_pos.y = vel.y * dt + old_pos.y;
-        
-        acc.x = 0.0f; 
-        acc.y = 0.0f;
-
-        particles.push_back(Particle(i + 1, radius[i], mass[i]));
-        particles[i].set_pos(old_pos, curr_pos);
-        particles[i].set_acc(acc);
+void Creature::get_observation(std::vector<float>& obs, sf::Vector2f target_pos, const std::vector<Particle>& particles){
+    assert(obs.size() == 4);
+    std::vector<std::pair<int, int>> vals(4);
+    for(int i = 0; i < 4; i++){
+        // rank the 4 points and give them -1(furthest), -0.33, 0.33, 1(closest)
+        vals[i] = {(target_pos-particles[m_sensing_points[i]].get_curr_pos()).length()
+                    , i};
     }
 
-    // --- 3. CREATE CONNECTIVITY MATRIX (Springs) ---
-    const float TENDON = 1e5f;
-    const float MUSCLE = 1e2f;
+    // DRAW AND CHECK IF SENSING POINT CORRECT
 
-    auto add_spring = [&](int idxA, int idxB, float stiffness) {
-        float dx = x_coords[idxA] - x_coords[idxB];
-        float dy = y_coords[idxA] - y_coords[idxB];
-        float exact_length = std::sqrt(dx * dx + dy * dy);
-        springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness));
-    };
-
-    // A. SLIM HEAD STRUCTURAL EXOSKELETON (Tendons)
-    for(int i = 1; i <= 6; i++) add_spring(0, i, TENDON); 
-    for(int i = 1; i <= 5; i++) add_spring(i, i + 1, TENDON); 
-    add_spring(6, 1, TENDON);
-
-    // B. ANTI-ROTATION SOLID TRUSS NECK (Tendons)
-    // Connecting the head's base base corners (3 and 5) directly to the spine (7) with high stiffness
-    add_spring(4, 7, TENDON); // Center neck bone
-    add_spring(3, 7, TENDON); // Right neck structural brace (Stops left/right tilting)
-    add_spring(5, 7, TENDON); // Left neck structural brace (Stops left/right tilting)
-
-    // C. RIGID SPINE & BASEPLATE (Tendons)
-    add_spring(7, 8,  TENDON); // Mid Spine to Baseplate Center
-    add_spring(8, 9,  TENDON); // Center to Left Hip
-    add_spring(8, 10, TENDON); // Center to Right Hip
-    add_spring(7, 9,  TENDON); 
-    add_spring(7, 10, TENDON); 
-
-    // D. SECURE LEG MUSCLE ANCHORS TO TRUNK (Tendons)
-    add_spring(11, 7, TENDON); add_spring(11, 9, TENDON);
-    add_spring(12, 8, TENDON); add_spring(12, 9, TENDON);
-    add_spring(13, 7, TENDON); add_spring(13, 10, TENDON);
-    add_spring(14, 8, TENDON); add_spring(14, 10, TENDON);
-
-    // E. LEG STRUCTURAL BONES (Tendons)
-    add_spring(9,  15, TENDON); add_spring(15, 16, TENDON); 
-    add_spring(10, 17, TENDON); add_spring(17, 18, TENDON); 
-    add_spring(9,  19, TENDON); add_spring(19, 20, TENDON); 
-    add_spring(10, 21, TENDON); add_spring(21, 22, TENDON); 
-
-    // F. ACTUATED LEG MUSCLES (Muscles)
-
-    // --- Leg 1 (Left Outer) Muscles ---
-    add_spring(11, 15, MUSCLE); add_spring(12, 15, MUSCLE);
-    add_spring(11, 16, MUSCLE); add_spring(12, 16, MUSCLE);
-
-    // --- Leg 2 (Right Outer) Muscles ---
-    add_spring(13, 17, MUSCLE); add_spring(14, 17, MUSCLE);
-    add_spring(13, 18, MUSCLE); add_spring(14, 18, MUSCLE);
-
-    // --- Leg 3 (Left Inner) Muscles ---
-    add_spring(11, 19, MUSCLE); add_spring(12, 19, MUSCLE);
-    add_spring(11, 20, MUSCLE); add_spring(12, 20, MUSCLE);
-
-    // --- Leg 4 (Right Inner) Muscles ---
-    add_spring(13, 21, MUSCLE); add_spring(14, 21, MUSCLE);
-    add_spring(13, 22, MUSCLE); add_spring(14, 22, MUSCLE);
-
-    num_springs = springs.size();
+    sort(vals.begin(), vals.end());
+    for(int i = 0; i < 4; i++){
+        obs[vals[i].second] = 1 - 0.66*i;
+    }
 }
 
 Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
@@ -216,21 +152,23 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         for(int s = 0; s < HEAD_SUBDIVISIONS; s++) {
             float t = (float)s / (float)HEAD_SUBDIVISIONS;
             positions.push_back(pA + t * (pB - pA));
-            radius.push_back(1.2f);
-            mass.push_back(head_heaviness * b_const * (1.2f * 1.2f * 1.2f)); // Preserved 1.2f factor
+            radius.push_back(1.4f);
+            mass.push_back(head_heaviness * b_const * (1.4f * 1.4f * 1.4f)); // Preserved 1.2f factor
         }
     }
 
     // --- 3. GENERATE SLIM ULTRA-THIN DOUBLE-STRAND TAIL ---
     std::vector<int> left_tail_indices;
     std::vector<int> right_tail_indices;
-    const int TAIL_SUBDIVISIONS = 4; 
+    // const int TAIL_SUBDIVISIONS = 4; 
+    std::vector<int> tail_subdivs{4, 4, 4, 6, 8};
 
     for(int i = 0; i < 5; i++) {
         sf::Vector2f tA = tail_landmarks[i];
         sf::Vector2f tB = tail_landmarks[i + 1];
         float rA = tail_radii[i];  float rB = tail_radii[i + 1];
 
+        const int TAIL_SUBDIVISIONS = tail_subdivs[i];
         for(int s = 1; s <= TAIL_SUBDIVISIONS; s++) {
             float t = (float)s / (float)TAIL_SUBDIVISIONS;
             sf::Vector2f center_pos = tA + t * (tB - tA);
@@ -243,13 +181,13 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
             // Left Strand Node
             left_tail_indices.push_back(positions.size());
             positions.push_back(center_pos + sf::Vector2f(-half_width, 0.0f));
-            radius.push_back(current_radius * 0.65); 
+            radius.push_back(current_radius * 0.7); 
             mass.push_back(mass_scaling * b_const * (radius.back() * radius.back() * radius.back()));
 
             // Right Strand Node
             right_tail_indices.push_back(positions.size());
             positions.push_back(center_pos + sf::Vector2f(half_width, 0.0f));
-            radius.push_back(current_radius * 0.65);
+            radius.push_back(current_radius * 0.7);
             mass.push_back(mass_scaling * b_const * (radius.back() * radius.back() * radius.back()));
         }
     }
@@ -257,7 +195,7 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
     num_particles = positions.size(); 
 
     // --- 4. INSTANTIATE PARTICLES IN ENGINE ---
-
+    std::vector<int> sensing_points;
     // THIS DOES NOT CHANGE RADIUS OF PARTICLES JUST THE DISTANCES
     const float sperm_size_scale = 1.f;
     for(int i = 0; i < num_particles; i++){
@@ -269,6 +207,12 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         particles.push_back(Particle(i + 1, radius[i], mass[i]));
         particles[i].set_pos(old_pos, curr_pos);
         particles[i].set_acc(acc);
+
+        if(old_pos == corners[1] or old_pos == corners[3]
+                or old_pos == corners[5] or old_pos == corners[7]){
+            
+            sensing_points.push_back(i);
+        }
     }
 
     // --- 5. CONSTRUCT CONNECTION NETWORK (SPRINGS) ---
@@ -334,6 +278,7 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
             // active muscle pairs (ACTUATOR). The remaining 16 segments are turned into 
             // springy, flexible tendons (FLEXIBLE_SPINE).
             // This leaves the GA with exactly 4 pairs of muscles to coordinate.
+            // bool is_active_muscle = (i == 0 || i == 6 || i == 12 || i == 18);
             bool is_active_muscle = (i == 0 || i == 5 || i == 10 || i == 15);
 
             float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
@@ -356,7 +301,7 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         muscle_indices.push_back(i);
     }
 
-    return Creature(muscle_indices);
+    return Creature(muscle_indices, sensing_points, {8+4, 10, 8});
 }
 
 void create_creature_motor_sperm(Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){
@@ -534,55 +479,78 @@ void create_creature_motor_sperm(Creature& creature, int& num_particles, std::ve
     num_springs = springs.size();
 }
 
-void create_creature_rope(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){
+void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){
     
-    // 30 Particles in a tight vertical chain
-    num_particles = 30;
+    // Back to a clean 23 Particles: No weird outriggers needed anymore
+    num_particles = 23;
     particles.clear();
     springs.clear();
     
     sf::Vector2<float> old_pos, vel, curr_pos, acc;
 
+    // --- 1. DEFINE BIOLOGICAL PROPERTIES (Mass, Radius, Initial Positions) ---
     std::vector<float> x_coords(num_particles);
     std::vector<float> y_coords(num_particles);
     std::vector<float> mass(num_particles);
     std::vector<float> radius(num_particles);
 
-    // --- 1. DEFINE CHAIN GEOMETRY & PROPERTIES ---
-    // Starting anchor position
-    float start_x = 400.0f;
-    float start_y = 100.0f;
-    float spacing = 8.0f; // Very close together to test tight constraints
+    // [Capsid Head Core] - Heavy, dense center of mass (Keeps it oriented)
+    x_coords[0] = 300.0f; y_coords[0] = 140.0f; mass[0] = 6.0f; radius[0] = 1.5f;
 
-    for(int i = 0; i < num_particles; i++) {
-        x_coords[i] = start_x;
-        y_coords[i] = start_y + (i * spacing);
-        radius[i] = 2.0f; // Overlaps slightly with spacing to test multi-body stability
-        
-        if (i == num_particles-1) {
-            // Anchor point: Ultra-massive so it remains virtually static, acting as a ceiling hook
-            mass[i] = 999999.0f; 
-        } else {
-            // Standard rope segment: Balanced density ratio (Volume ~33.5, Mass = 34.0 -> Sinks)
-            mass[i] = 34.0f; 
-        }
-    }
+    // [Slim Capsid Outer Loop] - Clean, streamlined bacteriophage head profile
+    x_coords[1] = 300.0f; y_coords[1] = 110.0f; mass[1] = 0.3f; radius[1] = 1.8f; // Top Apex
+    x_coords[2] = 312.0f; y_coords[2] = 125.0f; mass[2] = 0.3f; radius[2] = 1.8f; // Top-Right
+    x_coords[3] = 312.0f; y_coords[3] = 155.0f; mass[3] = 0.8f; radius[3] = 1.5f; // Bottom-Right Base
+    x_coords[4] = 300.0f; y_coords[4] = 165.0f; mass[4] = 1.0f; radius[4] = 1.5f; // Neck Center
+    x_coords[5] = 288.0f; y_coords[5] = 155.0f; mass[5] = 0.8f; radius[5] = 1.5f; // Bottom-Left Base
+    x_coords[6] = 288.0f; y_coords[6] = 125.0f; mass[6] = 0.3f; radius[6] = 1.8f; // Top-Left
+
+    // [Central Sheath & Baseplate Trunk] - High-density vertical backbone (Sinking ballast)
+    x_coords[7] = 300.0f; y_coords[7] = 190.0f; mass[7] = 5.0f; radius[7] = 1.2f; // Mid Sheath
+    x_coords[8] = 300.0f; y_coords[8] = 220.0f; mass[8] = 6.0f; radius[8] = 1.2f; // Baseplate Center
+    x_coords[9] = 292.0f; y_coords[9] = 220.0f; mass[9] = 2.0f; radius[9] = 1.2f; // Left Hip Joint
+    x_coords[10]= 308.0f; y_coords[10]= 220.0f; mass[10]= 2.0f; radius[10]= 1.2f; // Right Hip Joint
+
+    // [Special Muscle Insertion Points - Legs] - Tucked tight to hips for clean look
+    x_coords[11] = 295.0f; y_coords[11] = 210.0f; mass[11] = 0.3f; radius[11] = 1.0f; 
+    x_coords[12] = 295.0f; y_coords[12] = 230.0f; mass[12] = 0.3f; radius[12] = 1.0f; 
+    x_coords[13] = 305.0f; y_coords[13] = 210.0f; mass[13] = 0.3f; radius[13] = 1.0f; 
+    x_coords[14] = 305.0f; y_coords[14] = 230.0f; mass[14] = 0.3f; radius[14] = 1.0f; 
+
+    // [Tail Fibers / Moving Legs] - Low mass, high radius (Highly buoyant swimming paddles)
+    // Outer Leg Pair
+    x_coords[15] = 272.0f; y_coords[15] = 240.0f; mass[15] = 0.4f; radius[15] = 1.4f; // Left Knee 1
+    x_coords[16] = 255.0f; y_coords[16] = 270.0f; mass[16] = 0.1f; radius[16] = 2.2f; // Left Tip 1
+    x_coords[17] = 328.0f; y_coords[17] = 240.0f; mass[17] = 0.4f; radius[17] = 1.4f; // Right Knee 1
+    x_coords[18] = 345.0f; y_coords[18] = 270.0f; mass[18] = 0.1f; radius[18] = 2.2f; // Right Tip 1
+    // Inner Leg Pair
+    x_coords[19] = 282.0f; y_coords[19] = 245.0f; mass[19] = 0.4f; radius[19] = 1.4f; // Left Knee 2
+    x_coords[20] = 268.0f; y_coords[20] = 285.0f; mass[20] = 0.1f; radius[20] = 2.2f; // Left Tip 2
+    x_coords[21] = 318.0f; y_coords[21] = 245.0f; mass[21] = 0.4f; radius[21] = 1.4f; // Right Knee 2
+    x_coords[22] = 332.0f; y_coords[22] = 285.0f; mass[22] = 0.1f; radius[22] = 2.2f; // Right Tip 2
 
     // --- 2. INITIALIZE PARTICLES ---
     for(int i = 0; i < num_particles; i++){
-        old_pos.x = x_coords[i]; old_pos.y = y_coords[i];
-        vel.x = 0.0f; vel.y = 0.0f; // Start completely still to watch it drop and settle
-        curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
-        acc.x = 0.0f; acc.y = 0.0f;
+        old_pos.x = x_coords[i];
+        old_pos.y = y_coords[i];
+        
+        vel.x = 0.1f * i; 
+        vel.y = 0.1f * i;
+        
+        curr_pos.x = vel.x * dt + old_pos.x; 
+        curr_pos.y = vel.y * dt + old_pos.y;
+        
+        acc.x = 0.0f; 
+        acc.y = 0.0f;
 
         particles.push_back(Particle(i + 1, radius[i], mass[i]));
         particles[i].set_pos(old_pos, curr_pos);
         particles[i].set_acc(acc);
     }
 
-    // --- 3. CREATE CONNECTIVITY MATRIX (Structural Links) ---
-    // Using our verified safe stiffness for standard Verlet integration
-    const float ROPE_STIFFNESS = 3e6f;  
+    // --- 3. CREATE CONNECTIVITY MATRIX (Springs) ---
+    const float TENDON = 1e5f;
+    const float MUSCLE = 1e2f;
 
     auto add_spring = [&](int idxA, int idxB, float stiffness) {
         float dx = x_coords[idxA] - x_coords[idxB];
@@ -591,10 +559,53 @@ void create_creature_rope(int& num_particles, std::vector<Particle>& particles, 
         springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness));
     };
 
-    // Linear chain setup: Link each particle to its immediate neighbor
-    for(int i = 0; i < num_particles - 1; i++) {
-        add_spring(i, i + 1, ROPE_STIFFNESS);
-    }
+    // A. SLIM HEAD STRUCTURAL EXOSKELETON (Tendons)
+    for(int i = 1; i <= 6; i++) add_spring(0, i, TENDON); 
+    for(int i = 1; i <= 5; i++) add_spring(i, i + 1, TENDON); 
+    add_spring(6, 1, TENDON);
+
+    // B. ANTI-ROTATION SOLID TRUSS NECK (Tendons)
+    // Connecting the head's base base corners (3 and 5) directly to the spine (7) with high stiffness
+    add_spring(4, 7, TENDON); // Center neck bone
+    add_spring(3, 7, TENDON); // Right neck structural brace (Stops left/right tilting)
+    add_spring(5, 7, TENDON); // Left neck structural brace (Stops left/right tilting)
+
+    // C. RIGID SPINE & BASEPLATE (Tendons)
+    add_spring(7, 8,  TENDON); // Mid Spine to Baseplate Center
+    add_spring(8, 9,  TENDON); // Center to Left Hip
+    add_spring(8, 10, TENDON); // Center to Right Hip
+    add_spring(7, 9,  TENDON); 
+    add_spring(7, 10, TENDON); 
+
+    // D. SECURE LEG MUSCLE ANCHORS TO TRUNK (Tendons)
+    add_spring(11, 7, TENDON); add_spring(11, 9, TENDON);
+    add_spring(12, 8, TENDON); add_spring(12, 9, TENDON);
+    add_spring(13, 7, TENDON); add_spring(13, 10, TENDON);
+    add_spring(14, 8, TENDON); add_spring(14, 10, TENDON);
+
+    // E. LEG STRUCTURAL BONES (Tendons)
+    add_spring(9,  15, TENDON); add_spring(15, 16, TENDON); 
+    add_spring(10, 17, TENDON); add_spring(17, 18, TENDON); 
+    add_spring(9,  19, TENDON); add_spring(19, 20, TENDON); 
+    add_spring(10, 21, TENDON); add_spring(21, 22, TENDON); 
+
+    // F. ACTUATED LEG MUSCLES (Muscles)
+
+    // --- Leg 1 (Left Outer) Muscles ---
+    add_spring(11, 15, MUSCLE); add_spring(12, 15, MUSCLE);
+    add_spring(11, 16, MUSCLE); add_spring(12, 16, MUSCLE);
+
+    // --- Leg 2 (Right Outer) Muscles ---
+    add_spring(13, 17, MUSCLE); add_spring(14, 17, MUSCLE);
+    add_spring(13, 18, MUSCLE); add_spring(14, 18, MUSCLE);
+
+    // --- Leg 3 (Left Inner) Muscles ---
+    add_spring(11, 19, MUSCLE); add_spring(12, 19, MUSCLE);
+    add_spring(11, 20, MUSCLE); add_spring(12, 20, MUSCLE);
+
+    // --- Leg 4 (Right Inner) Muscles ---
+    add_spring(13, 21, MUSCLE); add_spring(14, 21, MUSCLE);
+    add_spring(13, 22, MUSCLE); add_spring(14, 22, MUSCLE);
 
     num_springs = springs.size();
 }

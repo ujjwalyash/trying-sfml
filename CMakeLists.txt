@@ -39,6 +39,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         -Wpedantic     # Forces strict adherence to the C++ standard
         -Wshadow       # Warns if you accidentally reuse a variable name
         -g
+        -I "./src/headers/Eigen/"
     )
 endif()
         # -Wconversion   # Warns if data might get lost (e.g., assigning a float to an int)

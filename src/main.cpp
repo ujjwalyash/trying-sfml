@@ -1,3 +1,4 @@
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Text.hpp>
@@ -30,7 +31,11 @@ int main()
 	std::vector<Muscle> muscles;
 	Creature creature = create_creature_muscle_sperm(num_particles, particles, num_springs, springs, num_muscles, muscles, dt);
 
-	std::vector<float> observation;
+	std::vector<float> observation(4);
+	sf::CircleShape target_shape(20);
+	target_shape.setFillColor(sf::Color::Red);
+	target_shape.setOrigin({10, 10});
+	sf::Vector2f target_pos;
 
 	sf::RenderWindow window( sf::VideoMode( { 1920, 1080 } ), "SFML works!", sf::State::Fullscreen);
 	window.setFramerateLimit(fps);
@@ -46,20 +51,26 @@ int main()
 			if ( event->is<sf::Event::Closed>() )
 				window.close();
 
-			if (const auto* resized = event->getIf<sf::Event::Resized>()) {
+			else if (const auto* resized = event->getIf<sf::Event::Resized>()) {
 				// Update the view to match the new window size dimensions
 				sf::FloatRect visibleArea(sf::Vector2f{0.f, 0.f}, sf::Vector2f{(float)resized->size.x, (float)resized->size.y});
 				window.setView(sf::View(visibleArea));
     		}
 
-			if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()){
+			else if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()){
 				if (keyPressed->scancode == sf::Keyboard::Scan::Escape)
 					paused = not paused;
+				
+				else if (keyPressed->scancode == sf::Keyboard::Scan::Enter)
+					step = true;
 			}
 
-			if (const auto* keyPressed = event->getIf<sf::Event::KeyPressed>()){
-				if (keyPressed->scancode == sf::Keyboard::Scan::Enter)
-					step = true;
+			else if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
+				sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
+				target_pos.x = (float)mouse_pos.x;
+				target_pos.y = (float)mouse_pos.y;
+
+				target_shape.setPosition(target_pos);
 			}
 		}
 
@@ -70,6 +81,8 @@ int main()
 		float total_energy = 0;
 		
 		window.clear();
+
+		window.draw(target_shape);
 		for(int i = 0; i < num_particles; i++){
 			// particles[i].handle_boundary_spring();
 			total_energy += particles[i].calculate_total_energy(dt);
@@ -99,8 +112,9 @@ int main()
 		// physics calc start /////////////
 		clock.restart();
 		
+		creature.get_observation(observation, target_pos, particles);
+		creature.act(muscles, observation);
 		for(int iter = 0; iter < num_iterations; iter++){
-			creature.act(muscles, observation);
 			handle_all_muscles(muscles, dt);
 			handle_all_springs(springs, dt);
 			for(int i = 0; i < num_particles; i++){
