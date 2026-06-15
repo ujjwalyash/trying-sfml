@@ -38,6 +38,8 @@ class Creature{
         
         Neural_Net m_brain; // ordered according to muslces_index
 
+        // ONYL FOR TESTING MAKE IT PRIVATE AGAIN LATER
+    public:
         std::vector<int> m_sensing_points;
 
     public:
@@ -57,7 +59,8 @@ class Creature{
 
 // }
 
-void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 Creature create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
+
+void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 void create_creature_motor_sperm  (Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
-void create_creature_rope         (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
+void create_football              (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);

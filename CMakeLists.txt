@@ -23,6 +23,7 @@ add_executable(main
                     src/spring.cpp
                     src/creature.cpp
                     src/muscle.cpp
+                    src/environment.cpp
 )
 target_compile_features(main PRIVATE cxx_std_26)
 target_link_libraries(main PRIVATE SFML::Graphics)
@@ -39,7 +40,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         -Wpedantic     # Forces strict adherence to the C++ standard
         -Wshadow       # Warns if you accidentally reuse a variable name
         -g
-        -I "./src/headers/Eigen/"
+        -I "./src/headers/"
     )
 endif()
         # -Wconversion   # Warns if data might get lost (e.g., assigning a float to an int)

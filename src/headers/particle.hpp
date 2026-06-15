@@ -41,7 +41,10 @@ class Particle{
         void step(float dt);
         void handle_boundary();
         void reflect(float wall, int axis, int sign);
-        sf::CircleShape& get_shape();
+
+        // why pass by non const reference -- if you want this just make the shape public
+        // change it to const reference in return value
+        const sf::CircleShape& get_shape();
 };
 
 void handle_two_body_collision(Particle& p1, Particle& p2);

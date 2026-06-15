@@ -145,7 +145,7 @@ void handle_all_collisions(std::vector<Particle>& particles){
     }
 }
 
-sf::CircleShape& Particle::get_shape(){
+const sf::CircleShape& Particle::get_shape(){
     m_body_shape.setPosition(m_curr_pos);
     return m_body_shape;
 }

@@ -1,7 +1,7 @@
 #include "headers/creature.hpp"
 #include "headers/muscle.hpp"
 #include <cassert>
-#include <vector>
+#include <iostream>
 
 Neural_Net::Neural_Net(std::vector<int> layer_sizes)
     :m_layer_sizes(layer_sizes.begin(), layer_sizes.end())
@@ -46,13 +46,14 @@ void Neural_Net::forward(std::vector<float>& current_activations, std::vector<fl
     activation = activation * m_weights[m_weights.size()-1];
     // approximate sigmoid as x/(1+|x|)
     activation = 0.5f*(1.f + (activation.array()/(1.f+activation.array().abs())));
+    std::cout << activation << '\n';
     
     for(int i = 0; i < (int)current_activations.size(); i++){
         current_activations[i] = activation(0, i);
     }
 }
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<int> layer_sizes)
     :m_muscle_index(muscle_index.begin(), muscle_index.end()),
@@ -77,30 +78,28 @@ void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation
 
 void Creature::get_observation(std::vector<float>& obs, sf::Vector2f target_pos, const std::vector<Particle>& particles){
     assert(obs.size() == 4);
-    std::vector<std::pair<int, int>> vals(4);
+    std::vector<int> vals(4);
+    float mn = 10000;
+    float mx = 0;
     for(int i = 0; i < 4; i++){
-        // rank the 4 points and give them -1(furthest), -0.33, 0.33, 1(closest)
-        vals[i] = {(target_pos-particles[m_sensing_points[i]].get_curr_pos()).length()
-                    , i};
+        vals[i] = (target_pos-particles[m_sensing_points[i]].get_curr_pos()).length();
+        mn = fmin(mn, vals[i]);
+        mx = fmax(mx, vals[i]);
     }
 
-    // DRAW AND CHECK IF SENSING POINT CORRECT
-
-    sort(vals.begin(), vals.end());
+    float dem = mx-mn;
     for(int i = 0; i < 4; i++){
-        obs[vals[i].second] = 1 - 0.66*i;
+        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
     }
 }
 
 Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
                                             , int& num_muscles, std::vector<Muscle>& muscles, float dt){
-    
-    particles.clear();
-    springs.clear();
 
     sf::Vector2<float> old_pos, vel, curr_pos, acc;
 
     // --- CRITICAL PARAMETERS (PRESERVED UNCHANGED) ---
+    int id_offset = num_particles;
 
     // we cant really make things lighter unless we lower the spring constants
     const float b_const = 4.f / 3.f * 3.141f * 10.f; 
@@ -192,26 +191,24 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         }
     }
 
-    num_particles = positions.size(); 
-
     // --- 4. INSTANTIATE PARTICLES IN ENGINE ---
     std::vector<int> sensing_points;
     // THIS DOES NOT CHANGE RADIUS OF PARTICLES JUST THE DISTANCES
     const float sperm_size_scale = 1.f;
-    for(int i = 0; i < num_particles; i++){
+    for(int i = 0; i < (int)positions.size(); i++){
         old_pos = positions[i] * sperm_size_scale;
         vel.x = 0.01f * i; vel.y = 0.01f * i; 
         curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
         acc = {0.0f, 0.0f};
 
-        particles.push_back(Particle(i + 1, radius[i], mass[i]));
-        particles[i].set_pos(old_pos, curr_pos);
-        particles[i].set_acc(acc);
+        particles.push_back(Particle(i + 1 + id_offset, radius[i], mass[i]));
+        particles[particles.size()-1].set_pos(old_pos, curr_pos);
+        particles[particles.size()-1].set_acc(acc);
 
         if(old_pos == corners[1] or old_pos == corners[3]
                 or old_pos == corners[5] or old_pos == corners[7]){
             
-            sensing_points.push_back(i);
+            sensing_points.push_back(particles.size()-1);
         }
     }
 
@@ -225,14 +222,16 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         float dx = positions[idxA].x - positions[idxB].x;
         float dy = positions[idxA].y - positions[idxB].y;
         float exact_length = std::sqrt(dx * dx + dy * dy) * sperm_size_scale;
-        springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness));
+        assert(exact_length != 0);
+        springs.push_back(Spring(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness));
     };
 
     auto add_muscle = [&](int idxA, int idxB, float stiffness) {
         float dx = positions[idxA].x - positions[idxB].x;
         float dy = positions[idxA].y - positions[idxB].y;
         float exact_length = std::sqrt(dx * dx + dy * dy) * sperm_size_scale;
-        muscles.push_back(Muscle(particles[idxA], particles[idxB], exact_length, stiffness));
+        assert(exact_length != 0);
+        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness));
     };
 
     // A. SOLID HEAD SPOKES & OUTER RING
@@ -293,6 +292,8 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         }
     }
 
+    
+    num_particles = particles.size();
     num_springs = springs.size();
     num_muscles = muscles.size();
 
@@ -302,6 +303,101 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
     }
 
     return Creature(muscle_indices, sensing_points, {8+4, 10, 8});
+}
+
+void create_football(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
+
+    const float ball_float_sink_factor = 1.f; 
+
+    // --- 2. DIMENSIONS & STRUCTURAL PARAMETERS ---
+    const sf::Vector2f ball_center = {500.0f, 230.0f}; // Placed perfectly within reach of the sperm
+    const float BALL_RADIUS = 20.0f;                  // Scaled size relative to the sperm head
+    const int EDGE_POINTS = 40;                       // Evenly distributed points around the rim
+    const float GAP_DISTANCE = 2.f;                  // Explicit tiny gap (in pixels) between edge circles
+    const float CENTER_PARTICLE_RADIUS = 1.0f;
+
+    // Calculate the precise chord distance between adjacent points along the circle
+    float chord_length = 2.0f * BALL_RADIUS * std::sin(3.14159265f / (float)EDGE_POINTS);
+    
+    // Automatically derive the radius to guarantee they don't overlap and preserve the gap
+    const float EDGE_PARTICLE_RADIUS = (chord_length - GAP_DISTANCE) / 2.0f;
+
+    // Grab the global buoyancy constant defined in your engine
+    const float buoyancy_const = 4.f / 3.f * 3.141f * 15.f;
+
+    // Track starting index offset if particles already exist in the vectors
+    int start_particle_idx = particles.size();
+
+    // Temp vectors to calculate setup arrays before instantiation
+    std::vector<sf::Vector2f> positions;
+    std::vector<float> mass;
+    std::vector<float> radius;
+
+    // --- 3. GENERATE CENTER CORE NODE ---
+    positions.push_back(ball_center);
+    radius.push_back(CENTER_PARTICLE_RADIUS);
+    float neutral_center_mass = buoyancy_const * (CENTER_PARTICLE_RADIUS * CENTER_PARTICLE_RADIUS * CENTER_PARTICLE_RADIUS);
+    mass.push_back(neutral_center_mass * ball_float_sink_factor);
+
+    // --- 4. GENERATE NON-OVERLAPPING RIM WITH EXPLICIT GAPS ---
+    int center_node_index = start_particle_idx;
+    int first_edge_index = start_particle_idx + 1;
+
+    for (int i = 0; i < EDGE_POINTS; i++) {
+        float angle = (i * 2.0f * 3.14159265f) / (float)EDGE_POINTS;
+        sf::Vector2f offset = { std::cos(angle) * BALL_RADIUS, std::sin(angle) * BALL_RADIUS };
+        
+        positions.push_back(ball_center + offset);
+        radius.push_back(EDGE_PARTICLE_RADIUS);
+
+        float neutral_edge_mass = buoyancy_const * (EDGE_PARTICLE_RADIUS * EDGE_PARTICLE_RADIUS * EDGE_PARTICLE_RADIUS);
+        mass.push_back(neutral_edge_mass * ball_float_sink_factor);
+    }
+
+    // --- 5. PUSH NEW PARTICLES INTO ENGINE ARRAY ---
+    for (size_t i = 0; i < positions.size(); i++) {
+        sf::Vector2f old_pos = positions[i];
+        sf::Vector2f vel = { 0.001f * i, 0.001f * i }; 
+        sf::Vector2f curr_pos = vel * dt + old_pos;
+        sf::Vector2f acc = { 0.0f, 0.0f };
+
+        int global_id = start_particle_idx + i + 1; 
+        particles.push_back(Particle(global_id, radius[i], mass[i]));
+        particles.back().set_pos(old_pos, curr_pos);
+        particles.back().set_acc(acc);
+    }
+
+    // --- 6. WEAVE THE SPRING CONSTANT NETWORK ---
+    const float BALL_SKIN_STIFFNESS  = 5e5f; // Perimeter structural strength
+    const float BALL_SPOKE_STIFFNESS = 3e4f; // Internal pressure preservation
+
+    auto add_ball_spring = [&](int idxA, int idxB, float stiffness) {
+        float dx = positions[idxA - start_particle_idx].x - positions[idxB - start_particle_idx].x;
+        float dy = positions[idxA - start_particle_idx].y - positions[idxB - start_particle_idx].y;
+        float exact_length = std::sqrt(dx * dx + dy * dy);
+        springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness));
+    };
+
+    for (int i = 0; i < EDGE_POINTS; i++) {
+        int current_edge_idx = first_edge_index + i;
+        int next_edge_idx = first_edge_index + ((i + 1) % EDGE_POINTS);
+
+        // A. Structural Rim Wheel (Forms the circular skin of the football)
+        add_ball_spring(current_edge_idx, next_edge_idx, BALL_SKIN_STIFFNESS);
+
+        // B. Central Pressure Spokes (Prevents the football from collapsing inward)
+        add_ball_spring(center_node_index, current_edge_idx, BALL_SPOKE_STIFFNESS);
+
+        // C. Cross-Diametric Bracing (Maintains perfect roundness during high impact)
+        int opposite_edge_idx = first_edge_index + ((i + (EDGE_POINTS / 2)) % EDGE_POINTS);
+        if (i < EDGE_POINTS / 2) { 
+            add_ball_spring(current_edge_idx, opposite_edge_idx, BALL_SPOKE_STIFFNESS * 0.5f);
+        }
+    }
+
+    // Update global reference numbers for your game loop renderer
+    num_particles = particles.size();
+    num_springs = springs.size();
 }
 
 void create_creature_motor_sperm(Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){

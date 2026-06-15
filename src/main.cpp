@@ -1,9 +1,10 @@
+#include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Clock.hpp>
-#include <vector>
+#include <iostream>
 #include "headers/particle.hpp"
 #include "headers/spring.hpp"
 #include "headers/creature.hpp"
@@ -29,7 +30,16 @@ int main()
 	// so muscles will not be present in springs hence 
 	// we need to WRITE THE SAME THING TWICE for Muscles too
 	std::vector<Muscle> muscles;
+
+	// after creating football in sperm creation springs vector is resized, the springs break
+	// temp fix for now
+	particles.reserve(200);
+	springs.reserve(300);
+	muscles.reserve(10);
+
+	create_football(num_particles, particles, num_springs, springs, dt);
 	Creature creature = create_creature_muscle_sperm(num_particles, particles, num_springs, springs, num_muscles, muscles, dt);
+	// Creature creature({}, {}, {});
 
 	std::vector<float> observation(4);
 	sf::CircleShape target_shape(20);
@@ -43,6 +53,7 @@ int main()
 	sf::Font font("/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf");
 	sf::Clock clock;
 	uint32_t time_taken = 0;
+	int num_frames_done = 0;
 
 	while ( window.isOpen() )
 	{
@@ -83,10 +94,19 @@ int main()
 		window.clear();
 
 		window.draw(target_shape);
+
+		int j = 0;
 		for(int i = 0; i < num_particles; i++){
-			// particles[i].handle_boundary_spring();
 			total_energy += particles[i].calculate_total_energy(dt);
-			window.draw(particles[i].get_shape());
+			if(j < (int)creature.m_sensing_points.size() && i == creature.m_sensing_points[j]){
+				j++;
+				sf::CircleShape sh = particles[i].get_shape();
+				sh.setFillColor(sf::Color::Green);
+				window.draw(sh);
+			}
+			else{
+				window.draw(particles[i].get_shape());
+			}
 		}
 		for(int i = 0; i < num_springs; i++){
 			std::array line = springs[i].get_line();
@@ -104,7 +124,6 @@ int main()
 		text.setCharacterSize(24);            
 		text.setFillColor(sf::Color::White); 
 		text.setPosition({0.f, 0.f}); 
-		// std::cout << "total_energy: " << total_energy << '\n';
 		window.draw(text);
 
 		window.display();
@@ -112,8 +131,14 @@ int main()
 		// physics calc start /////////////
 		clock.restart();
 		
-		creature.get_observation(observation, target_pos, particles);
-		creature.act(muscles, observation);
+		if(num_frames_done == (int)fps/10){
+			creature.get_observation(observation, target_pos, particles);
+			creature.act(muscles, observation);
+
+			num_frames_done = 0;
+		}
+		num_frames_done++;
+
 		for(int iter = 0; iter < num_iterations; iter++){
 			handle_all_muscles(muscles, dt);
 			handle_all_springs(springs, dt);
