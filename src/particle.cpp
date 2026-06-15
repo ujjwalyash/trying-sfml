@@ -15,24 +15,30 @@ float restitution = 0.8;
 float coefficient_friction = 0;
 float viscosity = 0.02 * 20; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
 
-Particle::Particle(int id, float radius, float mass)
+Particle::Particle(int id, float radius, float mass, sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos, structure type)
     :m_id(id),
+     m_original_old_pos(old_pos),
+     m_original_curr_pos(curr_pos),
+     m_old_pos(old_pos),
+     m_curr_pos(curr_pos),
      m_spring_acc({0, 0}),
      m_radius(radius),
      m_cube_radius(radius*radius*radius),
      m_mass(mass),
-     m_sqrt_mass(sqrt(mass))
+     m_sqrt_mass(sqrt(mass)),
+     m_type(type)
 {
-    m_body_shape.setRadius(m_radius); 
-    m_body_shape.setOrigin({m_radius, m_radius}); 
-    m_body_shape.setFillColor(sf::Color::White);
-
     m_buoyancy_acc = -buoyancy_const*(m_cube_radius)*gravity/m_mass;
 }
 
 void Particle::set_pos(sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos){
     m_old_pos = old_pos;
     m_curr_pos = curr_pos;
+}
+
+void Particle::shift_pos(sf::Vector2<float> shift){
+    m_old_pos += shift;
+    m_curr_pos += shift;
 }
 
 sf::Vector2<float> Particle::get_curr_pos() const{
@@ -108,6 +114,11 @@ void Particle::reflect(float wall, int axis, int sign){
     }
 }
 
+void Particle::reset(){
+    m_old_pos = m_original_old_pos;
+    m_curr_pos = m_original_curr_pos;
+}
+
 // function will sort particles inplace according to x coord -- particles list is permuted
 // DO NOT SORT, since stl sort swaps elements the reference to these variables will be ruined
 // eg if a spring hold refernces to 2 points, then after sorting the swaps make now change the underlying points which are refernced
@@ -143,11 +154,6 @@ void handle_all_collisions(std::vector<Particle>& particles){
         }
 
     }
-}
-
-const sf::CircleShape& Particle::get_shape(){
-    m_body_shape.setPosition(m_curr_pos);
-    return m_body_shape;
 }
 
 void handle_two_body_collision(Particle& p1, Particle& p2){

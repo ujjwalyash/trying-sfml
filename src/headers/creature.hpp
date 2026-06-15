@@ -44,11 +44,15 @@ class Creature{
 
     public:
 
+        // idk if i should allow this but it here to make environment constructor better
+        Creature();
+
         Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<int> layer_sizes);
         Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXd>& layers, std::vector<VectorXd>& biases);
         void act(std::vector<Muscle>& muscles, std::vector<float>& observation);    
 
         // will be moved to the derived class
+        // passing the entire particles array not a good practice(maybe)
         void get_observation(std::vector<float>& obs, sf::Vector2f target_pos, const std::vector<Particle>& particles);
 
 };
@@ -60,7 +64,7 @@ class Creature{
 // }
 
 Creature create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
+int create_football              (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
 
 void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 void create_creature_motor_sperm  (Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
-void create_football              (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);

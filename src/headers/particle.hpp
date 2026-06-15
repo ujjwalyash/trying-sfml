@@ -2,10 +2,18 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/System/Vector2.hpp>
 
+enum class structure{
+    creature,
+    ball
+};
+
 class Particle{
     private:
 
         int m_id;
+
+        sf::Vector2f m_original_old_pos;
+        sf::Vector2f m_original_curr_pos;
 
         sf::Vector2f m_old_pos;
         sf::Vector2f m_curr_pos;
@@ -16,16 +24,23 @@ class Particle{
 
         // this circle shape is 344 bytes ?? try to do something for this -- maybe do not hold the shapes and create just one circle and modify
                                                                                     // it according to points before rendering
-        sf::CircleShape m_body_shape{};
+        // removed
+        // sf::CircleShape m_body_shape{};
+        
         float m_radius;
         float m_cube_radius;
         float m_mass;
         float m_sqrt_mass;
         
+        // maybe make radius, mass public const too
     public:
-        Particle(int id, float radius, float mass);
+        const structure m_type;
+
+    public:
+        Particle(int id, float radius, float mass, sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos, structure type);
 
         void set_pos(sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos);
+        void shift_pos(sf::Vector2<float> shift);
         void set_acc(sf::Vector2<float> acc);
         
         sf::Vector2<float> get_curr_pos() const;
@@ -41,10 +56,11 @@ class Particle{
         void step(float dt);
         void handle_boundary();
         void reflect(float wall, int axis, int sign);
+        void reset();
 
         // why pass by non const reference -- if you want this just make the shape public
         // change it to const reference in return value
-        const sf::CircleShape& get_shape();
+        // const sf::CircleShape& get_shape();
 };
 
 void handle_two_body_collision(Particle& p1, Particle& p2);

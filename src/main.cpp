@@ -1,59 +1,28 @@
-#include <SFML/Graphics/CircleShape.hpp>
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
+#include "headers/environment.hpp"
 #include <SFML/Graphics/Font.hpp>
 #include <SFML/Graphics/Text.hpp>
 #include <SFML/System/Clock.hpp>
-#include <iostream>
-#include "headers/particle.hpp"
-#include "headers/spring.hpp"
-#include "headers/creature.hpp"
-#include "headers/muscle.hpp"
-// #include <iostream>
+#include <SFML/System/Vector2.hpp>
+#include <SFML/Window/Keyboard.hpp>
 
 int main()
 {	
-	// simulation params
-	int fps = 60;
-	int num_iterations = 16;
-	float dt = 1.f/(fps*num_iterations);
-	bool paused = true;
+    sf::Vector2f goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+    sf::Vector2f ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+    Environment env(ball_pos, goal_pos);    
+    bool paused = true;
 	bool step = false;
 
-	int num_particles = 0; 
-	std::vector<Particle> particles;
-	int num_springs = 0;
-	std::vector<Spring> springs;
-	int num_muscles = 0;
-	// you cant keep copy of same spring in two arrays if you modify
-	// one you would need to modify the other too
-	// so muscles will not be present in springs hence 
-	// we need to WRITE THE SAME THING TWICE for Muscles too
-	std::vector<Muscle> muscles;
-
-	// after creating football in sperm creation springs vector is resized, the springs break
-	// temp fix for now
-	particles.reserve(200);
-	springs.reserve(300);
-	muscles.reserve(10);
-
-	create_football(num_particles, particles, num_springs, springs, dt);
-	Creature creature = create_creature_muscle_sperm(num_particles, particles, num_springs, springs, num_muscles, muscles, dt);
-	// Creature creature({}, {}, {});
-
-	std::vector<float> observation(4);
-	sf::CircleShape target_shape(20);
-	target_shape.setFillColor(sf::Color::Red);
-	target_shape.setOrigin({10, 10});
-	sf::Vector2f target_pos;
-
+    int speed_up = 1;
 	sf::RenderWindow window( sf::VideoMode( { 1920, 1080 } ), "SFML works!", sf::State::Fullscreen);
-	window.setFramerateLimit(fps);
+    int fps = (env.m_fps/env.m_num_frames_per_creature_action);
+	window.setFramerateLimit(fps * speed_up);
 
 	sf::Font font("/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf");
 	sf::Clock clock;
 	uint32_t time_taken = 0;
-	int num_frames_done = 0;
+	int num_steps_done = 0;
+    float reward = 0;
 
 	while ( window.isOpen() )
 	{
@@ -74,53 +43,37 @@ int main()
 				
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Enter)
 					step = true;
-			}
 
-			else if (sf::Mouse::isButtonPressed(sf::Mouse::Button::Left)){
-				sf::Vector2i mouse_pos = sf::Mouse::getPosition(window);
-				target_pos.x = (float)mouse_pos.x;
-				target_pos.y = (float)mouse_pos.y;
+				else if (keyPressed->scancode == sf::Keyboard::Scan::R){
+                    ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+                    goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+					env.reset(ball_pos, goal_pos);
 
-				target_shape.setPosition(target_pos);
-			}
+                    num_steps_done = 0;
+				}
+
+				else if (keyPressed->scancode == sf::Keyboard::Scan::Up){
+                    speed_up++;
+                	window.setFramerateLimit(fps * speed_up);
+                }
+				else if (keyPressed->scancode == sf::Keyboard::Scan::Down){
+                    if(speed_up > 1) speed_up--;
+                	window.setFramerateLimit(fps * speed_up);
+                }
+            }
 		}
 
 		if(paused && (!step)) 
 			continue;
 		step = false;
-
-		float total_energy = 0;
 		
 		window.clear();
-
-		window.draw(target_shape);
-
-		int j = 0;
-		for(int i = 0; i < num_particles; i++){
-			total_energy += particles[i].calculate_total_energy(dt);
-			if(j < (int)creature.m_sensing_points.size() && i == creature.m_sensing_points[j]){
-				j++;
-				sf::CircleShape sh = particles[i].get_shape();
-				sh.setFillColor(sf::Color::Green);
-				window.draw(sh);
-			}
-			else{
-				window.draw(particles[i].get_shape());
-			}
-		}
-		for(int i = 0; i < num_springs; i++){
-			std::array line = springs[i].get_line();
-			total_energy += springs[i].calculate_total_energy();
-			window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
-		}
-		for(int i = 0; i < num_muscles; i++){
-			std::array line = muscles[i].get_line();
-			total_energy += muscles[i].calculate_total_energy();
-			window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
-		}
-					
-		sf::Text text(font);
-		text.setString(std::format("{:.2e}\n{}", total_energy, time_taken)); 
+        
+        env.render(window);
+		
+        sf::Text text(font);
+		text.setString(std::format("{:.1f}\n{}\n{}\n{}", 
+                                            reward, time_taken, num_steps_done, speed_up)); 
 		text.setCharacterSize(24);            
 		text.setFillColor(sf::Color::White); 
 		text.setPosition({0.f, 0.f}); 
@@ -131,22 +84,9 @@ int main()
 		// physics calc start /////////////
 		clock.restart();
 		
-		if(num_frames_done == (int)fps/10){
-			creature.get_observation(observation, target_pos, particles);
-			creature.act(muscles, observation);
-
-			num_frames_done = 0;
-		}
-		num_frames_done++;
-
-		for(int iter = 0; iter < num_iterations; iter++){
-			handle_all_muscles(muscles, dt);
-			handle_all_springs(springs, dt);
-			for(int i = 0; i < num_particles; i++){
-				particles[i].step(dt);
-			}			
-			handle_all_collisions(particles);
-		}
+		env.step();
+        reward = env.get_curr_reward();
+        num_steps_done++;
 		
 		// physics calc end ///////////////
 		clock.stop();

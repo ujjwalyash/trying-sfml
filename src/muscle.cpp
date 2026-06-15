@@ -19,6 +19,11 @@ void Muscle::handle_nerve_signal(){
     m_spring_constant = m_rest_spring_constant*(1+m_activation*m_max_spring_constant_scaling);
 }
 
+void Muscle::reset(){
+    m_natural_length = m_rest_length;
+    m_spring_constant = m_rest_spring_constant;
+}
+
 
 void handle_all_muscles(std::vector<Muscle> &muscles, float dt){
     int num_muscles = muscles.size();

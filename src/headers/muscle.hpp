@@ -19,6 +19,7 @@ class Muscle : public Spring
         
         void handle_nerve_signal();
         void set_activation(float acti);
+        void reset();
         
 };
 
