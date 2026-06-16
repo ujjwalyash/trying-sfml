@@ -1,6 +1,35 @@
+// #include <iostream>
+// #include <random>
+// #include <Eigen/Dense>
+// #include <EigenRand/EigenRand>
+
+// typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatrixXdf;
+
+// Eigen::Rand::P8_mt19937_64 urng_AAA(42);
+
+// void func(){
+	
+//     std::cout << Eigen::Rand::balanced<MatrixXdf>(2, 2, urng_AAA) << "\n";
+
+// }
+
+// int main() {
+
+// 	func();
+// 	std::cout << '\n';
+// 	func();
+// 	std::cout << '\n';
+// 	func();
+// 	std::cout << '\n';
+
+//     return 0;
+// }
+
+
 #include "headers/environment.hpp"
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Keyboard.hpp>
+#include <iostream>
 #include <pthread.h>
 
 /*
@@ -96,9 +125,9 @@ void render_current_best(){
 
 int main()
 {	
-	int population_size = 100;
-	int num_generations = 100;
-	int num_episode_per_generation = 2;
+	int population_size = 20;
+	int num_generations = 10;
+	int num_episode_per_generation = 1;
 
 	float top_unchanged_percentage = 0.3;
 	float elimination_percentage = 0.4;
@@ -107,7 +136,20 @@ int main()
 
     sf::Vector2f first_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
     sf::Vector2f first_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-    std::vector<Environment> env(population_size, Environment(first_ball_pos, first_goal_pos));    
+
+	
+	// BADD ALL ENVIRONMENTS WILL END UP WITH SAME INTIAL VALUES of neural netwrok DUE TO THIS
+    // !std::vector<Environment> env(population_size, Environment(first_ball_pos, first_goal_pos));    
+	// here the env object is created ONLY ONCE and copied to every entry in the vector
+
+	// now ok
+	std::vector<Environment> env;
+	env.reserve(population_size); // Prevents performance-heavy reallocations
+
+	for (int i = 0; i < (int)population_size; ++i) {
+		env.emplace_back(first_ball_pos, first_goal_pos);
+	}
+
     std::vector<float> rewards(population_size, 0);    
 	
     std::vector<sf::Vector2f> goal_pos(num_episode_per_generation);
@@ -129,6 +171,11 @@ int main()
 			goal_pos[i] = {(float)(rand()%1920), (float)(rand()%1080)};
 			ball_pos[i] = {(float)(rand()%1920), (float)(rand()%1080)};
 		}
+
+		// reset rewards
+		for(int i = 0; i < population_size; i++){
+			rewards[i] = 0;
+		}
 		
 		// evaluate all creatures
 		for(int i = 0; i < population_size; i++){
@@ -144,24 +191,23 @@ int main()
 		
 		// remove bottom ones, repalce by cross_overs
 		for(int i = population_size-1; i >= (1-elimination_percentage)*population_size; i--){
-			int par_1 = rankings[rand()%((int)(1-elimination_percentage)*population_size)];
-			int par_2 = rankings[rand()%((int)(1-elimination_percentage)*population_size)];
+			int par_1 = rankings[rand()%(int)((1-elimination_percentage)*population_size)];
+			int par_2 = rankings[rand()%(int)((1-elimination_percentage)*population_size)];
 
-			// TODO: check correctness 
-			env[i].crossover(env[par_1], env[par_2]);
+			env[rankings[i]].crossover(env[par_1], env[par_2]);
 		}
 
+		// mutate the middle ones
 		for(int i = (1-elimination_percentage)*population_size-1; i >= top_unchanged_percentage*population_size; i--){
-			env[i].mutate(mutation_rate);
+			env[rankings[i]].mutate(mutation_rate);
 		}
-		
-		// reset rewards
-		for(int i = 0; i < population_size; i++){
-			rewards[i] = 0;
-		}
+
+		std::cout << "current generation: " << gen << '\n';
+		std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
+		std::cout << '\n';
 	}
 
 	for(int i = 0; i < population_size; i++){
-		env[i].save(i);
+		env[rankings[i]].save(i, rewards[rankings[i]]);
 	}
 }

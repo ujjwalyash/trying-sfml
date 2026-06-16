@@ -1,16 +1,21 @@
 #include "headers/creature.hpp"
+#include <iostream>
 
-Eigen::Rand::P8_mt19937_64 urng{ 42 };
+Eigen::Rand::P8_mt19937_64 urng(42);
+// Eigen::Rand::P8_mt19937_64 urng(rand()%UINT64_MAX);
 
 Neural_Net::Neural_Net(std::vector<int> layer_sizes)
     :m_layer_sizes(layer_sizes.begin(), layer_sizes.end())
 {
+
     int num_matrics = layer_sizes.size()-1;
     for(int i = 0; i < num_matrics; i++){
         int in_sz = layer_sizes[i];
         int out_sz = layer_sizes[i+1];
-        m_weights.push_back(Eigen::Rand::balanced<Eigen::MatrixXf>(in_sz, out_sz, urng));
-        m_biases.push_back(Eigen::Rand::balanced<Eigen::MatrixXf>(1, out_sz, urng));
+
+        m_weights.push_back(Eigen::Rand::balanced<MatrixXdf>(in_sz, out_sz, urng));
+        m_biases.push_back(Eigen::Rand::balanced<MatrixXdf>(1, out_sz, urng));
+
     }
 }
 
@@ -52,15 +57,21 @@ namespace Eigen{
     }
 }
 
-void Neural_Net::save(int id){
+void Neural_Net::save(int id, float reward){
     json data;
     data["id"] = id;
+    data["reward"] = reward;
     data["layer_sizes"] = m_layer_sizes;
     data["weights"] = m_weights;
     data["biases"] = m_biases;
 
     std::string file_path = std::format("./saved/{}.json", id);
     std::ofstream o(file_path);
+    if (!o) {
+        std::cout << "Error opening file: " << file_path << std::endl;
+        return;
+    }
+
     o << std::setw(4) << data << std::endl;
 }
 
@@ -70,7 +81,7 @@ void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
     
     std::vector<MatrixXdf> const& par_2_w = par_2.get_weights();
     std::vector<VectorXdf> const& par_2_b = par_2.get_biases();
-
+    
     for(int i = 0; i < (int)m_layer_sizes.size()-1; i++){
         
         // currently we would need to move columns since we mutiply weights to the right
@@ -97,13 +108,22 @@ void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
 }
 
 void Neural_Net::mutate(float mutation_rate){
-    for(int i = 0; i < (int)m_layer_sizes.size(); i++){
+
+    for(int i = 0; i < (int)m_layer_sizes.size()-1; i++){
         int in_sz = m_layer_sizes[i];
         int out_sz = m_layer_sizes[i+1];
-        m_weights[i] += m_mutation_std * Eigen::Rand::normal<Eigen::MatrixXf>(in_sz, out_sz, urng)
-                            * Eigen::Rand::bernoulli<Eigen::MatrixXf>(in_sz, out_sz, urng, mutation_rate);
-        m_biases[i] += m_mutation_std * Eigen::Rand::normal<Eigen::MatrixXf>(1, out_sz, urng)
-                            * Eigen::Rand::bernoulli<Eigen::MatrixXf>(1, out_sz, urng, mutation_rate);
+        
+        MatrixXdf weight_noise = m_mutation_std * Eigen::Rand::normal<MatrixXdf>(in_sz, out_sz, urng);
+        MatrixXdf rand_w_mat    = Eigen::Rand::balanced<MatrixXdf>(in_sz, out_sz, urng);
+        // rand w mat has [-1, 1] so we use 2*mutation_rate-1 instead of mutations rate
+        MatrixXdf weight_mask = (rand_w_mat.array() < 2*mutation_rate-1).cast<float>();
+        m_weights[i] += m_mutation_std * weight_noise.cwiseProduct(weight_mask);
+        
+        MatrixXdf bias_noise = m_mutation_std * Eigen::Rand::normal<MatrixXdf>(1, out_sz, urng);
+        MatrixXdf rand_b_mat  = Eigen::Rand::balanced<MatrixXdf>(1, out_sz, urng);
+        MatrixXdf bias_mask = (rand_b_mat.array() < 2*mutation_rate-1).cast<float>();
+
+        m_biases[i] += m_mutation_std * bias_noise.cwiseProduct(bias_mask);
     }
 }
 
@@ -144,15 +164,15 @@ Creature::Creature()
 Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<int> layer_sizes)
     :m_muscle_index(muscle_index.begin(), muscle_index.end()),
     m_current_activations(m_muscle_index.size(), 0),
-    m_brain(layer_sizes),
-    m_sensing_points(sensing_points.begin(), sensing_points.end())
+    m_sensing_points(sensing_points.begin(), sensing_points.end()),
+    m_brain(layer_sizes)
 {}
 
 Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases)
     :m_muscle_index(muscle_index.begin(), muscle_index.end()),
     m_current_activations(m_muscle_index.size(), 0),
-    m_brain(layers, biases),
-    m_sensing_points(sensing_points.begin(), sensing_points.end())
+    m_sensing_points(sensing_points.begin(), sensing_points.end()),
+    m_brain(layers, biases)
 {}
 
 Neural_Net const& Creature::get_brain() const{
@@ -167,8 +187,12 @@ void Creature::mutate(float mutation_rate){
     m_brain.mutate(mutation_rate);
 }
 
-void Creature::save(int id){
-    m_brain.save(id);
+void Creature::save(int id, float reward){
+    m_brain.save(id, reward);
+}
+
+int Creature::get_apex_tip_index(){
+    return m_sensing_points[0];
 }
 
 void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation){

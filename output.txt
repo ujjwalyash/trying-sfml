@@ -1,0 +1,28 @@
+-- libudev stable: 1
+-- Found UDev: /usr/lib64/libudev.so
+--    include: /usr/include
+-- Found hb-features.h
+-- Found the following HarfBuzz libraries:
+--  HarfBuzz (required): /usr/lib64/libharfbuzz.so
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
+[1/9] Scanning /home/yashujjwal/projects/trying-sfml/src/environment.cpp for CXX dependencies
+[2/9] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
+[3/4] Building CXX object CMakeFiles/main.dir/src/environment.cpp.o
+[4/4] Linking CXX executable bin/main
+current generation: 0
+current best_reward: -31.0599
+
+current generation: 1
+current best_reward: -37.7813
+
+current generation: 2
+current best_reward: -34.817
+
+current generation: 3
+current best_reward: -38.0176
+
+current generation: 4
+current best_reward: -47.6902
+

@@ -18,6 +18,7 @@ class Environment
     private:
         const int m_num_iterations_per_frame = 16;
         const float m_dt = 1.f/(m_fps*m_num_iterations_per_frame);
+        const int m_max_steps_per_episode = 200;
     
         int m_num_particles = 0; 
         int m_num_springs = 0;
@@ -72,5 +73,5 @@ class Environment
 
         void crossover(Environment const& par_1, Environment const& par_2);
         void mutate(float mutation_rate);
-        void save(int id);
+        void save(int id, float total_reard);
 };

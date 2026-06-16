@@ -3,17 +3,17 @@
 Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // m_creature has no default constructor hence need to do this
     // ensure all function parameter are defined earlier in the CLASS DECLARATION
-    {
-        // CREATE THE BALL BEFROE THE CREATURE
-        // if you do afterwords and the vector moves to a bigger size
-        // all the springs which hold references will be invalidated
+{
+    // CREATE THE BALL BEFROE THE CREATURE
+    // if you do afterwords and the vector moves to a bigger size
+    // all the springs which hold references will be invalidated
         
     m_original_ball_pos = ball_pos;
     m_goal_pos = goal_pos;
     
     // after creating football in sperm creation springs vector is resized, the springs break
     // temp fix for now
-    m_particles.reserve(200);
+    m_particles.reserve(300);
     m_springs.reserve(300);
     m_muscles.reserve(10);
     
@@ -50,7 +50,7 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
 }
 
 void Environment::run_episode(){
-    while(m_episode_end){
+    while(not m_episode_end){
         step();
     }
 }
@@ -64,33 +64,39 @@ void Environment::crossover(Environment const& par_1, Environment const& par_2){
     m_creature.crossover(par_1.get_creature(), par_2.get_creature());
 }
 
-void Environment::save(int id){
-    m_creature.save(id);
+void Environment::save(int id, float total_reard){
+    m_creature.save(id, total_reard);
 }
 
 void Environment::render(sf::RenderWindow& window){
-        int j = 0;
+        // int j = 0;
 		sf::CircleShape sh;
 		for(int i = 0; i < m_num_particles; i++){
-			if(j < (int)m_creature.m_sensing_points.size() && i == m_creature.m_sensing_points[j]){
-				j++;
-                // if(j != 1 and j != 4) continue;
+			// if(j < (int)m_creature.m_sensing_points.size() && i == m_creature.m_sensing_points[j]){
+			// 	j++;
+            //     // if(j != 1 and j != 4) continue;
 
-				sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
-				float r = m_particles[i].get_radius();
-				sh.setPosition({particle_pos.x-r, particle_pos.y-r});
-				sh.setRadius(r);
-				sh.setFillColor(sf::Color::Green);
-				window.draw(sh);
-			}
-			else{
-				sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
-				float r = m_particles[i].get_radius();
-				sh.setPosition({particle_pos.x-r, particle_pos.y-r});
-				sh.setRadius(r);
-				sh.setFillColor(sf::Color::White);
-				window.draw(sh);
-			}
+			// 	sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
+			// 	float r = m_particles[i].get_radius();
+			// 	sh.setPosition({particle_pos.x-r, particle_pos.y-r});
+			// 	sh.setRadius(r);
+			// 	sh.setFillColor(sf::Color::Green);
+			// 	window.draw(sh);
+			// }
+			// else{
+			// 	sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
+			// 	float r = m_particles[i].get_radius();
+			// 	sh.setPosition({particle_pos.x-r, particle_pos.y-r});
+			// 	sh.setRadius(r);
+			// 	sh.setFillColor(sf::Color::White);
+			// 	window.draw(sh);
+			// }
+            sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
+            float r = m_particles[i].get_radius();
+            sh.setPosition({particle_pos.x-r, particle_pos.y-r});
+            sh.setRadius(r);
+            sh.setFillColor(sf::Color::White);
+            window.draw(sh);
 		}
 		for(int i = 0; i < m_num_springs; i++){
 			std::array line = m_springs[i].get_line();
@@ -136,6 +142,10 @@ void Environment::step(){
     m_reward += reward;
 
     m_num_steps_done++;
+
+    if(m_num_steps_done > m_max_steps_per_episode)
+        m_episode_end = true;
+    
 }
 
 void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle){
@@ -177,16 +187,20 @@ float Environment::calculate_reward(){
 
     float goal_ball_dist = (m_ball_pos-m_goal_pos).length();
     float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
+    float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_ball_pos).length();
+
     if(ball_displacement > 5) m_has_touched_ball = true;
 
-    if(not m_has_touched_ball) reward -= 1;
-    m_reward -= goal_ball_dist/300.f;
-    m_reward -= 1; // normal time thing
+    if(not m_has_touched_ball){
+        reward -= 1;
+        reward -= creature_ball_dist/200.f;
+    }
+    reward -= goal_ball_dist/300.f;
+    reward -= 1; // normal time thing
 
     if(goal_ball_dist < m_goal_radius){
-        m_reward += 1000;
+        reward += 1000;
         m_episode_end = 1;
-
     }
 
     return reward;

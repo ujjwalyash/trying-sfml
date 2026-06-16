@@ -16,7 +16,7 @@ class Neural_Net
 {       
     private:
         
-        float m_mutation_std = 0.1;
+        float m_mutation_std = 0.3;
 
         std::vector<int> m_layer_sizes;
         std::vector<MatrixXdf> m_weights; // supposed to be keep on multiplied to the right 
@@ -34,7 +34,7 @@ class Neural_Net
         void crossover(Neural_Net const& par_1, Neural_Net const& par_2);
         void mutate(float mutation_rate);
 
-        void save(int id);
+        void save(int id, float reward);
 };
 
 class Creature{
@@ -46,12 +46,9 @@ class Creature{
         
         std::vector<int> m_muscle_index; // indicies in the springs array 
         std::vector<float> m_current_activations; // ordered according to muslces_index
+        std::vector<int> m_sensing_points;
         
         Neural_Net m_brain; // ordered according to muslces_index
-
-        // ONYL FOR TESTING MAKE IT PRIVATE AGAIN LATER
-    public:
-        std::vector<int> m_sensing_points;
 
     public:
 
@@ -65,12 +62,13 @@ class Creature{
         // will be moved to the derived class
         // passing the entire particles array not a good practice(maybe)
         void get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles);
+        int get_apex_tip_index();
 
         Neural_Net const& get_brain() const;
         void crossover(Creature const& par_1, Creature const& par_2);
         void mutate(float mutation_rate);
 
-        void save(int id);
+        void save(int id, float reward);
 
 };
 
