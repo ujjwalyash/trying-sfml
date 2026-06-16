@@ -26,6 +26,10 @@ Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     m_goal_radius = 10;
 }
 
+Creature const& Environment::get_creature() const{
+    return m_creature;
+}
+
 void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
 
     m_original_ball_pos = ball_pos;
@@ -45,12 +49,33 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
     m_has_touched_ball = false;
 }
 
+void Environment::run_episode(){
+    while(m_episode_end){
+        step();
+    }
+}
+
+void Environment::mutate(float mutation_rate){
+    m_creature.mutate(mutation_rate);
+}
+
+void Environment::crossover(Environment const& par_1, Environment const& par_2){
+    // since par_1 is const we can only const member functions of get_creature
+    m_creature.crossover(par_1.get_creature(), par_2.get_creature());
+}
+
+void Environment::save(int id){
+    m_creature.save(id);
+}
+
 void Environment::render(sf::RenderWindow& window){
         int j = 0;
 		sf::CircleShape sh;
 		for(int i = 0; i < m_num_particles; i++){
 			if(j < (int)m_creature.m_sensing_points.size() && i == m_creature.m_sensing_points[j]){
 				j++;
+                // if(j != 1 and j != 4) continue;
+
 				sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
 				float r = m_particles[i].get_radius();
 				sh.setPosition({particle_pos.x-r, particle_pos.y-r});
@@ -85,19 +110,57 @@ void Environment::render(sf::RenderWindow& window){
         window.draw(sh);
 }
 
+
+// DUPLICATE FUNCTIONS bc you cant give references default params -- try pointer 
 void Environment::step(){
     
 	std::vector<float> observation(m_observation_size);
-    m_creature.get_observation(observation, m_ball_pos, m_particles);
+    m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
     
-    for(int iter = 0; iter < m_num_iterations_per_frame*m_num_frames_per_creature_action; iter++){
-        handle_all_muscles(m_muscles, m_dt);
-        handle_all_springs(m_springs, m_dt);
-        for(int i = 0; i < m_num_particles; i++){
-            m_particles[i].step(m_dt);
-        }			
-        handle_all_collisions(m_particles);
+    for(int cycle = 0; cycle < m_num_frames_per_creature_action; cycle++){
+
+        for(int iter = 0; iter < m_num_iterations_per_frame; iter++){
+            handle_all_muscles(m_muscles, m_dt);
+            handle_all_springs(m_springs, m_dt);
+            for(int i = 0; i < m_num_particles; i++){
+                m_particles[i].step(m_dt);
+            }			
+            handle_all_collisions(m_particles);    
+        }
+    }
+
+    m_ball_pos = m_particles[m_goal_center_index].get_curr_pos();
+
+    float reward = calculate_reward();
+    m_reward += reward;
+
+    m_num_steps_done++;
+}
+
+void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle){
+    
+	std::vector<float> observation(m_observation_size);
+    m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
+    m_creature.act(m_muscles, observation);
+    
+    for(int cycle = 0; cycle < m_num_frames_per_creature_action; cycle++){
+
+        for(int iter = 0; iter < m_num_iterations_per_frame; iter++){
+            handle_all_muscles(m_muscles, m_dt);
+            handle_all_springs(m_springs, m_dt);
+            for(int i = 0; i < m_num_particles; i++){
+                m_particles[i].step(m_dt);
+            }			
+            handle_all_collisions(m_particles);    
+        }
+
+        if(render_between_cycle){
+            window.clear();
+            render(window);
+            window.draw(text);
+            window.display();
+        }
     }
 
     m_ball_pos = m_particles[m_goal_center_index].get_curr_pos();

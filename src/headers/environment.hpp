@@ -6,6 +6,7 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics/Text.hpp>
 
 class Environment
 {
@@ -34,7 +35,7 @@ class Environment
         float m_goal_radius;
         bool m_has_touched_ball = false;
         
-        const int m_observation_size = 4;
+        const int m_observation_size = 12;
         float m_reward = 0; 
         int m_num_steps_done = 0;
         bool m_episode_end = 0;
@@ -51,17 +52,25 @@ class Environment
         // draws everything on window, does not clear, display
         void render(sf::RenderWindow& window);
         
+        // step till m_episode_end
+        void run_episode();
+        
         // proceed forward with num_iterations step each with time_interval m_dt
         // also calculates rewards, end_condition, new_target pos
         // we have a set of fixed sequenece of target_pos generated randomly for each
         // generation and step will switch targets too as required
-
         // EACH STEP DOES 0.1s not 1/60 = 0.016;
         void step();
+        void step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle = false);
 
         // returns the reward for one step
         // checks for end condition
         float calculate_reward();
 
         float get_curr_reward();
+        Creature const& get_creature() const;
+
+        void crossover(Environment const& par_1, Environment const& par_2);
+        void mutate(float mutation_rate);
+        void save(int id);
 };

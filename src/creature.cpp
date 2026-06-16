@@ -1,9 +1,6 @@
 #include "headers/creature.hpp"
-#include "headers/muscle.hpp"
-#include "headers/particle.hpp"
-#include <SFML/System/Vector2.hpp>
-#include <cassert>
-#include <iostream>
+
+Eigen::Rand::P8_mt19937_64 urng{ 42 };
 
 Neural_Net::Neural_Net(std::vector<int> layer_sizes)
     :m_layer_sizes(layer_sizes.begin(), layer_sizes.end())
@@ -12,24 +9,107 @@ Neural_Net::Neural_Net(std::vector<int> layer_sizes)
     for(int i = 0; i < num_matrics; i++){
         int in_sz = layer_sizes[i];
         int out_sz = layer_sizes[i+1];
-        m_weights.push_back(MatrixXd::Random(in_sz, out_sz));
-        m_biases.push_back(MatrixXd::Random(1, out_sz));
+        m_weights.push_back(Eigen::Rand::balanced<Eigen::MatrixXf>(in_sz, out_sz, urng));
+        m_biases.push_back(Eigen::Rand::balanced<Eigen::MatrixXf>(1, out_sz, urng));
     }
 }
 
-Neural_Net::Neural_Net(std::vector<MatrixXd>& layers, std::vector<VectorXd>& biases)
+Neural_Net::Neural_Net(std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases)
     :m_weights(layers.begin(), layers.end()),
      m_biases(biases.begin(), biases.end())
 {
-    for(MatrixXd m: m_weights){
+    for(MatrixXdf m: m_weights){
         m_layer_sizes.push_back(m.rows());
     }
     m_layer_sizes.push_back(m_weights.back().cols());
 }
 
+std::vector<MatrixXdf> const& Neural_Net::get_weights() const{
+    return m_weights;
+}
+std::vector<VectorXdf> const& Neural_Net::get_biases() const{
+    return m_biases;
+}
+
+namespace Eigen{
+
+    // matrix to json
+    void to_json(json& j, MatrixXdf const& matrix){
+        j = json{
+            {"rows", matrix.rows()},
+            {"cols", matrix.cols()},
+            {"data", std::vector<float>(matrix.data(), matrix.data() + matrix.size())}
+        };
+    }
+
+    void from_json(const nlohmann::json& j, MatrixXd& matrix) {
+        int rows = j.at("rows");
+        int cols = j.at("cols");
+        std::vector<double> data = j.at("data");
+        
+        matrix.resize(rows, cols);
+        std::copy(data.begin(), data.end(), matrix.data());
+    }
+}
+
+void Neural_Net::save(int id){
+    json data;
+    data["id"] = id;
+    data["layer_sizes"] = m_layer_sizes;
+    data["weights"] = m_weights;
+    data["biases"] = m_biases;
+
+    std::string file_path = std::format("./saved/{}.json", id);
+    std::ofstream o(file_path);
+    o << std::setw(4) << data << std::endl;
+}
+
+void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
+    std::vector<MatrixXdf> const& par_1_w = par_1.get_weights();
+    std::vector<VectorXdf> const& par_1_b = par_1.get_biases();
+    
+    std::vector<MatrixXdf> const& par_2_w = par_2.get_weights();
+    std::vector<VectorXdf> const& par_2_b = par_2.get_biases();
+
+    for(int i = 0; i < (int)m_layer_sizes.size()-1; i++){
+        
+        // currently we would need to move columns since we mutiply weights to the right
+        // change this to respect row major order of storage(but check how eigen stores before)
+        int num_rows = m_layer_sizes[i];
+        int num_cols = m_layer_sizes[i+1];
+        for(int j = 0; j < num_cols; j++){
+            if(rand()%2){
+                // take col from p1
+                m_weights[i].block(0, j, num_rows, 1)
+                    = par_1_w[i].block(0, j, num_rows, 1);
+
+                m_biases[i](j) = par_1_b[i](j); 
+            }
+            else{
+                // take col from p2
+                m_weights[i].block(0, j, num_rows, 1)
+                    = par_2_w[i].block(0, j, num_rows, 1);
+
+                m_biases[i](j) = par_2_b[i](j); 
+            }
+        }
+    }
+}
+
+void Neural_Net::mutate(float mutation_rate){
+    for(int i = 0; i < (int)m_layer_sizes.size(); i++){
+        int in_sz = m_layer_sizes[i];
+        int out_sz = m_layer_sizes[i+1];
+        m_weights[i] += m_mutation_std * Eigen::Rand::normal<Eigen::MatrixXf>(in_sz, out_sz, urng)
+                            * Eigen::Rand::bernoulli<Eigen::MatrixXf>(in_sz, out_sz, urng, mutation_rate);
+        m_biases[i] += m_mutation_std * Eigen::Rand::normal<Eigen::MatrixXf>(1, out_sz, urng)
+                            * Eigen::Rand::bernoulli<Eigen::MatrixXf>(1, out_sz, urng, mutation_rate);
+    }
+}
+
 void Neural_Net::forward(std::vector<float>& current_activations, std::vector<float>& observation){
 
-    VectorXd activation(m_layer_sizes[0]);
+    VectorXdf activation(m_layer_sizes[0]);
     assert(m_layer_sizes[0] == (int)(current_activations.size() + observation.size()));
     int ind = 0;
     for(float a: current_activations){
@@ -41,6 +121,8 @@ void Neural_Net::forward(std::vector<float>& current_activations, std::vector<fl
         ind++;
     }
 
+    // std::cout << activation << '\n';
+
     for(int layer_no = 0; layer_no < (int)m_weights.size()-1; layer_no++){
         activation = activation * m_weights[layer_no] + m_biases[layer_no];
         activation = activation.cwiseMax(0);
@@ -48,7 +130,6 @@ void Neural_Net::forward(std::vector<float>& current_activations, std::vector<fl
     activation = activation * m_weights[m_weights.size()-1];
     // approximate sigmoid as x/(1+|x|)
     activation = 0.5f*(1.f + (activation.array()/(1.f+activation.array().abs())));
-    std::cout << activation << '\n';
     
     for(int i = 0; i < (int)current_activations.size(); i++){
         current_activations[i] = activation(0, i);
@@ -67,12 +148,28 @@ Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_point
     m_sensing_points(sensing_points.begin(), sensing_points.end())
 {}
 
-Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXd>& layers, std::vector<VectorXd>& biases)
+Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases)
     :m_muscle_index(muscle_index.begin(), muscle_index.end()),
     m_current_activations(m_muscle_index.size(), 0),
     m_brain(layers, biases),
     m_sensing_points(sensing_points.begin(), sensing_points.end())
 {}
+
+Neural_Net const& Creature::get_brain() const{
+    return m_brain;
+}
+
+void Creature::crossover(Creature const& par_1, Creature const& par_2){
+    m_brain.crossover(par_1.get_brain(), par_2.get_brain());
+}
+
+void Creature::mutate(float mutation_rate){
+    m_brain.mutate(mutation_rate);
+}
+
+void Creature::save(int id){
+    m_brain.save(id);
+}
 
 void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation){
     m_brain.forward(m_current_activations, observation);
@@ -81,13 +178,16 @@ void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation
     }
 }
 
-void Creature::get_observation(std::vector<float>& obs, sf::Vector2f target_pos, const std::vector<Particle>& particles){
-    assert(obs.size() == 4);
-    std::vector<int> vals(4);
+void Creature::get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles){
+    
+    // use a parameter somewhere instead of hardcoding 12
+    assert(obs.size() == 12);
+    std::vector<int> vals(12);
+    // for ball
     float mn = 10000;
     float mx = 0;
     for(int i = 0; i < 4; i++){
-        vals[i] = (target_pos-particles[m_sensing_points[i]].get_curr_pos()).length();
+        vals[i] = (ball_pos-particles[m_sensing_points[i]].get_curr_pos()).length();
         mn = fmin(mn, vals[i]);
         mx = fmax(mx, vals[i]);
     }
@@ -96,6 +196,28 @@ void Creature::get_observation(std::vector<float>& obs, sf::Vector2f target_pos,
     for(int i = 0; i < 4; i++){
         obs[i] = 2.f*(vals[i]-mn)/dem - 1;
     }
+
+    // for goal
+    mn = 10000;
+    mx = 0;
+    for(int i = 4; i < 8; i++){
+        vals[i] = (goal_pos-particles[m_sensing_points[i-4]].get_curr_pos()).length();
+        mn = fmin(mn, vals[i]);
+        mx = fmax(mx, vals[i]);
+    }
+
+    dem = mx-mn;
+    for(int i = 4; i < 8; i++){
+        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
+    }
+
+    // for walls
+    // points 0, 3
+    obs[8] = 2.f*(particles[m_sensing_points[0]].get_curr_pos().x/max_x) - 1.f;
+    obs[9] = 2.f*(particles[m_sensing_points[0]].get_curr_pos().y/max_y) - 1.f;
+    
+    obs[10] = 2.f*(particles[m_sensing_points[3]].get_curr_pos().x/max_x) - 1.f;
+    obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos().y/max_y) - 1.f;
 }
 
 Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
@@ -210,7 +332,7 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         particles[particles.size()-1].set_acc(acc);
 
         if(positions[i] == corners[1] or positions[i] == corners[3]
-                or positions[i] == corners[5] or positions[i] == corners[7]){
+                or positions[i] == corners[7] or i == (int)positions.size()-1){
             
             sensing_points.push_back(particles.size()-1);
         }
@@ -306,7 +428,7 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         muscle_indices.push_back(i);
     }
 
-    return Creature(muscle_indices, sensing_points, {8+4, 10, 8});
+    return Creature(muscle_indices, sensing_points, {8+12, 12, 8});
 }
 
 int create_football(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
@@ -316,8 +438,8 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     // --- 2. DIMENSIONS & STRUCTURAL PARAMETERS ---
     const sf::Vector2f ball_center = {0.0f, 0.0f}; // Placed perfectly within reach of the sperm
     const float BALL_RADIUS = 20.0f;                  // Scaled size relative to the sperm head
-    const int EDGE_POINTS = 40;                       // Evenly distributed points around the rim
-    const float GAP_DISTANCE = 2.f;                  // Explicit tiny gap (in pixels) between edge circles
+    const int EDGE_POINTS = 50;                       // Evenly distributed points around the rim
+    const float GAP_DISTANCE = 1.f;                  // Explicit tiny gap (in pixels) between edge circles
     const float CENTER_PARTICLE_RADIUS = 1.0f;
 
     // Calculate the precise chord distance between adjacent points along the circle
@@ -327,7 +449,7 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     const float EDGE_PARTICLE_RADIUS = (chord_length - GAP_DISTANCE) / 2.0f;
 
     // Grab the global buoyancy constant defined in your engine
-    const float buoyancy_const = 4.f / 3.f * 3.141f * 15.f;
+    // const float buoyancy_const = 4.f / 3.f * 3.141f * 15.f;
 
     // Track starting index offset if particles already exist in the vectors
     int start_particle_idx = particles.size();

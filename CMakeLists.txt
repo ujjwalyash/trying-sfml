@@ -27,6 +27,7 @@ add_executable(main
 )
 target_compile_features(main PRIVATE cxx_std_26)
 target_link_libraries(main PRIVATE SFML::Graphics)
+target_include_directories(main SYSTEM PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/src/external")
 
 # Enable modern C++ standards (C++20 or C++23)
 set(CMAKE_CXX_STANDARD 20)
@@ -40,7 +41,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         -Wpedantic     # Forces strict adherence to the C++ standard
         -Wshadow       # Warns if you accidentally reuse a variable name
         -g
-        -I "./src/headers/"
+
+        # -O3
+        -march=native
     )
 endif()
         # -Wconversion   # Warns if data might get lost (e.g., assigning a float to an int)

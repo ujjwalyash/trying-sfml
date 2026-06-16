@@ -2,28 +2,39 @@
 #include "particle.hpp"
 #include "spring.hpp"
 #include "muscle.hpp"
-#include "Eigen/Core"
-#include <SFML/System/Vector2.hpp>
-#include <vector>
+#include <Eigen/Core>
+#include <EigenRand/EigenRand>
+#include <json.hpp>
 
-typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatrixXd;
 // row vec
-typedef Eigen::Matrix<float, 1, Eigen::Dynamic> VectorXd;
+typedef Eigen::Matrix<float, 1, Eigen::Dynamic> VectorXdf;
+typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatrixXdf;
+
+using json = nlohmann::json;
 
 class Neural_Net
 {       
     private:
         
+        float m_mutation_std = 0.1;
+
         std::vector<int> m_layer_sizes;
-        std::vector<MatrixXd> m_weights; // supposed to be keep on multiplied to the right 
-        std::vector<VectorXd> m_biases; // supposed to be keep on multiplied to the right 
+        std::vector<MatrixXdf> m_weights; // supposed to be keep on multiplied to the right 
+        std::vector<VectorXdf> m_biases; // supposed to be keep on multiplied to the right 
 
     public:
 
         Neural_Net(std::vector<int> layer_sizes);    
-        Neural_Net(std::vector<MatrixXd>& layers, std::vector<VectorXd>& biases);    
+        Neural_Net(std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases);    
         // takes current activations and changes them
         void forward(std::vector<float>& current_activations, std::vector<float>& observation);
+
+        std::vector<MatrixXdf> const& get_weights() const;
+        std::vector<VectorXdf> const& get_biases() const;
+        void crossover(Neural_Net const& par_1, Neural_Net const& par_2);
+        void mutate(float mutation_rate);
+
+        void save(int id);
 };
 
 class Creature{
@@ -48,20 +59,20 @@ class Creature{
         Creature();
 
         Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<int> layer_sizes);
-        Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXd>& layers, std::vector<VectorXd>& biases);
+        Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases);
         void act(std::vector<Muscle>& muscles, std::vector<float>& observation);    
 
         // will be moved to the derived class
         // passing the entire particles array not a good practice(maybe)
-        void get_observation(std::vector<float>& obs, sf::Vector2f target_pos, const std::vector<Particle>& particles);
+        void get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles);
+
+        Neural_Net const& get_brain() const;
+        void crossover(Creature const& par_1, Creature const& par_2);
+        void mutate(float mutation_rate);
+
+        void save(int id);
 
 };
-
-// class Sperm: public Creature
-// {
-//     public:
-
-// }
 
 Creature create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 int create_football              (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);

@@ -2,6 +2,18 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/System/Vector2.hpp>
 
+// params
+extern float max_y;
+extern float max_x;
+
+extern sf::Vector2f gravity;
+extern float buoyancy_const; // DO NOT MAKE DENSITY 1000
+
+extern float restitution;
+extern float coefficient_friction;
+extern float viscosity; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
+
+
 enum class structure{
     creature,
     ball
