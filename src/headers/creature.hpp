@@ -11,6 +11,14 @@ typedef Eigen::Matrix<float, 1, Eigen::Dynamic> VectorXdf;
 typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatrixXdf;
 
 using json = nlohmann::json;
+namespace Eigen{
+    void to_json(json& j, MatrixXdf const& matrix);
+    void from_json(const nlohmann::json& j, MatrixXdf& matrix);
+    
+    // remove this duplication
+    void to_json(json& j, VectorXdf const& vector);
+    void from_json(const nlohmann::json& j, VectorXdf& vector);
+}
 
 class Neural_Net
 {       
@@ -25,7 +33,7 @@ class Neural_Net
     public:
 
         Neural_Net(std::vector<int> layer_sizes);    
-        Neural_Net(std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases);    
+        Neural_Net(std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases);    
         // takes current activations and changes them
         void forward(std::vector<float>& current_activations, std::vector<float>& observation);
 
@@ -35,6 +43,7 @@ class Neural_Net
         void mutate(float mutation_rate);
 
         void save(int id, float reward);
+        // void load(int id);
 };
 
 class Creature{
@@ -56,7 +65,7 @@ class Creature{
         Creature();
 
         Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<int> layer_sizes);
-        Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases);
+        Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases);
         void act(std::vector<Muscle>& muscles, std::vector<float>& observation);    
 
         // will be moved to the derived class
@@ -69,11 +78,18 @@ class Creature{
         void mutate(float mutation_rate);
 
         void save(int id, float reward);
+        // void load(int id);
 
 };
 
-Creature create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 int create_football              (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
+// return type for creation functions below
+struct Creature_data{
+    std::vector<int> s_muscle_indices;
+    std::vector<int> s_sensing_points;
+};
+
+Creature_data create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 
 void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 void create_creature_motor_sperm  (Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);

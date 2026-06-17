@@ -1,4 +1,5 @@
 #include "headers/environment.hpp"
+#include <iostream>
 
 Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // m_creature has no default constructor hence need to do this
@@ -21,8 +22,65 @@ Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
-    m_creature = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_dt);
+
+    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_dt);
+    // 20 -- 12 -- 8
+    std::vector<int> layer_sizes{m_num_muscles+m_observation_size, 12, m_num_muscles};
+    // 2 wasteful initliaizations 
+    // once before constructor body starts
+    // once when we create this temp object and copy
+    m_creature = Creature{data.s_muscle_indices, data.s_sensing_points, layer_sizes};
+
+    m_goal_radius = 10;
+}
+
+
+Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
+    // m_creature has no default constructor hence need to do this
+    // ensure all function parameter are defined earlier in the CLASS DECLARATION
+{
+    // CREATE THE BALL BEFROE THE CREATURE
+    // if you do afterwords and the vector moves to a bigger size
+    // all the springs which hold references will be invalidated
+        
+    m_original_ball_pos = ball_pos;
+    m_goal_pos = goal_pos;
     
+    // after creating football in sperm creation springs vector is resized, the springs break
+    // temp fix for now
+    m_particles.reserve(300);
+    m_springs.reserve(300);
+    m_muscles.reserve(10);
+    
+    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_dt);
+    for(int i = 0; i < m_num_particles; i++){
+        m_particles[i].shift_pos(m_original_ball_pos);
+    }
+    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_dt);
+    // 20 -- 12 -- 8
+    std::vector<int> layer_sizes{m_num_muscles+m_observation_size, 12, m_num_muscles};
+
+    // loading json
+    std::string file_path = std::format("./saved/{}.json", id);
+    std::ifstream i(file_path);
+    if(!i){
+        std::cout << "could not load from file: " << file_path << '\n';
+        exit(-1);
+    }
+
+    json j = json::parse(i);
+    std::vector<MatrixXdf> weights = j["weights"].get<std::vector<MatrixXdf>>();
+    std::vector<VectorXdf> biases = j["biases"].get<std::vector<VectorXdf>>();
+    std::vector<int> lsizes = j["layer_sizes"].get<std::vector<int>>();
+    m_reward = j["reward"].get<float>();
+    assert(lsizes == layer_sizes);
+
+    // 2 wasteful initliaizations 
+    // once before constructor body starts
+    // once when we create this temp object and copy
+    m_creature = Creature{data.s_muscle_indices, data.s_sensing_points
+                            , weights, biases};
+
     m_goal_radius = 10;
 }
 

@@ -1,31 +1,3 @@
-// #include <iostream>
-// #include <random>
-// #include <Eigen/Dense>
-// #include <EigenRand/EigenRand>
-
-// typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatrixXdf;
-
-// Eigen::Rand::P8_mt19937_64 urng_AAA(42);
-
-// void func(){
-	
-//     std::cout << Eigen::Rand::balanced<MatrixXdf>(2, 2, urng_AAA) << "\n";
-
-// }
-
-// int main() {
-
-// 	func();
-// 	std::cout << '\n';
-// 	func();
-// 	std::cout << '\n';
-// 	func();
-// 	std::cout << '\n';
-
-//     return 0;
-// }
-
-
 #include "headers/environment.hpp"
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Keyboard.hpp>
@@ -127,12 +99,13 @@ int main()
 {	
 	int population_size = 20;
 	int num_generations = 10;
-	int num_episode_per_generation = 1;
+	int num_episode_per_generation = 2;
 
 	float top_unchanged_percentage = 0.3;
 	float elimination_percentage = 0.4;
 
 	float mutation_rate = 0.5;
+	bool load_old_gen = true;
 
     sf::Vector2f first_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
     sf::Vector2f first_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
@@ -147,8 +120,23 @@ int main()
 	env.reserve(population_size); // Prevents performance-heavy reallocations
 
 	for (int i = 0; i < (int)population_size; ++i) {
-		env.emplace_back(first_ball_pos, first_goal_pos);
+		// if a saved with id does not exist the constructor
+		if(load_old_gen) env.emplace_back(i, first_ball_pos, first_goal_pos);
+		else env.emplace_back(first_ball_pos, first_goal_pos);
 	}
+
+	// save-load testing
+	// for(int i = 0; i < population_size; i++){
+	// 	env[i].save(i, 0);
+	// }
+	
+	// for(int i = 0; i < population_size; i++){
+	// 	Environment temp(i, first_ball_pos, first_goal_pos);
+	// 	assert(temp.get_creature().get_brain().get_weights() == env[i].get_creature().get_brain().get_weights());
+	// 	assert(temp.get_creature().get_brain().get_biases() == env[i].get_creature().get_brain().get_biases());
+	// 	assert(temp.get_curr_reward() == env[i].get_curr_reward());
+	// }
+	// exit(0);
 
     std::vector<float> rewards(population_size, 0);    
 	

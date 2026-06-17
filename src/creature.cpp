@@ -19,8 +19,8 @@ Neural_Net::Neural_Net(std::vector<int> layer_sizes)
     }
 }
 
-Neural_Net::Neural_Net(std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases)
-    :m_weights(layers.begin(), layers.end()),
+Neural_Net::Neural_Net(std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases)
+    :m_weights(weights.begin(), weights.end()),
      m_biases(biases.begin(), biases.end())
 {
     for(MatrixXdf m: m_weights){
@@ -38,7 +38,6 @@ std::vector<VectorXdf> const& Neural_Net::get_biases() const{
 
 namespace Eigen{
 
-    // matrix to json
     void to_json(json& j, MatrixXdf const& matrix){
         j = json{
             {"rows", matrix.rows()},
@@ -47,13 +46,30 @@ namespace Eigen{
         };
     }
 
-    void from_json(const nlohmann::json& j, MatrixXd& matrix) {
+    void from_json(const nlohmann::json& j, MatrixXdf& matrix) {
         int rows = j.at("rows");
         int cols = j.at("cols");
         std::vector<double> data = j.at("data");
         
         matrix.resize(rows, cols);
         std::copy(data.begin(), data.end(), matrix.data());
+    }
+    
+    void to_json(json& j, VectorXdf const& vector){
+        j = json{
+            {"rows", vector.rows()},
+            {"cols", vector.cols()},
+            {"data", std::vector<float>(vector.data(), vector.data() + vector.size())}
+        };
+    }
+
+    void from_json(const nlohmann::json& j, VectorXdf& vector) {
+        int rows = j.at("rows");
+        int cols = j.at("cols");
+        std::vector<double> data = j.at("data");
+        
+        vector.resize(rows, cols);
+        std::copy(data.begin(), data.end(), vector.data());
     }
 }
 
@@ -74,6 +90,17 @@ void Neural_Net::save(int id, float reward){
 
     o << std::setw(4) << data << std::endl;
 }
+
+// void Neural_Net::load(int id){
+//     std::string file_path = std::format("./saved/{}.json", id);
+//     std::ifstream i(file_path);
+//     if(!i)
+//         std::cerr << "could not load from file: " << file_path << '\n';
+    
+//     json j = json::parse(i);
+
+    
+// }
 
 void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
     std::vector<MatrixXdf> const& par_1_w = par_1.get_weights();
@@ -168,11 +195,11 @@ Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_point
     m_brain(layer_sizes)
 {}
 
-Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& layers, std::vector<VectorXdf>& biases)
+Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases)
     :m_muscle_index(muscle_index.begin(), muscle_index.end()),
     m_current_activations(m_muscle_index.size(), 0),
     m_sensing_points(sensing_points.begin(), sensing_points.end()),
-    m_brain(layers, biases)
+    m_brain(weights, biases)
 {}
 
 Neural_Net const& Creature::get_brain() const{
@@ -190,6 +217,11 @@ void Creature::mutate(float mutation_rate){
 void Creature::save(int id, float reward){
     m_brain.save(id, reward);
 }
+
+// void Creature::load(int id){
+//     m_brain.load(id);
+// }
+
 
 int Creature::get_apex_tip_index(){
     return m_sensing_points[0];
@@ -244,7 +276,7 @@ void Creature::get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, s
     obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos().y/max_y) - 1.f;
 }
 
-Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
+Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
                                             , int& num_muscles, std::vector<Muscle>& muscles, float dt){
 
     sf::Vector2<float> old_pos, vel, curr_pos, acc;
@@ -452,7 +484,9 @@ Creature create_creature_muscle_sperm(int& num_particles, std::vector<Particle>&
         muscle_indices.push_back(i);
     }
 
-    return Creature(muscle_indices, sensing_points, {8+12, 12, 8});
+    Creature_data data{ muscle_indices, sensing_points };
+
+    return data;
 }
 
 int create_football(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {

@@ -44,6 +44,7 @@ class Environment
     public:
 
         Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos);
+        Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos);
 
         // the state of a environment is just the positions of all the particles in it
         // also return all muscles to natural length, and natual spring constant
