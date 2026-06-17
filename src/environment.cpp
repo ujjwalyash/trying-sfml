@@ -1,6 +1,13 @@
 #include "headers/environment.hpp"
 #include <iostream>
 
+const int env_fps = 60;
+const int env_num_frames_per_creature_action = (float)env_fps/10; // every 100ms 
+const int env_num_iterations_per_frame = 16;
+const float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
+const int env_max_steps_per_episode = 200;
+const int env_observation_size = 12;
+
 Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // m_creature has no default constructor hence need to do this
     // ensure all function parameter are defined earlier in the CLASS DECLARATION
@@ -18,14 +25,14 @@ Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     m_springs.reserve(300);
     m_muscles.reserve(10);
     
-    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_dt);
+    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
 
-    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_dt);
+    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, env_dt);
     // 20 -- 12 -- 8
-    std::vector<int> layer_sizes{m_num_muscles+m_observation_size, 12, m_num_muscles};
+    std::vector<int> layer_sizes{m_num_muscles+env_observation_size, 12, m_num_muscles};
     // 2 wasteful initliaizations 
     // once before constructor body starts
     // once when we create this temp object and copy
@@ -52,13 +59,13 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     m_springs.reserve(300);
     m_muscles.reserve(10);
     
-    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_dt);
+    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
-    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_dt);
+    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, env_dt);
     // 20 -- 12 -- 8
-    std::vector<int> layer_sizes{m_num_muscles+m_observation_size, 12, m_num_muscles};
+    std::vector<int> layer_sizes{m_num_muscles+env_observation_size, 12, m_num_muscles};
 
     // loading json
     std::string file_path = std::format("./saved/{}.json", id);
@@ -178,17 +185,17 @@ void Environment::render(sf::RenderWindow& window){
 // DUPLICATE FUNCTIONS bc you cant give references default params -- try pointer 
 void Environment::step(){
     
-	std::vector<float> observation(m_observation_size);
+	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
     
-    for(int cycle = 0; cycle < m_num_frames_per_creature_action; cycle++){
+    for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
 
-        for(int iter = 0; iter < m_num_iterations_per_frame; iter++){
-            handle_all_muscles(m_muscles, m_dt);
-            handle_all_springs(m_springs, m_dt);
+        for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
+            handle_all_muscles(m_muscles, env_dt);
+            handle_all_springs(m_springs, env_dt);
             for(int i = 0; i < m_num_particles; i++){
-                m_particles[i].step(m_dt);
+                m_particles[i].step(env_dt);
             }			
             handle_all_collisions(m_particles);    
         }
@@ -201,24 +208,24 @@ void Environment::step(){
 
     m_num_steps_done++;
 
-    if(m_num_steps_done > m_max_steps_per_episode)
+    if(m_num_steps_done > env_max_steps_per_episode)
         m_episode_end = true;
     
 }
 
 void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle){
     
-	std::vector<float> observation(m_observation_size);
+	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
     
-    for(int cycle = 0; cycle < m_num_frames_per_creature_action; cycle++){
+    for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
 
-        for(int iter = 0; iter < m_num_iterations_per_frame; iter++){
-            handle_all_muscles(m_muscles, m_dt);
-            handle_all_springs(m_springs, m_dt);
+        for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
+            handle_all_muscles(m_muscles, env_dt);
+            handle_all_springs(m_springs, env_dt);
             for(int i = 0; i < m_num_particles; i++){
-                m_particles[i].step(m_dt);
+                m_particles[i].step(env_dt);
             }			
             handle_all_collisions(m_particles);    
         }

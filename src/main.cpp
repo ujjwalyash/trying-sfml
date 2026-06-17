@@ -1,27 +1,41 @@
 #include "headers/environment.hpp"
+#include <SFML/Graphics/Font.hpp>
 #include <SFML/System/Clock.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <iostream>
 #include <pthread.h>
 
-/*
-void render_current_best(){
+// to ensure no other file can access these -- ie global vars restricted to this file
+namespace{
+	std::vector<Environment> env;
+	std::vector<int> rankings;
+	int gen;
+	int population_size = 20;
+};
+
+void* render_current_gen(void *){
+
 	bool paused = true;
 	bool step = false;
 	bool render = true;
-
 	int speed_up = 1;
+
+	int env_rank = 0;
+
+	// COPY
+	int curr_gen = gen;
+	std::optional<Environment> env_used_for_render;
+	env_used_for_render.emplace(env[rankings[env_rank]]);
+
 	sf::RenderWindow window( sf::VideoMode( { 1920, 1080 } ), "SFML works!", sf::State::Fullscreen);
-    int fps = (env[0].m_fps/env[0].m_num_frames_per_creature_action);
-	if (render) window.setFramerateLimit(env[0].m_fps * speed_up);
+    int fps = (env_fps/env_num_frames_per_creature_action);
+	if (render) window.setFramerateLimit(env_fps * speed_up);
 	else window.setFramerateLimit(fps * speed_up);
 
 	sf::Font font("/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf");
-	sf::Clock clock;
-	uint32_t time_taken = 0;
 	int num_steps_done = 0;
     float reward = 0;
-
+	
 	while ( window.isOpen() )
 	{
 		while ( const std::optional event = window.pollEvent() )
@@ -43,22 +57,67 @@ void render_current_best(){
 					step = true;
 
 				else if (keyPressed->scancode == sf::Keyboard::Scan::R){
-                    ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-                    goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-					env.reset(ball_pos, goal_pos);
+
+					// update
+					curr_gen = gen;
+					env_used_for_render.emplace(env[rankings[env_rank]]);
+
+                    sf::Vector2f ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+                    sf::Vector2f goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+					
+					env_used_for_render->reset(ball_pos, goal_pos);
 
                     num_steps_done = 0;
 				}
 
+				else if (keyPressed->scancode == sf::Keyboard::Scan::Q){
+
+					window.close();
+					return NULL;
+				}
+
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Up){
                     speed_up++;
-                	if (render) window.setFramerateLimit(env.m_fps * speed_up);
+					if (render) window.setFramerateLimit(env_fps * speed_up);
 					else window.setFramerateLimit(fps * speed_up);
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Down){
-                    if(speed_up > 1) speed_up--;
-                	if (render) window.setFramerateLimit(env.m_fps * speed_up);
+					if(speed_up > 1) speed_up--;
+					if (render) window.setFramerateLimit(env_fps * speed_up);
 					else window.setFramerateLimit(fps * speed_up);
+                }
+
+				else if (keyPressed->scancode == sf::Keyboard::Scan::Right){
+					if(env_rank < population_size-1){
+						env_rank++;	
+						// update
+						curr_gen = gen;
+						env_used_for_render.emplace(env[rankings[env_rank]]);
+					}
+                }
+				else if (keyPressed->scancode == sf::Keyboard::Scan::Left){
+					if(env_rank > 0){
+						env_rank--;	
+						// update
+						curr_gen = gen;
+						env_used_for_render.emplace(env[rankings[env_rank]]);
+					}
+                }
+				else if (keyPressed->scancode == sf::Keyboard::Scan::End){
+					if(env_rank < population_size-10){
+						env_rank += 10;	
+						// update
+						curr_gen = gen;
+						env_used_for_render.emplace(env[rankings[env_rank]]);
+					}
+                }
+				else if (keyPressed->scancode == sf::Keyboard::Scan::Home){
+					if(env_rank > 9){
+						env_rank -= 10;	
+						// update
+						curr_gen = gen;
+						env_used_for_render.emplace(env[rankings[env_rank]]);
+					}
                 }
             }
 		}
@@ -69,11 +128,11 @@ void render_current_best(){
 		
 		window.clear();
         
-        env.render(window);
+        env_used_for_render->render(window);
 		
         sf::Text text(font);
 		text.setString(std::format("{:.1f}\n{}\n{}\n{}", 
-                                            reward, time_taken, num_steps_done, speed_up)); 
+                                            reward, num_steps_done, speed_up, curr_gen)); 
 		text.setCharacterSize(24);            
 		text.setFillColor(sf::Color::White); 
 		text.setPosition({0.f, 0.f}); 
@@ -81,23 +140,18 @@ void render_current_best(){
 
 		window.display();
 		
-		// physics calc start /////////////
-		clock.restart();
-		
-		env.step(window, text, render);
-        reward = env.get_curr_reward();
+		env_used_for_render->step(window, text, render);
+        reward = env_used_for_render->get_curr_reward();
         num_steps_done++;
-		
-		// physics calc end ///////////////
-		clock.stop();
-		time_taken = time_taken*0.9 + clock.getElapsedTime().asMilliseconds()/9.f;
 	}
+
+	// wont reach here 
+	// only to remove warning
+	return NULL;
 }
-*/
 
 int main()
 {	
-	int population_size = 20;
 	int num_generations = 10;
 	int num_episode_per_generation = 2;
 
@@ -109,14 +163,12 @@ int main()
 
     sf::Vector2f first_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
     sf::Vector2f first_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-
 	
 	// BADD ALL ENVIRONMENTS WILL END UP WITH SAME INTIAL VALUES of neural netwrok DUE TO THIS
     // !std::vector<Environment> env(population_size, Environment(first_ball_pos, first_goal_pos));    
 	// here the env object is created ONLY ONCE and copied to every entry in the vector
 
 	// now ok
-	std::vector<Environment> env;
 	env.reserve(population_size); // Prevents performance-heavy reallocations
 
 	for (int i = 0; i < (int)population_size; ++i) {
@@ -143,7 +195,6 @@ int main()
     std::vector<sf::Vector2f> goal_pos(num_episode_per_generation);
     std::vector<sf::Vector2f> ball_pos(num_episode_per_generation);
 
-	std::vector<int> rankings;
 	for(int i = 0; i < population_size; i++) rankings.push_back(i);
 
 	// only works for lambdas without capture 
@@ -151,9 +202,15 @@ int main()
 	auto comp = [&rewards](int a, int b)->bool{
 			return rewards[a] > rewards[b];
 	};
-	
-	for(int gen = 0; gen < num_generations; gen++){
 
+	// start the rendering thread
+	pthread_t render_thread;
+	pthread_create(&render_thread, NULL, render_current_gen, NULL);
+	
+	sf::Clock clock;
+	for(gen = 0; gen < num_generations; gen++){
+
+		clock.restart();
 		// generate sequence of ball and goal positions
 		for(int i = 0; i < num_episode_per_generation; i++){
 			goal_pos[i] = {(float)(rand()%1920), (float)(rand()%1080)};
@@ -190,8 +247,10 @@ int main()
 			env[rankings[i]].mutate(mutation_rate);
 		}
 
+		clock.stop();
 		std::cout << "current generation: " << gen << '\n';
 		std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
+		std::cout << "time taken: " << clock.getElapsedTime().asSeconds() << "s" << '\n';
 		std::cout << '\n';
 	}
 

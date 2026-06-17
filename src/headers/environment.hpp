@@ -8,18 +8,20 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Text.hpp>
 
+
+// simulation params
+
+extern const int env_fps;
+extern const int env_num_frames_per_creature_action; // every 100ms 
+extern const int env_num_iterations_per_frame;
+extern const float env_dt;
+extern const int env_max_steps_per_episode;
+extern const int env_observation_size;
+
 class Environment
 {
-    // simulation params
-    public:
-        const int m_fps = 60;
-        const int m_num_frames_per_creature_action = (float)m_fps/10; // every 100ms 
-        
     private:
-        const int m_num_iterations_per_frame = 16;
-        const float m_dt = 1.f/(m_fps*m_num_iterations_per_frame);
-        const int m_max_steps_per_episode = 200;
-    
+        
         int m_num_particles = 0; 
         int m_num_springs = 0;
         std::vector<Particle> m_particles;
@@ -36,7 +38,6 @@ class Environment
         float m_goal_radius;
         bool m_has_touched_ball = false;
         
-        const int m_observation_size = 12;
         float m_reward = 0; 
         int m_num_steps_done = 0;
         bool m_episode_end = 0;

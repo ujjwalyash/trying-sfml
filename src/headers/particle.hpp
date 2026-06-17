@@ -44,7 +44,8 @@ class Particle{
         float m_mass;
         float m_sqrt_mass;
         
-        // maybe make radius, mass public const too
+        // maybe make radius, mass public const too 
+        // but it causes default copy constructor to fail
     public:
         const structure m_type;
 
