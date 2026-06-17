@@ -20,3 +20,16 @@ single thread cpu:
     why only 5x speed up not close to 10 -- look into this
 
 having 12 workers works better bruh maybe fully using the 20 core cpu is not a good idea
+
+
+forget things above this i didnt use g++ and -O3 
+
+pop sz -- 108
+max steps -- 400
+num_episode_per_generation -- 1
+
+1 worker 76s 
+6 worker 16s 
+12 worker 14s 
+16 worker 12s -- 112 pop size
+18 worker 11s 

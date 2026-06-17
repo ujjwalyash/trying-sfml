@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
-# set(CMAKE_CXX_COMPILER "g++") 
-set(CMAKE_CXX_COMPILER "clang++") 
+set(CMAKE_CXX_COMPILER "g++") 
+# set(CMAKE_CXX_COMPILER "clang++") 
 
 project(CMakeSFMLProject LANGUAGES CXX)
 
@@ -42,7 +42,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         -Wshadow       # Warns if you accidentally reuse a variable name
         -g
 
-        # -O3
+        -O3
         -march=native
     )
 endif()

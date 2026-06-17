@@ -6,23 +6,44 @@
 #include <pthread.h>
 #include <cassert>
 
+// physics params
+const float max_y = 1080;
+const float max_x = 1920;
+const sf::Vector2f gravity = {6, 8};
+const float buoyancy_const = 4.f/3 * 3.141 * 15; // DO NOT MAKE DENSITY 1000
+const float restitution = 0.8;
+const float coefficient_friction = 0;
+
+// if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
+// this completely destroys the concept of streamlined bodies 
+// TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
+const float viscosity = 0.02 * 20; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
+
+// env params
+const int env_fps = 60;
+const int env_num_frames_per_creature_action = (float)env_fps/10; // every 100ms 
+const int env_num_iterations_per_frame = 16;
+const float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
+const int env_max_steps_per_episode = 500;
+const int env_observation_size = 12;
+
 // to ensure no other file can access these -- ie global vars restricted to this file
 namespace{
 	
-	// 18 cores for 20 core cpu too much
-	const int num_workers = 12;
+	// 18 threads for 20 core cpu too much
+	const int num_workers = 16;
 
 	// simulation params
-	const int population_size = 108;
+	const int population_size = 112;
 	static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
 
-	const int num_episode_per_generation = 2;
-	const int num_generations = 50;
+	const int num_episode_per_generation = 1;
+	const int num_generations = 300;
 
 	const float top_unchanged_percentage = 0.3;
 	const float elimination_percentage = 0.4;
 	
-	const float mutation_rate = 0.5;
+	const float mutation_rate = 0.6;
 	
 	const bool load_old_gen = true;
 	
@@ -148,11 +169,12 @@ void* render_current_gen(void *){
 					curr_gen = gen;
 					env_used_for_render.copy_brain(env[rankings[env_rank]]);
 					// env_used_for_render.emplace(env[rankings[env_rank]]);
-
+					
                     render_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
                     render_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
 					
 					env_used_for_render.reset(render_ball_pos, render_goal_pos);
+					env_used_for_render.reset_reward();
 
                     num_steps_done = 0;
 				}
@@ -180,6 +202,7 @@ void* render_current_gen(void *){
 						// update
 						curr_gen = gen;
 						env_used_for_render.copy_brain(env[rankings[env_rank]]);
+						env_used_for_render.reset_reward();
 					}
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Left){
@@ -188,6 +211,7 @@ void* render_current_gen(void *){
 						// update
 						curr_gen = gen;
 						env_used_for_render.copy_brain(env[rankings[env_rank]]);
+						env_used_for_render.reset_reward();
 					}
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::End){
@@ -196,6 +220,7 @@ void* render_current_gen(void *){
 						// update
 						curr_gen = gen;
 						env_used_for_render.copy_brain(env[rankings[env_rank]]);
+						env_used_for_render.reset_reward();
 					}
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Home){
@@ -204,6 +229,7 @@ void* render_current_gen(void *){
 						// update
 						curr_gen = gen;
 						env_used_for_render.copy_brain(env[rankings[env_rank]]);
+						env_used_for_render.reset_reward();
 					}
                 }
             }

@@ -1,36 +1,5 @@
-./run.sh 
-clear
-./run.sh 
 gdb -tui ./build/bin/main
-./run.sh 
-clear
-./run.sh 
-gdb -tui ./build/bin/main
-./run.sh 
-gdb -tui ./build/bin/main
-./run.sh 
-gdb -tui ./build/bin/main
-./run.sh 
-clear
-./run.sh ./run.sh 
-clear
-./run.sh 
-clear
-./run.sh 
-clear
-./run.sh 
-clear
-./run.sh 
-clear
-./run.sh 
 cmake -B build -G Ninja
-./run.sh 
-./src/external/Eigen/Eigen
-cat src/external/Eigen/Eigen
-./run.sh 
-clear
-./run.sh 
 ./run.sh > output.txt
 ./run.sh
 ./run.sh > output.txt
-./run.sh

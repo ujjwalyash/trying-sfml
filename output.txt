@@ -7,10 +7,7 @@
 -- Configuring done (0.2s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
-[1/9] Scanning /home/yashujjwal/projects/trying-sfml/src/main.cpp for CXX dependencies
-[2/9] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
-[3/4] Building CXX object CMakeFiles/main.dir/src/main.cpp.o
-[4/4] Linking CXX executable bin/main
+[1/8] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
 loaded from file: ./saved/0.json
 loaded from file: ./saved/1.json
 loaded from file: ./saved/2.json
@@ -29,8 +26,8 @@ loaded from file: ./saved/14.json
 loaded from file: ./saved/15.json
 loaded from file: ./saved/16.json
 loaded from file: ./saved/17.json
-loaded from file: ./saved/18.json
-loaded from file: ./saved/19.json
+could not load from file: ./saved/18.json --> doing random initialization
+could not load from file: ./saved/19.json --> doing random initialization
 could not load from file: ./saved/20.json --> doing random initialization
 could not load from file: ./saved/21.json --> doing random initialization
 could not load from file: ./saved/22.json --> doing random initialization
@@ -77,4 +74,1265 @@ could not load from file: ./saved/62.json --> doing random initialization
 could not load from file: ./saved/63.json --> doing random initialization
 could not load from file: ./saved/64.json --> doing random initialization
 could not load from file: ./saved/65.json --> doing random initialization
-could not load from fi
+could not load from file: ./saved/66.json --> doing random initialization
+could not load from file: ./saved/67.json --> doing random initialization
+could not load from file: ./saved/68.json --> doing random initialization
+could not load from file: ./saved/69.json --> doing random initialization
+could not load from file: ./saved/70.json --> doing random initialization
+could not load from file: ./saved/71.json --> doing random initialization
+could not load from file: ./saved/72.json --> doing random initialization
+could not load from file: ./saved/73.json --> doing random initialization
+could not load from file: ./saved/74.json --> doing random initialization
+could not load from file: ./saved/75.json --> doing random initialization
+could not load from file: ./saved/76.json --> doing random initialization
+could not load from file: ./saved/77.json --> doing random initialization
+could not load from file: ./saved/78.json --> doing random initialization
+could not load from file: ./saved/79.json --> doing random initialization
+could not load from file: ./saved/80.json --> doing random initialization
+could not load from file: ./saved/81.json --> doing random initialization
+could not load from file: ./saved/82.json --> doing random initialization
+could not load from file: ./saved/83.json --> doing random initialization
+could not load from file: ./saved/84.json --> doing random initialization
+could not load from file: ./saved/85.json --> doing random initialization
+could not load from file: ./saved/86.json --> doing random initialization
+could not load from file: ./saved/87.json --> doing random initialization
+could not load from file: ./saved/88.json --> doing random initialization
+could not load from file: ./saved/89.json --> doing random initialization
+could not load from file: ./saved/90.json --> doing random initialization
+could not load from file: ./saved/91.json --> doing random initialization
+could not load from file: ./saved/92.json --> doing random initialization
+could not load from file: ./saved/93.json --> doing random initialization
+could not load from file: ./saved/94.json --> doing random initialization
+could not load from file: ./saved/95.json --> doing random initialization
+could not load from file: ./saved/96.json --> doing random initialization
+could not load from file: ./saved/97.json --> doing random initialization
+could not load from file: ./saved/98.json --> doing random initialization
+could not load from file: ./saved/99.json --> doing random initialization
+could not load from file: ./saved/100.json --> doing random initialization
+could not load from file: ./saved/101.json --> doing random initialization
+could not load from file: ./saved/102.json --> doing random initialization
+could not load from file: ./saved/103.json --> doing random initialization
+could not load from file: ./saved/104.json --> doing random initialization
+could not load from file: ./saved/105.json --> doing random initialization
+could not load from file: ./saved/106.json --> doing random initialization
+could not load from file: ./saved/107.json --> doing random initialization
+could not load from file: ./saved/108.json --> doing random initialization
+could not load from file: ./saved/109.json --> doing random initialization
+could not load from file: ./saved/110.json --> doing random initialization
+could not load from file: ./saved/111.json --> doing random initialization
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+current generation: 0
+current best_reward: -3907.25
+time taken: 14.6249s
+
+current generation: 1
+current best_reward: -1550.77
+time taken: 15.1871s
+
+current generation: 2
+current best_reward: -3327.62
+time taken: 15.4617s
+
+current generation: 3
+current best_reward: -3340.35
+time taken: 15.4321s
+
+current generation: 4
+current best_reward: -4462.36
+time taken: 15.7448s
+
+current generation: 5
+current best_reward: -3067.07
+time taken: 15.4281s
+
+current generation: 6
+current best_reward: -3256.14
+time taken: 15.4705s
+
+current generation: 7
+current best_reward: -2715.44
+time taken: 15.7037s
+
+current generation: 8
+current best_reward: -2959.78
+time taken: 15.8682s
+
+current generation: 9
+current best_reward: -2415.64
+time taken: 15.6283s
+
+current generation: 10
+current best_reward: -2520.79
+time taken: 15.2995s
+
+current generation: 11
+current best_reward: -1165.89
+time taken: 15.8845s
+
+current generation: 12
+current best_reward: -2553.03
+time taken: 15.8421s
+
+current generation: 13
+current best_reward: -2137.41
+time taken: 15.666s
+
+current generation: 14
+current best_reward: -3188.33
+time taken: 15.9682s
+
+current generation: 15
+current best_reward: -603.562
+time taken: 15.9068s
+
+current generation: 16
+current best_reward: -3062.62
+time taken: 15.9942s
+
+current generation: 17
+current best_reward: -3504.27
+time taken: 16.276s
+
+current generation: 18
+current best_reward: -1506.79
+time taken: 16.2605s
+
+current generation: 19
+current best_reward: -3078.56
+time taken: 16.2378s
+
+current generation: 20
+current best_reward: -4420.67
+time taken: 16.1994s
+
+current generation: 21
+current best_reward: -4734.65
+time taken: 16.0009s
+
+current generation: 22
+current best_reward: -6250.67
+time taken: 15.9363s
+
+current generation: 23
+current best_reward: -4619.96
+time taken: 16.0408s
+
+current generation: 24
+current best_reward: -2782.71
+time taken: 15.8382s
+
+current generation: 25
+current best_reward: -3140.59
+time taken: 16.9579s
+
+current generation: 26
+current best_reward: -2286.71
+time taken: 16.0015s
+
+current generation: 27
+current best_reward: -3874.96
+time taken: 16.1621s
+
+current generation: 28
+current best_reward: -2503.6
+time taken: 16.3222s
+
+current generation: 29
+current best_reward: -4504.72
+time taken: 15.7524s
+
+current generation: 30
+current best_reward: -5566.8
+time taken: 15.5005s
+
+current generation: 31
+current best_reward: -3094.88
+time taken: 15.6465s
+
+current generation: 32
+current best_reward: -4036.8
+time taken: 15.8315s
+
+current generation: 33
+current best_reward: -1867.6
+time taken: 15.7948s
+
+current generation: 34
+current best_reward: -5411.48
+time taken: 16.0981s
+
+current generation: 35
+current best_reward: -1647.18
+time taken: 15.9491s
+
+current generation: 36
+current best_reward: -3314
+time taken: 16.1288s
+
+current generation: 37
+current best_reward: -4615.93
+time taken: 16.4769s
+
+current generation: 38
+current best_reward: -4196.12
+time taken: 15.8717s
+
+current generation: 39
+current best_reward: -5281.24
+time taken: 16.1759s
+
+current generation: 40
+current best_reward: -2535.96
+time taken: 16.0264s
+
+current generation: 41
+current best_reward: -3190.38
+time taken: 17.5946s
+
+current generation: 42
+current best_reward: -2352.74
+time taken: 16.2713s
+
+current generation: 43
+current best_reward: -3613.34
+time taken: 16.161s
+
+current generation: 44
+current best_reward: -5081.28
+time taken: 16.4095s
+
+current generation: 45
+current best_reward: -2848.08
+time taken: 16.4365s
+
+current generation: 46
+current best_reward: -3301.18
+time taken: 16.2796s
+
+current generation: 47
+current best_reward: -5203.83
+time taken: 16.4959s
+
+current generation: 48
+current best_reward: -3273.91
+time taken: 16.5388s
+
+current generation: 49
+current best_reward: -3583.08
+time taken: 16.3962s
+
+current generation: 50
+current best_reward: -4339.98
+time taken: 16.4219s
+
+current generation: 51
+current best_reward: 136.127
+time taken: 16.0352s
+
+current generation: 52
+current best_reward: -3744.8
+time taken: 15.6459s
+
+current generation: 53
+current best_reward: -2625.21
+time taken: 16.0642s
+
+current generation: 54
+current best_reward: -2578.35
+time taken: 15.8211s
+
+current generation: 55
+current best_reward: -2569.15
+time taken: 16.6492s
+
+current generation: 56
+current best_reward: -2950.55
+time taken: 16.2022s
+
+current generation: 57
+current best_reward: -3491.62
+time taken: 16.0074s
+
+current generation: 58
+current best_reward: -350.723
+time taken: 16.5769s
+
+current generation: 59
+current best_reward: -3836
+time taken: 16.6165s
+
+current generation: 60
+current best_reward: -3133.19
+time taken: 15.9586s
+
+current generation: 61
+current best_reward: -3201.85
+time taken: 16.3904s
+
+current generation: 62
+current best_reward: -2958.19
+time taken: 16.5374s
+
+current generation: 63
+current best_reward: -1648.12
+time taken: 17.2275s
+
+current generation: 64
+current best_reward: -4453.02
+time taken: 16.7122s
+
+current generation: 65
+current best_reward: -3431.78
+time taken: 16.8174s
+
+current generation: 66
+current best_reward: -2925.23
+time taken: 17.2103s
+
+current generation: 67
+current best_reward: -3834.21
+time taken: 16.5875s
+
+current generation: 68
+current best_reward: -1422.65
+time taken: 17.0176s
+
+current generation: 69
+current best_reward: -3633.3
+time taken: 16.5573s
+
+current generation: 70
+current best_reward: -2879.61
+time taken: 16.8899s
+
+current generation: 71
+current best_reward: -2822.3
+time taken: 16.6477s
+
+current generation: 72
+current best_reward: -3267.83
+time taken: 16.5819s
+
+current generation: 73
+current best_reward: -5101.92
+time taken: 16.9152s
+
+current generation: 74
+current best_reward: -3251.37
+time taken: 17.152s
+
+current generation: 75
+current best_reward: -2343.72
+time taken: 16.3718s
+
+current generation: 76
+current best_reward: -3798.29
+time taken: 16.8795s
+
+current generation: 77
+current best_reward: -3473.66
+time taken: 16.7311s
+
+current generation: 78
+current best_reward: -2971.46
+time taken: 17.0431s
+
+current generation: 79
+current best_reward: -3770.76
+time taken: 16.7544s
+
+current generation: 80
+current best_reward: -3216.53
+time taken: 15.8554s
+
+current generation: 81
+current best_reward: -2950.98
+time taken: 16.5267s
+
+current generation: 82
+current best_reward: -3541.77
+time taken: 16.4783s
+
+current generation: 83
+current best_reward: -4270.48
+time taken: 16.2736s
+
+current generation: 84
+current best_reward: -3764.92
+time taken: 16.7553s
+
+current generation: 85
+current best_reward: -3581.16
+time taken: 17.0092s
+
+current generation: 86
+current best_reward: -4041.35
+time taken: 16.8871s
+
+current generation: 87
+current best_reward: -2105.91
+time taken: 16.9214s
+
+current generation: 88
+current best_reward: -1710.25
+time taken: 16.6457s
+
+current generation: 89
+current best_reward: -1255.24
+time taken: 16.7261s
+
+current generation: 90
+current best_reward: -1890.46
+time taken: 16.6827s
+
+current generation: 91
+current best_reward: -3954.26
+time taken: 16.8745s
+
+current generation: 92
+current best_reward: -2272.71
+time taken: 16.7366s
+
+current generation: 93
+current best_reward: -3187.18
+time taken: 16.7703s
+
+current generation: 94
+current best_reward: -3151.94
+time taken: 17.0597s
+
+current generation: 95
+current best_reward: -2185.37
+time taken: 16.7702s
+
+current generation: 96
+current best_reward: -3626.77
+time taken: 17.1323s
+
+current generation: 97
+current best_reward: -2713.1
+time taken: 16.2836s
+
+current generation: 98
+current best_reward: -2295.75
+time taken: 16.1693s
+
+current generation: 99
+current best_reward: 13.068
+time taken: 16.9414s
+
+current generation: 100
+current best_reward: -1743.84
+time taken: 16.3526s
+
+current generation: 101
+current best_reward: -1897
+time taken: 16.7155s
+
+current generation: 102
+current best_reward: -2682.77
+time taken: 16.4875s
+
+current generation: 103
+current best_reward: -1667.25
+time taken: 17.2864s
+
+current generation: 104
+current best_reward: -3225.66
+time taken: 16.977s
+
+current generation: 105
+current best_reward: -2227.33
+time taken: 16.558s
+
+current generation: 106
+current best_reward: -5195.19
+time taken: 16.3779s
+
+current generation: 107
+current best_reward: -2267.88
+time taken: 17.2684s
+
+current generation: 108
+current best_reward: -770.644
+time taken: 17.3063s
+
+current generation: 109
+current best_reward: -2350.24
+time taken: 17.2591s
+
+current generation: 110
+current best_reward: -3808.94
+time taken: 16.7149s
+
+current generation: 111
+current best_reward: -3623.62
+time taken: 16.3711s
+
+current generation: 112
+current best_reward: -2227.18
+time taken: 16.3745s
+
+current generation: 113
+current best_reward: -2856.38
+time taken: 15.9462s
+
+current generation: 114
+current best_reward: -3055.92
+time taken: 15.5986s
+
+current generation: 115
+current best_reward: -2313.66
+time taken: 15.9193s
+
+current generation: 116
+current best_reward: -2253.71
+time taken: 16.1157s
+
+current generation: 117
+current best_reward: -3087.06
+time taken: 16.1345s
+
+current generation: 118
+current best_reward: -4240.89
+time taken: 16.1878s
+
+current generation: 119
+current best_reward: -3579.88
+time taken: 16.1838s
+
+current generation: 120
+current best_reward: -1656.83
+time taken: 16.2775s
+
+current generation: 121
+current best_reward: -3314.7
+time taken: 16.3037s
+
+current generation: 122
+current best_reward: -4090.26
+time taken: 16.1193s
+
+current generation: 123
+current best_reward: -2959.82
+time taken: 16.2212s
+
+current generation: 124
+current best_reward: -2636.19
+time taken: 16.1742s
+
+current generation: 125
+current best_reward: -4703.88
+time taken: 16.1418s
+
+current generation: 126
+current best_reward: -2886.94
+time taken: 15.9809s
+
+current generation: 127
+current best_reward: -5630.06
+time taken: 16.0914s
+
+current generation: 128
+current best_reward: -1271.13
+time taken: 16.2665s
+
+current generation: 129
+current best_reward: -3147.28
+time taken: 16.7154s
+
+current generation: 130
+current best_reward: -2611.84
+time taken: 16.9197s
+
+current generation: 131
+current best_reward: -2960.66
+time taken: 15.9196s
+
+current generation: 132
+current best_reward: -3092.46
+time taken: 16.9039s
+
+current generation: 133
+current best_reward: -1697.7
+time taken: 17.5771s
+
+current generation: 134
+current best_reward: -4080.97
+time taken: 16.7047s
+
+current generation: 135
+current best_reward: -3904.64
+time taken: 16.3309s
+
+current generation: 136
+current best_reward: -2371.27
+time taken: 16.2267s
+
+current generation: 137
+current best_reward: -2241.47
+time taken: 16.4218s
+
+current generation: 138
+current best_reward: -2557.15
+time taken: 16.6038s
+
+current generation: 139
+current best_reward: -3655.95
+time taken: 16.4144s
+
+current generation: 140
+current best_reward: -3888.34
+time taken: 16.4063s
+
+current generation: 141
+current best_reward: -2572.61
+time taken: 16.4703s
+
+current generation: 142
+current best_reward: -1910.22
+time taken: 16.8134s
+
+current generation: 143
+current best_reward: -4731.4
+time taken: 16.3965s
+
+current generation: 144
+current best_reward: -979.665
+time taken: 16.6054s
+
+current generation: 145
+current best_reward: 216.047
+time taken: 16.7261s
+
+current generation: 146
+current best_reward: -3656.21
+time taken: 16.7262s
+
+current generation: 147
+current best_reward: -3143.68
+time taken: 16.3665s
+
+current generation: 148
+current best_reward: -2843.02
+time taken: 16.2102s
+
+current generation: 149
+current best_reward: -2364.35
+time taken: 16.1635s
+
+current generation: 150
+current best_reward: -2016.45
+time taken: 16.4274s
+
+current generation: 151
+current best_reward: -3472.79
+time taken: 16.384s
+
+current generation: 152
+current best_reward: -5007.29
+time taken: 16.1275s
+
+current generation: 153
+current best_reward: -4317.76
+time taken: 16.1665s
+
+current generation: 154
+current best_reward: -2495.84
+time taken: 15.9971s
+
+current generation: 155
+current best_reward: -2794.04
+time taken: 16.183s
+
+current generation: 156
+current best_reward: -3505.36
+time taken: 16.3269s
+
+current generation: 157
+current best_reward: -2587.18
+time taken: 16.2105s
+
+current generation: 158
+current best_reward: -4235.15
+time taken: 16.6079s
+
+current generation: 159
+current best_reward: -3110.91
+time taken: 15.9774s
+
+current generation: 160
+current best_reward: -3051.08
+time taken: 16.3454s
+
+current generation: 161
+current best_reward: -3622.65
+time taken: 16.2336s
+
+current generation: 162
+current best_reward: -2021.1
+time taken: 15.9652s
+
+current generation: 163
+current best_reward: -2075.65
+time taken: 16.4754s
+
+current generation: 164
+current best_reward: -187.187
+time taken: 16.5756s
+
+current generation: 165
+current best_reward: -2990.46
+time taken: 16.3233s
+
+current generation: 166
+current best_reward: -88.4113
+time taken: 16.5856s
+
+current generation: 167
+current best_reward: -2795.21
+time taken: 16.4084s
+
+current generation: 168
+current best_reward: -2274.26
+time taken: 16.4109s
+
+current generation: 169
+current best_reward: -738.312
+time taken: 16.2265s
+
+current generation: 170
+current best_reward: -2694.54
+time taken: 16.2376s
+
+current generation: 171
+current best_reward: -3911.71
+time taken: 15.9711s
+
+current generation: 172
+current best_reward: -2946.96
+time taken: 16.3698s
+
+current generation: 173
+current best_reward: -1845.01
+time taken: 17.1706s
+
+current generation: 174
+current best_reward: -4172.1
+time taken: 17.0748s
+
+current generation: 175
+current best_reward: -2007.78
+time taken: 16.2715s
+
+current generation: 176
+current best_reward: -3803.56
+time taken: 16.0137s
+
+current generation: 177
+current best_reward: -1965.49
+time taken: 15.962s
+
+current generation: 178
+current best_reward: -3174.72
+time taken: 16.1138s
+
+current generation: 179
+current best_reward: -1541.53
+time taken: 16.1602s
+
+current generation: 180
+current best_reward: -2740.55
+time taken: 16.3259s
+
+current generation: 181
+current best_reward: -5632.76
+time taken: 17.0681s
+
+current generation: 182
+current best_reward: -1444.41
+time taken: 16.253s
+
+current generation: 183
+current best_reward: -1965.51
+time taken: 16.4258s
+
+current generation: 184
+current best_reward: -5233.95
+time taken: 15.8784s
+
+current generation: 185
+current best_reward: -3264.26
+time taken: 15.9185s
+
+current generation: 186
+current best_reward: -4082.64
+time taken: 16.1324s
+
+current generation: 187
+current best_reward: -3958.83
+time taken: 16.2446s
+
+current generation: 188
+current best_reward: -2909.3
+time taken: 16.268s
+
+current generation: 189
+current best_reward: -4931.5
+time taken: 16.3599s
+
+current generation: 190
+current best_reward: -4330.31
+time taken: 16.4661s
+
+current generation: 191
+current best_reward: -2174.8
+time taken: 16.1713s
+
+current generation: 192
+current best_reward: -4009.72
+time taken: 16.6256s
+
+current generation: 193
+current best_reward: -2471.18
+time taken: 16.3683s
+
+current generation: 194
+current best_reward: -2112.45
+time taken: 16.8847s
+
+current generation: 195
+current best_reward: -5319.55
+time taken: 16.3016s
+
+current generation: 196
+current best_reward: -2821.72
+time taken: 16.4354s
+
+current generation: 197
+current best_reward: -2050.9
+time taken: 16.2194s
+
+current generation: 198
+current best_reward: -1936.45
+time taken: 16.4371s
+
+current generation: 199
+current best_reward: -3910.64
+time taken: 16.4559s
+
+current generation: 200
+current best_reward: -4086.76
+time taken: 16.7417s
+
+current generation: 201
+current best_reward: -3915.05
+time taken: 16.4669s
+
+current generation: 202
+current best_reward: -1916.63
+time taken: 16.2486s
+
+current generation: 203
+current best_reward: -1904.76
+time taken: 16.0816s
+
+current generation: 204
+current best_reward: 515.221
+time taken: 16.2595s
+
+current generation: 205
+current best_reward: -2105.04
+time taken: 16.5082s
+
+current generation: 206
+current best_reward: -4842.35
+time taken: 16.5525s
+
+current generation: 207
+current best_reward: -3415.89
+time taken: 16.1415s
+
+current generation: 208
+current best_reward: -4240.85
+time taken: 16.2826s
+
+current generation: 209
+current best_reward: -4493.42
+time taken: 16.2952s
+
+current generation: 210
+current best_reward: -2927.45
+time taken: 16.9639s
+
+current generation: 211
+current best_reward: -2457.56
+time taken: 16.846s
+
+current generation: 212
+current best_reward: -3837.26
+time taken: 16.8516s
+
+current generation: 213
+current best_reward: -2334.93
+time taken: 16.7954s
+
+current generation: 214
+current best_reward: -4259.54
+time taken: 16.7862s
+
+current generation: 215
+current best_reward: -3113.81
+time taken: 16.6275s
+
+current generation: 216
+current best_reward: -2852.22
+time taken: 16.8705s
+
+current generation: 217
+current best_reward: -630.945
+time taken: 16.7218s
+
+current generation: 218
+current best_reward: -2647.81
+time taken: 16.9635s
+
+current generation: 219
+current best_reward: -3475.69
+time taken: 16.9198s
+
+current generation: 220
+current best_reward: -4380.94
+time taken: 16.3851s
+
+current generation: 221
+current best_reward: -2020.45
+time taken: 16.8785s
+
+current generation: 222
+current best_reward: -1259.88
+time taken: 16.8719s
+
+current generation: 223
+current best_reward: -3176.7
+time taken: 16.3534s
+
+current generation: 224
+current best_reward: -1839.65
+time taken: 16.2498s
+
+current generation: 225
+current best_reward: -1577.07
+time taken: 16.1669s
+
+current generation: 226
+current best_reward: -4232.56
+time taken: 16.3487s
+
+current generation: 227
+current best_reward: -2285.62
+time taken: 16.2752s
+
+current generation: 228
+current best_reward: -4683.53
+time taken: 16.2436s
+
+current generation: 229
+current best_reward: -3269.57
+time taken: 15.9078s
+
+current generation: 230
+current best_reward: -1743
+time taken: 16.5699s
+
+current generation: 231
+current best_reward: -2707.33
+time taken: 16.0875s
+
+current generation: 232
+current best_reward: -2031.41
+time taken: 16.3483s
+
+current generation: 233
+current best_reward: -2484.53
+time taken: 16.2635s
+
+current generation: 234
+current best_reward: -3088.91
+time taken: 16.1312s
+
+current generation: 235
+current best_reward: -3983.07
+time taken: 16.2636s
+
+current generation: 236
+current best_reward: -2243.79
+time taken: 15.9283s
+
+current generation: 237
+current best_reward: -4669.63
+time taken: 15.9101s
+
+current generation: 238
+current best_reward: -2190.6
+time taken: 16.4105s
+
+current generation: 239
+current best_reward: -2315.48
+time taken: 15.8458s
+
+current generation: 240
+current best_reward: -1988.58
+time taken: 16.1566s
+
+current generation: 241
+current best_reward: -2725.22
+time taken: 16.1359s
+
+current generation: 242
+current best_reward: -3217.78
+time taken: 16.6491s
+
+current generation: 243
+current best_reward: -2525.96
+time taken: 16.3229s
+
+current generation: 244
+current best_reward: -4162.58
+time taken: 16.1958s
+
+current generation: 245
+current best_reward: -3923.08
+time taken: 16.1899s
+
+current generation: 246
+current best_reward: -2441.38
+time taken: 16.2619s
+
+current generation: 247
+current best_reward: -1542.12
+time taken: 16.165s
+
+current generation: 248
+current best_reward: -4276.85
+time taken: 16.1436s
+
+current generation: 249
+current best_reward: -2666.06
+time taken: 16.3152s
+
+current generation: 250
+current best_reward: -5520.24
+time taken: 16.1335s
+
+current generation: 251
+current best_reward: -3175.1
+time taken: 17.1959s
+
+current generation: 252
+current best_reward: -2881.85
+time taken: 16.2071s
+
+current generation: 253
+current best_reward: -3151.38
+time taken: 15.831s
+
+current generation: 254
+current best_reward: -3479.62
+time taken: 16.0301s
+
+current generation: 255
+current best_reward: -2884.24
+time taken: 15.9763s
+
+current generation: 256
+current best_reward: -3249.81
+time taken: 16.0291s
+
+current generation: 257
+current best_reward: -3010.61
+time taken: 16.3469s
+
+current generation: 258
+current best_reward: -1878.78
+time taken: 15.9607s
+
+current generation: 259
+current best_reward: -3657.94
+time taken: 17.136s
+
+current generation: 260
+current best_reward: -5024.32
+time taken: 16.0023s
+
+current generation: 261
+current best_reward: -3226.37
+time taken: 15.8503s
+
+current generation: 262
+current best_reward: -3250.6
+time taken: 16.2855s
+
+current generation: 263
+current best_reward: -4024.57
+time taken: 16.7451s
+
+current generation: 264
+current best_reward: -4172.8
+time taken: 16.0837s
+
+current generation: 265
+current best_reward: -2364.25
+time taken: 16.8232s
+
+current generation: 266
+current best_reward: -2694.93
+time taken: 16.0694s
+
+current generation: 267
+current best_reward: -1941.38
+time taken: 17.2265s
+
+current generation: 268
+current best_reward: -6163.71
+time taken: 16.0794s
+
+current generation: 269
+current best_reward: -2231.32
+time taken: 16.1236s
+
+current generation: 270
+current best_reward: -1316.3
+time taken: 16.0976s
+
+current generation: 271
+current best_reward: -3000.15
+time taken: 16.3943s
+
+current generation: 272
+current best_reward: -3285.29
+time taken: 16.1074s
+
+current generation: 273
+current best_reward: -2077.67
+time taken: 17.0052s
+
+current generation: 274
+current best_reward: -1082.22
+time taken: 17.0593s
+
+current generation: 275
+current best_reward: -3639.03
+time taken: 15.5226s
+
+current generation: 276
+current best_reward: -2546.69
+time taken: 16.1718s
+
+current generation: 277
+current best_reward: -3282.77
+time taken: 16.2034s
+
+current generation: 278
+current best_reward: -900.234
+time taken: 16.2803s
+
+current generation: 279
+current best_reward: -3114.24
+time taken: 16.1489s
+
+current generation: 280
+current best_reward: -389.809
+time taken: 16.166s
+
+current generation: 281
+current best_reward: -3987.96
+time taken: 16.5087s
+
+current generation: 282
+current best_reward: -3579.42
+time taken: 16.1829s
+
+current generation: 283
+current best_reward: -1628.1
+time taken: 16.2273s
+
+current generation: 284
+current best_reward: -2671.5
+time taken: 16.1275s
+
+current generation: 285
+current best_reward: -2071.62
+time taken: 16.254s
+
+current generation: 286
+current best_reward: -3905.02
+time taken: 15.7797s
+
+current generation: 287
+current best_reward: -2815.86
+time taken: 16.4104s
+
+current generation: 288
+current best_reward: -2044.25
+time taken: 16.264s
+
+current generation: 289
+current best_reward: -928.045
+time taken: 16.2198s
+
+current generation: 290
+current best_reward: -4027.68
+time taken: 16.3668s
+
+current generation: 291
+current best_reward: -3433.56
+time taken: 16.1856s
+
+current generation: 292
+current best_reward: -3535.04
+time taken: 16.218s
+
+current generation: 293
+current best_reward: -2207.01
+time taken: 16.1983s
+
+current generation: 294
+current best_reward: -2293.79
+time taken: 15.9407s
+
+current generation: 295
+current best_reward: -1413.78
+time taken: 15.882s
+
+current generation: 296
+current best_reward: -2934.65
+time taken: 15.7492s
+
+current generation: 297
+current best_reward: -2052.41
+time taken: 15.5657s
+
+current generation: 298
+current best_reward: -3232.26
+time taken: 15.9569s
+
+current generation: 299
+current best_reward: -3929.82
+time taken: 15.9302s
+

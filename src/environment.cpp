@@ -1,13 +1,6 @@
 #include "headers/environment.hpp"
 #include <iostream>
 
-const int env_fps = 60;
-const int env_num_frames_per_creature_action = (float)env_fps/10; // every 100ms 
-const int env_num_iterations_per_frame = 16;
-const float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
-const int env_max_steps_per_episode = 200;
-const int env_observation_size = 12;
-
 Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // m_creature has no default constructor hence need to do this
     // ensure all function parameter are defined earlier in the CLASS DECLARATION
@@ -262,6 +255,7 @@ float Environment::calculate_reward(){
     float goal_ball_dist = (m_ball_pos-m_goal_pos).length();
     float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
     float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_ball_pos).length();
+    float apex_tip_speed = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_particles[m_creature.get_apex_tip_index()].get_old_pos()).length()/env_dt;
 
     if(ball_displacement > 5) m_has_touched_ball = true;
 
@@ -271,6 +265,10 @@ float Environment::calculate_reward(){
     }
     reward -= goal_ball_dist/300.f;
     reward -= 1; // normal time thing
+
+    // std::cout << "tip speed" << apex_tip_speed << '\n';
+    // std::cout.flush();
+    reward += apex_tip_speed/40;
 
     if(goal_ball_dist < m_goal_radius){
         reward += 1000;

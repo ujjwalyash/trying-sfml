@@ -97,30 +97,57 @@ void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
     
     std::vector<MatrixXdf> const& par_2_w = par_2.get_weights();
     std::vector<VectorXdf> const& par_2_b = par_2.get_biases();
-    
+
+    int final_out = m_layer_sizes.back();
+    float break_off = float(rand()%(final_out+1))/final_out;
+
+    // std::cout << break_off << "\n\n";
+    // std::cout << par_1_w[0] << "\n\n";
+    // std::cout << par_2_w[0] << "\n\n";
+    // std::cout << m_weights[0] << "\n\n";
+
     for(int i = 0; i < (int)m_layer_sizes.size()-1; i++){
-        
         // currently we would need to move columns since we mutiply weights to the right
         // change this to respect row major order of storage(but check how eigen stores before)
         int num_rows = m_layer_sizes[i];
         int num_cols = m_layer_sizes[i+1];
-        for(int j = 0; j < num_cols; j++){
-            if(rand()%2){
-                // take col from p1
-                m_weights[i].block(0, j, num_rows, 1)
-                    = par_1_w[i].block(0, j, num_rows, 1);
 
-                m_biases[i](j) = par_1_b[i](j); 
-            }
-            else{
-                // take col from p2
-                m_weights[i].block(0, j, num_rows, 1)
-                    = par_2_w[i].block(0, j, num_rows, 1);
+        int first_half = (int)(break_off * num_cols);
+        if(first_half == 0) first_half++;
+        if(first_half == num_cols) first_half--;
 
-                m_biases[i](j) = par_2_b[i](j); 
-            }
-        }
+        m_weights[i].block(0, 0, num_rows, first_half)
+                                        = par_1_w[i].block(0, 0, num_rows, first_half);
+
+        m_biases[i].block(0, 0, 1, first_half) = par_1_b[i].block(0, 0, 1, first_half); 
+        
+
+        m_weights[i].block(0, first_half, num_rows, num_cols-first_half)
+                                        = par_2_w[i].block(0, first_half, num_rows, num_cols-first_half);
+
+        m_biases[i].block(0, first_half, 1, num_cols-first_half) = par_2_b[i].block(0, first_half, 1, num_cols-first_half); 
+        // for(int j = 0; j < num_cols; j++){
+        //     if(j < (int)(break_off * num_cols)){
+        //         // take col from p1
+        //         m_weights[i].block(0, j, num_rows, 1)
+        //             = par_1_w[i].block(0, j, num_rows, 1);
+
+        //         m_biases[i](j) = par_1_b[i](j); 
+        //     }
+        //     else{
+        //         // take col from p2
+        //         m_weights[i].block(0, j, num_rows, 1)
+        //             = par_2_w[i].block(0, j, num_rows, 1);
+
+        //         m_biases[i](j) = par_2_b[i](j); 
+        //     }
+        // }
     }
+
+    // std::cout << m_weights[0] << "\n\n";
+    // std::cout.flush();
+
+    // exit(0);
 }
 
 void Neural_Net::mutate(float mutation_rate){
@@ -278,8 +305,8 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     sf::Vector2f shift = {660, 390};
 
     // we cant really make things lighter unless we lower the spring constants
-    const float b_const = 4.f / 3.f * 3.141f * 10.f; 
-    const float head_heaviness = 2.f;
+    const float b_const = 4.f / 3.f * 3.141f * 15.f; 
+    const float head_heaviness = 1.f;
 
     // --- 1. DEFINE ORIGINAL CONTROL VERTICES ---
     sf::Vector2f corners[9];

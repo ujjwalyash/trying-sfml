@@ -3,15 +3,15 @@
 #include <SFML/System/Vector2.hpp>
 
 // params
-extern float max_y;
-extern float max_x;
+extern const float max_y;
+extern const float max_x;
 
-extern sf::Vector2f gravity;
-extern float buoyancy_const; // DO NOT MAKE DENSITY 1000
+extern const sf::Vector2f gravity;
+extern const float buoyancy_const; // DO NOT MAKE DENSITY 1000
 
-extern float restitution;
-extern float coefficient_friction;
-extern float viscosity; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
+extern const float restitution;
+extern const float coefficient_friction;
+extern const float viscosity; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
 
 
 enum class structure{

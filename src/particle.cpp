@@ -4,17 +4,6 @@
 #include <cmath>
 #include <vector>
 
-// params
-float max_y = 1080;
-float max_x = 1920;
-
-sf::Vector2f gravity = {6, 8};
-float buoyancy_const = 4.f/3 * 3.141 * 15; // DO NOT MAKE DENSITY 1000
-
-float restitution = 0.8;
-float coefficient_friction = 0;
-float viscosity = 0.02 * 20; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
-
 Particle::Particle(int id, float radius, float mass, sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos, structure type)
     :m_id(id),
      m_original_old_pos(old_pos),
