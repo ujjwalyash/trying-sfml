@@ -43,7 +43,6 @@ class Neural_Net
         void mutate(float mutation_rate);
 
         void save(int id, float reward);
-        // void load(int id);
 };
 
 class Creature{
@@ -78,7 +77,7 @@ class Creature{
         void mutate(float mutation_rate);
 
         void save(int id, float reward);
-        // void load(int id);
+        void copy_brain(Creature const& creature);
 
 };
 

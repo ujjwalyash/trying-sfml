@@ -1,0 +1,22 @@
+with only vs code running + charging + performance mode
+
+single thread cpu:
+    int population_size = 10;
+	int num_episode_per_generation = 2;
+    const int env_max_steps_per_episode = 200;
+
+    took 49 sec per generation -- 49/(10*2) -- 2.45 sec for each episode
+
+    for pop size 100 -- 490 sec -- 8 min per gen
+
+18 worker thread first implementation:
+    int num_workers = 18
+    int population_size = 10;
+	int num_episode_per_generation = 2;
+    const int env_max_steps_per_episode = 200;
+
+    took 9 sec per generation -- 9/(10*2) -- 0.45 sec for each episode
+
+    why only 5x speed up not close to 10 -- look into this
+
+having 12 workers works better bruh maybe fully using the 20 core cpu is not a good idea

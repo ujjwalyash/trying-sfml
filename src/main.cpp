@@ -4,32 +4,118 @@
 #include <SFML/Window/Keyboard.hpp>
 #include <iostream>
 #include <pthread.h>
+#include <cassert>
 
 // to ensure no other file can access these -- ie global vars restricted to this file
 namespace{
+	
+	// 18 cores for 20 core cpu too much
+	const int num_workers = 12;
+
+	// simulation params
+	const int population_size = 108;
+	static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
+
+	const int num_episode_per_generation = 2;
+	const int num_generations = 50;
+
+	const float top_unchanged_percentage = 0.3;
+	const float elimination_percentage = 0.4;
+	
+	const float mutation_rate = 0.5;
+	
+	const bool load_old_gen = true;
+	
+	// other vars
+	int gen;
 	std::vector<Environment> env;
 	std::vector<int> rankings;
-	int gen;
-	int population_size = 20;
+	std::vector<sf::Vector2f> goal_pos(num_episode_per_generation);
+    std::vector<sf::Vector2f> ball_pos(num_episode_per_generation);
+
+	// for thread pool
+	int num_envs_started = 0;
+	pthread_mutex_t lk_num_ens_started;
+	
+	int num_envs_done = 0;
+	pthread_mutex_t lk_num_ens_done;
+
+	// to wake up every worker to start working
+	pthread_cond_t worker_cond_var;
+	// to wake up main thread when everything's done
+	pthread_cond_t main_thread_cond_var;
 };
+
+void * worker(void *){
+	
+	std::cout << "New worker started working \n";
+	// work your whole life
+	while(1){
+
+		// the index of the env the worker is supoosed to run right now
+		int curr_job = -1;
+		
+		// look for new job
+		pthread_mutex_lock(&lk_num_ens_started);
+		
+		// if everything is done release lock and sleep -- woken up by main_thread with brodacast during next generation
+		while(num_envs_started >= population_size){
+			pthread_cond_wait(&worker_cond_var, &lk_num_ens_started);
+		}
+		
+		// commit to the job
+		curr_job = num_envs_started;
+		num_envs_started++;
+		
+		// relese lock
+		pthread_mutex_unlock(&lk_num_ens_started);
+		
+		// useless but doesnt hurt will remove later
+		assert(curr_job != -1);
+
+		// now do the job
+		for(int ep_no = 0; ep_no < num_episode_per_generation; ep_no++){
+			env[curr_job].run_episode();
+			// TODO: do not reset muscles/praticles just move the target -- ball and creature stays as is 
+			// TODO: but in the early stage creature never touches ball so fine rn
+			env[curr_job].reset(ball_pos[ep_no], goal_pos[ep_no]);
+		}
+
+		// increment the done counter
+		pthread_mutex_lock(&lk_num_ens_done);
+		num_envs_done++;
+		if(num_envs_done == population_size){
+			// everything done wake up main thread to continue
+			pthread_cond_broadcast(&main_thread_cond_var);
+		}
+		pthread_mutex_unlock(&lk_num_ens_done);
+	}
+	
+	return NULL;
+}
 
 void* render_current_gen(void *){
 
 	bool paused = true;
 	bool step = false;
-	bool render = true;
+	bool render_btw_cycle = true;
 	int speed_up = 1;
 
 	int env_rank = 0;
 
 	// COPY
 	int curr_gen = gen;
-	std::optional<Environment> env_used_for_render;
-	env_used_for_render.emplace(env[rankings[env_rank]]);
+	sf::Vector2f render_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+	sf::Vector2f render_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+	Environment env_used_for_render(render_ball_pos, render_goal_pos);
+	env_used_for_render.copy_brain(env[rankings[env_rank]]);
+	
+	// YOU cANT copy env -- bc springs have refs not indexes so after copy new env still points to old env's particles
+	// env_used_for_render.emplace(env[rankings[env_rank]]);
 
 	sf::RenderWindow window( sf::VideoMode( { 1920, 1080 } ), "SFML works!", sf::State::Fullscreen);
     int fps = (env_fps/env_num_frames_per_creature_action);
-	if (render) window.setFramerateLimit(env_fps * speed_up);
+	if (render_btw_cycle) window.setFramerateLimit(env_fps * speed_up);
 	else window.setFramerateLimit(fps * speed_up);
 
 	sf::Font font("/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf");
@@ -40,7 +126,7 @@ void* render_current_gen(void *){
 	{
 		while ( const std::optional event = window.pollEvent() )
 		{
-			if ( event->is<sf::Event::Closed>() )
+			if ( event->is<sf::Event::Closed>() )		
 				window.close();
 
 			else if (const auto* resized = event->getIf<sf::Event::Resized>()) {
@@ -60,12 +146,13 @@ void* render_current_gen(void *){
 
 					// update
 					curr_gen = gen;
-					env_used_for_render.emplace(env[rankings[env_rank]]);
+					env_used_for_render.copy_brain(env[rankings[env_rank]]);
+					// env_used_for_render.emplace(env[rankings[env_rank]]);
 
-                    sf::Vector2f ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-                    sf::Vector2f goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+                    render_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
+                    render_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
 					
-					env_used_for_render->reset(ball_pos, goal_pos);
+					env_used_for_render.reset(render_ball_pos, render_goal_pos);
 
                     num_steps_done = 0;
 				}
@@ -78,12 +165,12 @@ void* render_current_gen(void *){
 
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Up){
                     speed_up++;
-					if (render) window.setFramerateLimit(env_fps * speed_up);
+					if (render_btw_cycle) window.setFramerateLimit(env_fps * speed_up);
 					else window.setFramerateLimit(fps * speed_up);
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Down){
 					if(speed_up > 1) speed_up--;
-					if (render) window.setFramerateLimit(env_fps * speed_up);
+					if (render_btw_cycle) window.setFramerateLimit(env_fps * speed_up);
 					else window.setFramerateLimit(fps * speed_up);
                 }
 
@@ -92,7 +179,7 @@ void* render_current_gen(void *){
 						env_rank++;	
 						// update
 						curr_gen = gen;
-						env_used_for_render.emplace(env[rankings[env_rank]]);
+						env_used_for_render.copy_brain(env[rankings[env_rank]]);
 					}
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Left){
@@ -100,7 +187,7 @@ void* render_current_gen(void *){
 						env_rank--;	
 						// update
 						curr_gen = gen;
-						env_used_for_render.emplace(env[rankings[env_rank]]);
+						env_used_for_render.copy_brain(env[rankings[env_rank]]);
 					}
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::End){
@@ -108,7 +195,7 @@ void* render_current_gen(void *){
 						env_rank += 10;	
 						// update
 						curr_gen = gen;
-						env_used_for_render.emplace(env[rankings[env_rank]]);
+						env_used_for_render.copy_brain(env[rankings[env_rank]]);
 					}
                 }
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Home){
@@ -116,7 +203,7 @@ void* render_current_gen(void *){
 						env_rank -= 10;	
 						// update
 						curr_gen = gen;
-						env_used_for_render.emplace(env[rankings[env_rank]]);
+						env_used_for_render.copy_brain(env[rankings[env_rank]]);
 					}
                 }
             }
@@ -128,11 +215,11 @@ void* render_current_gen(void *){
 		
 		window.clear();
         
-        env_used_for_render->render(window);
+        env_used_for_render.render(window);
 		
         sf::Text text(font);
-		text.setString(std::format("{:.1f}\n{}\n{}\n{}", 
-                                            reward, num_steps_done, speed_up, curr_gen)); 
+		text.setString(std::format("{:.1f}\n{}\n{}\n{}\n{}", 
+                                            reward, num_steps_done, speed_up, curr_gen, env_rank+1)); 
 		text.setCharacterSize(24);            
 		text.setFillColor(sf::Color::White); 
 		text.setPosition({0.f, 0.f}); 
@@ -140,8 +227,8 @@ void* render_current_gen(void *){
 
 		window.display();
 		
-		env_used_for_render->step(window, text, render);
-        reward = env_used_for_render->get_curr_reward();
+		env_used_for_render.step(window, text, render_btw_cycle);
+        reward = env_used_for_render.get_curr_reward();
         num_steps_done++;
 	}
 
@@ -152,14 +239,6 @@ void* render_current_gen(void *){
 
 int main()
 {	
-	int num_generations = 10;
-	int num_episode_per_generation = 2;
-
-	float top_unchanged_percentage = 0.3;
-	float elimination_percentage = 0.4;
-
-	float mutation_rate = 0.5;
-	bool load_old_gen = true;
 
     sf::Vector2f first_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
     sf::Vector2f first_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
@@ -168,8 +247,8 @@ int main()
     // !std::vector<Environment> env(population_size, Environment(first_ball_pos, first_goal_pos));    
 	// here the env object is created ONLY ONCE and copied to every entry in the vector
 
-	// now ok
-	env.reserve(population_size); // Prevents performance-heavy reallocations
+	// now ok. this also prevents copy of the big envi objects when resized
+	env.reserve(population_size);
 
 	for (int i = 0; i < (int)population_size; ++i) {
 		// if a saved with id does not exist the constructor
@@ -191,9 +270,6 @@ int main()
 	// exit(0);
 
     std::vector<float> rewards(population_size, 0);    
-	
-    std::vector<sf::Vector2f> goal_pos(num_episode_per_generation);
-    std::vector<sf::Vector2f> ball_pos(num_episode_per_generation);
 
 	for(int i = 0; i < population_size; i++) rankings.push_back(i);
 
@@ -207,6 +283,26 @@ int main()
 	pthread_t render_thread;
 	pthread_create(&render_thread, NULL, render_current_gen, NULL);
 	
+	// initialize mutex
+	pthread_mutex_init(&lk_num_ens_started, NULL);
+	pthread_mutex_init(&lk_num_ens_done, NULL);
+
+	// create workers
+	
+	// to ensure no worker starts working right away -- all go to sleep
+	pthread_mutex_lock(&lk_num_ens_started);
+	num_envs_started = population_size;
+	pthread_mutex_unlock(&lk_num_ens_started);
+
+	pthread_mutex_lock(&lk_num_ens_done);
+	num_envs_done = population_size;
+	pthread_mutex_unlock(&lk_num_ens_done);
+	for(int i = 0; i < num_workers; i++){
+		// bad i should pobably keep track of the pthread_t objects
+		pthread_t worker_thread;
+		pthread_create(&worker_thread, NULL, worker, NULL);		
+	}
+
 	sf::Clock clock;
 	for(gen = 0; gen < num_generations; gen++){
 
@@ -219,18 +315,36 @@ int main()
 
 		// reset rewards
 		for(int i = 0; i < population_size; i++){
+			env[i].reset_reward();
 			rewards[i] = 0;
 		}
 		
 		// evaluate all creatures
-		for(int i = 0; i < population_size; i++){
-			for(int ep_no = 0; ep_no < num_episode_per_generation; ep_no++){
-				env[i].run_episode();
-				rewards[i] += env[i].get_curr_reward();
-				env[i].reset(ball_pos[ep_no], goal_pos[ep_no]);
-			}
-		}
+		// reset job count
+		pthread_mutex_lock(&lk_num_ens_started);
+		num_envs_started = 0;
+		pthread_mutex_unlock(&lk_num_ens_started);
+
+		pthread_mutex_lock(&lk_num_ens_done);
+		num_envs_done = 0;
+		pthread_mutex_unlock(&lk_num_ens_done);
+
+		// wake up all workers
+		pthread_cond_broadcast(&worker_cond_var);
 		
+		// barrier -- wait for all threads to finish working
+		pthread_mutex_lock(&lk_num_ens_done);
+		// if everything is not done yet sleep -- will be woken up the last working thread
+		while(num_envs_done != population_size){
+			pthread_cond_wait(&main_thread_cond_var, &lk_num_ens_done);
+		}
+		pthread_mutex_unlock(&lk_num_ens_done);
+		
+		// copy rewards before sorting -- probably faster but so negligible compared to the sims 
+		for(int i = 0; i < population_size; i++){
+			rewards[i] = env[i].get_curr_reward();
+		}
+
 		// sort them
 		std::sort(rankings.begin(), rankings.end(), comp);
 		
@@ -252,9 +366,12 @@ int main()
 		std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
 		std::cout << "time taken: " << clock.getElapsedTime().asSeconds() << "s" << '\n';
 		std::cout << '\n';
+		std::cout.flush();
 	}
 
 	for(int i = 0; i < population_size; i++){
 		env[rankings[i]].save(i, rewards[rankings[i]]);
 	}
+
+	pthread_join(render_thread, NULL);
 }

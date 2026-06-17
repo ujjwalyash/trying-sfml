@@ -55,8 +55,8 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     
     // after creating football in sperm creation springs vector is resized, the springs break
     // temp fix for now
-    m_particles.reserve(300);
-    m_springs.reserve(300);
+    m_particles.reserve(400);
+    m_springs.reserve(400);
     m_muscles.reserve(10);
     
     m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
@@ -71,28 +71,34 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     std::string file_path = std::format("./saved/{}.json", id);
     std::ifstream i(file_path);
     if(!i){
-        std::cout << "could not load from file: " << file_path << '\n';
-        exit(-1);
+        std::cout << "could not load from file: " << file_path << " --> doing random initialization" << '\n';
+        m_creature = Creature{data.s_muscle_indices, data.s_sensing_points, layer_sizes};
     }
-
-    json j = json::parse(i);
-    std::vector<MatrixXdf> weights = j["weights"].get<std::vector<MatrixXdf>>();
-    std::vector<VectorXdf> biases = j["biases"].get<std::vector<VectorXdf>>();
-    std::vector<int> lsizes = j["layer_sizes"].get<std::vector<int>>();
-    m_reward = j["reward"].get<float>();
-    assert(lsizes == layer_sizes);
-
-    // 2 wasteful initliaizations 
-    // once before constructor body starts
-    // once when we create this temp object and copy
-    m_creature = Creature{data.s_muscle_indices, data.s_sensing_points
-                            , weights, biases};
+    else{
+        std::cout << "loaded from file: " << file_path << '\n';
+        
+        json j = json::parse(i);
+        std::vector<MatrixXdf> weights = j["weights"].get<std::vector<MatrixXdf>>();
+        std::vector<VectorXdf> biases = j["biases"].get<std::vector<VectorXdf>>();
+        std::vector<int> lsizes = j["layer_sizes"].get<std::vector<int>>();
+        m_reward = j["reward"].get<float>();
+        assert(lsizes == layer_sizes);
+        // 2 wasteful initliaizations 
+        // once before constructor body starts
+        // once when we create this temp object and copy
+        m_creature = Creature{data.s_muscle_indices, data.s_sensing_points
+                                , weights, biases};
+    }
 
     m_goal_radius = 10;
 }
 
 Creature const& Environment::get_creature() const{
     return m_creature;
+}
+
+void Environment::copy_brain(Environment const& env){
+    m_creature.copy_brain(env.get_creature());
 }
 
 void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
@@ -109,7 +115,7 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
     }
 
     m_num_steps_done = 0;
-    m_reward = 0;
+    // m_reward = 0;
     m_episode_end = false;
     m_has_touched_ball = false;
 }
@@ -244,6 +250,9 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
     m_reward += reward;
 
     m_num_steps_done++;
+
+    if(m_num_steps_done > env_max_steps_per_episode)
+        m_episode_end = true;
 }
 
 float Environment::calculate_reward(){
@@ -269,6 +278,10 @@ float Environment::calculate_reward(){
     }
 
     return reward;
+}
+
+void Environment::reset_reward(){
+    m_reward = 0;
 }
 
 float Environment::get_curr_reward(){

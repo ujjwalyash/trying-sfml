@@ -71,9 +71,12 @@ class Environment
         float calculate_reward();
 
         float get_curr_reward();
+        void reset_reward();
         Creature const& get_creature() const;
 
         void crossover(Environment const& par_1, Environment const& par_2);
         void mutate(float mutation_rate);
         void save(int id, float total_reard);
+
+        void copy_brain(Environment const& env);
 };

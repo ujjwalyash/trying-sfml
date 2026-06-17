@@ -91,17 +91,6 @@ void Neural_Net::save(int id, float reward){
     o << std::setw(4) << data << std::endl;
 }
 
-// void Neural_Net::load(int id){
-//     std::string file_path = std::format("./saved/{}.json", id);
-//     std::ifstream i(file_path);
-//     if(!i)
-//         std::cerr << "could not load from file: " << file_path << '\n';
-    
-//     json j = json::parse(i);
-
-    
-// }
-
 void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
     std::vector<MatrixXdf> const& par_1_w = par_1.get_weights();
     std::vector<VectorXdf> const& par_1_b = par_1.get_biases();
@@ -184,6 +173,9 @@ void Neural_Net::forward(std::vector<float>& current_activations, std::vector<fl
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 Creature::Creature()
     :m_brain({})
 {}
@@ -218,10 +210,10 @@ void Creature::save(int id, float reward){
     m_brain.save(id, reward);
 }
 
-// void Creature::load(int id){
-//     m_brain.load(id);
-// }
-
+void Creature::copy_brain(Creature const& creature){
+    // neural net has no const members and refs so safe to copy
+    m_brain = creature.get_brain();
+}
 
 int Creature::get_apex_tip_index(){
     return m_sensing_points[0];
@@ -304,11 +296,11 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // Original guide landmarks for interpolation path
     sf::Vector2f tail_landmarks[] = {
         corners[5],       
-        {300.0f, 205.0f}, 
-        {300.0f, 235.0f}, 
-        {300.0f, 265.0f}, 
-        {300.0f, 295.0f}, 
-        {300.0f, 325.0f}  
+        {300.0f, 205.0f - 10.f}, 
+        {300.0f, 235.0f - 10.f}, 
+        {300.0f, 265.0f - 10.f}, 
+        {300.0f, 295.0f - 10.f}, 
+        {300.0f, 325.0f - 10.f}  
     };
     
     float tail_radii[] = {1.2f, 1.6f, 1.4f, 1.2f, 1.0f, 0.8f};
@@ -344,7 +336,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     std::vector<int> left_tail_indices;
     std::vector<int> right_tail_indices;
     // const int TAIL_SUBDIVISIONS = 4; 
-    std::vector<int> tail_subdivs{4, 4, 4, 6, 8};
+    std::vector<int> tail_subdivs{6, 6, 6, 6, 8};
 
     for(int i = 0; i < 5; i++) {
         sf::Vector2f tA = tail_landmarks[i];
@@ -359,7 +351,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
             
             float half_width = current_radius * 1.5f; 
 
-            float mass_scaling = 0.8f;
+            float mass_scaling = 1.f;
 
             // Left Strand Node
             left_tail_indices.push_back(positions.size());
@@ -460,7 +452,11 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
             // springy, flexible tendons (FLEXIBLE_SPINE).
             // This leaves the GA with exactly 4 pairs of muscles to coordinate.
             // bool is_active_muscle = (i == 0 || i == 6 || i == 12 || i == 18);
-            bool is_active_muscle = (i == 0 || i == 5 || i == 10 || i == 15);
+
+            // std::vector<int> tail_subdivs{6, 6, 6, 6, 8};
+            // *----**----**----**----**------*
+            // 0123456789
+            bool is_active_muscle = (i == 0 || i == 7 || i == 14 || i == 21);
 
             float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
 
@@ -586,6 +582,7 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     return center_index;
 }
 
+/*
 // void create_creature_motor_sperm(Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){
     
 //     particles.clear();
@@ -889,3 +886,5 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
 
 //     num_springs = springs.size();
 // }
+
+*/
