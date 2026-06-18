@@ -9,10 +9,13 @@
 // physics params
 const float max_y = 1080;
 const float max_x = 1920;
-const sf::Vector2f gravity = {6, 8};
-const float buoyancy_const = 4.f/3 * 3.141 * 15; // DO NOT MAKE DENSITY 1000
+
+// since i keep both balanced out anyways just make both 0
+const sf::Vector2f gravity = {0, 0};
+const float buoyancy_const = 4.f/3 * 3.141 * 0; // DO NOT MAKE DENSITY 1000
+
 const float restitution = 0.8;
-const float coefficient_friction = 0;
+const float coefficient_friction = 1;
 
 // if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
 // this completely destroys the concept of streamlined bodies 
@@ -120,7 +123,7 @@ void* render_current_gen(void *){
 	bool paused = true;
 	bool step = false;
 	bool render_btw_cycle = true;
-	int speed_up = 1;
+	int speed_up = 2;
 
 	int env_rank = 0;
 
@@ -244,7 +247,7 @@ void* render_current_gen(void *){
         env_used_for_render.render(window);
 		
         sf::Text text(font);
-		text.setString(std::format("{:.1f}\n{}\n{}\n{}\n{}", 
+		text.setString(std::format("reward:    {:.1f}\nstps_done: {}\nspd_up:    {}\ncurr_gen:  {}\ncurr_rank: {}", 
                                             reward, num_steps_done, speed_up, curr_gen, env_rank+1)); 
 		text.setCharacterSize(24);            
 		text.setFillColor(sf::Color::White); 

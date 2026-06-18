@@ -261,14 +261,14 @@ float Environment::calculate_reward(){
 
     if(not m_has_touched_ball){
         reward -= 1;
-        reward -= creature_ball_dist/200.f;
+        reward -= creature_ball_dist/100.f;
     }
     reward -= goal_ball_dist/300.f;
     reward -= 1; // normal time thing
 
     // std::cout << "tip speed" << apex_tip_speed << '\n';
     // std::cout.flush();
-    reward += apex_tip_speed/40;
+    reward += apex_tip_speed/20;
 
     if(goal_ball_dist < m_goal_radius){
         reward += 1000;

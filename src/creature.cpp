@@ -530,7 +530,7 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     const float EDGE_PARTICLE_RADIUS = (chord_length - GAP_DISTANCE) / 2.0f;
 
     // Grab the global buoyancy constant defined in your engine
-    // const float buoyancy_const = 4.f / 3.f * 3.141f * 15.f;
+    const float b_const = 4.f / 3.f * 3.141f * 15.f;
 
     // Track starting index offset if particles already exist in the vectors
     int start_particle_idx = particles.size();
@@ -544,7 +544,7 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     int center_index = 0;
     positions.push_back(ball_center);
     radius.push_back(CENTER_PARTICLE_RADIUS);
-    float neutral_center_mass = buoyancy_const * (CENTER_PARTICLE_RADIUS * CENTER_PARTICLE_RADIUS * CENTER_PARTICLE_RADIUS);
+    float neutral_center_mass = b_const * (CENTER_PARTICLE_RADIUS * CENTER_PARTICLE_RADIUS * CENTER_PARTICLE_RADIUS);
     mass.push_back(neutral_center_mass * ball_float_sink_factor);
 
     // --- 4. GENERATE NON-OVERLAPPING RIM WITH EXPLICIT GAPS ---
@@ -558,7 +558,7 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
         positions.push_back(ball_center + offset);
         radius.push_back(EDGE_PARTICLE_RADIUS);
 
-        float neutral_edge_mass = buoyancy_const * (EDGE_PARTICLE_RADIUS * EDGE_PARTICLE_RADIUS * EDGE_PARTICLE_RADIUS);
+        float neutral_edge_mass = b_const * (EDGE_PARTICLE_RADIUS * EDGE_PARTICLE_RADIUS * EDGE_PARTICLE_RADIUS);
         mass.push_back(neutral_edge_mass * ball_float_sink_factor);
     }
 
