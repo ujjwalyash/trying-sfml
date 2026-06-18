@@ -6,7 +6,7 @@
 1. run ./run.sh to build + start the simulation
 2. parameters can be tuned in the main.cpp file
 3. when runnning the evolution and simulation is handled by num_worker + 1 threads  the main thread does the crossover, mutations and the worker threads run the simulation to evalute the creatures
-4. a seperate thread for all these is run to visualize the current generation 
+4. a thread separate from the num_worker + 1 is run to visualize the current generation 
 5. Some stats are shown at the top right cornere
    - The current reward for this episode(the one you are seeing)
    - num_steps_done in the current episode
