@@ -71,6 +71,10 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
     m_p2.add_spring_acc(-1.f*fsqrt(spring_const_for_p2)/sqrt_m2 * (v2_along_spring-vel_com));
 }
 
+// void Spring::calculate_viscous_force(){
+    
+// }
+
 void handle_all_springs(std::vector<Spring> &springs, float dt){
 
     for(Spring spring: springs){

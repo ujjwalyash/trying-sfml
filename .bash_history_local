@@ -3,3 +3,4 @@ cmake -B build -G Ninja
 ./run.sh > output.txt
 ./run.sh
 ./run.sh > output.txt
+./run.sh

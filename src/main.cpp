@@ -41,7 +41,7 @@ namespace{
 	static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
 
 	const int num_episode_per_generation = 1;
-	const int num_generations = 300;
+	const int num_generations = 0;
 
 	const float top_unchanged_percentage = 0.3;
 	const float elimination_percentage = 0.4;
