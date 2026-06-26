@@ -400,10 +400,10 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     for(int i = 0; i < (int)positions.size(); i++){
         old_pos = positions[i] + shift;
         vel.x = 0.01f * i; vel.y = 0.01f * i; 
-        curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
+        // curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
         acc = {0.0f, 0.0f};
 
-        particles.push_back(Particle(i + 1 + id_offset, radius[i], mass[i], old_pos, curr_pos, structure::creature));
+        particles.push_back(Particle(i + 1 + id_offset, radius[i], mass[i], old_pos, vel, structure::creature));
         particles[particles.size()-1].set_acc(acc);
 
         if(positions[i] == corners[1] or positions[i] == corners[3]
@@ -566,11 +566,11 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     for (size_t i = 0; i < positions.size(); i++) {
         sf::Vector2f old_pos = positions[i];
         sf::Vector2f vel = { 0.001f * i, 0.001f * i }; 
-        sf::Vector2f curr_pos = vel * dt + old_pos;
+        // sf::Vector2f curr_pos = vel * dt + old_pos;
         sf::Vector2f acc = { 0.0f, 0.0f };
 
         int global_id = start_particle_idx + i + 1; 
-        particles.push_back(Particle(global_id, radius[i], mass[i], old_pos, curr_pos, structure::ball));
+        particles.push_back(Particle(global_id, radius[i], mass[i], old_pos, vel, structure::ball));
         particles.back().set_acc(acc);
     }
 
@@ -617,22 +617,22 @@ void create_collision_test_rig(int& num_particles, std::vector<Particle>& partic
     springs.reserve(100);
 
     // --- 2. CONFIGURATION PARAMETERS ---
-    const float TEST_RADIUS = 20.0f;       // Large radius as requested
-    const float TEST_MASS = 500000.0f;        // Heavy mass to minimize viscosity damping impact
+    const float TEST_RADIUS = 15.0f;       // Large radius as requested
+    const float TEST_MASS = 500.0f;        // Heavy mass to minimize viscosity damping impact
     const float CLUSTER_RADIUS = 50.0f;    // Spatial spacing radius from the local center
     const int RIM_POINTS = 6;              // Hexagonal outer rim layout (6 outer + 1 center = 7 particles per cluster)
     const float HIGH_SPEED = 200.0f;       // Aggressive initial velocity for collision testing
 
     // Cluster Centers (positioned horizontally, moving toward each other)
     sf::Vector2f left_center = { 400.0f, 540.0f };
-    sf::Vector2f right_center = { 1000.0f, 545.0f }; // Slight Y offset to test angular deflection/rotation
+    sf::Vector2f right_center = { 1500.0f, 545.0f }; // Slight Y offset to test angular deflection/rotation
 
     // --- 3. HELPER LAMBDA TO GENERATE A STRUCTURAL CLUSTER ---
     auto generate_cluster = [&](sf::Vector2f center, sf::Vector2f velocity) {
         int cluster_start_idx = particles.size();
 
         // A. Add Center Node
-        particles.push_back(Particle(particles.size() + 1, TEST_RADIUS, TEST_MASS, center, center + velocity * dt, structure::cluster));
+        particles.push_back(Particle(particles.size() + 1, TEST_RADIUS, TEST_MASS, center, velocity, structure::cluster));
         particles.back().set_acc({0.0f, 0.0f});
 
         // B. Add Perimeter Nodes (Hexagonal layout, mathematically guaranteeing no overlaps)
@@ -641,12 +641,12 @@ void create_collision_test_rig(int& num_particles, std::vector<Particle>& partic
             sf::Vector2f offset = { std::cos(angle) * CLUSTER_RADIUS, std::sin(angle) * CLUSTER_RADIUS };
             sf::Vector2f pos = center + offset;
 
-            particles.push_back(Particle(particles.size() + 1, TEST_RADIUS, TEST_MASS, pos, pos + velocity * dt, structure::cluster));
+            particles.push_back(Particle(particles.size() + 1, TEST_RADIUS, TEST_MASS, pos, velocity, structure::cluster));
             particles.back().set_acc({0.0f, 0.0f});
         }
 
         // C. Weave Structural Springs
-        const float TEST_STIFFNESS = 1e5f; // Rigid springs to maintain shape during high-speed impact
+        const float TEST_STIFFNESS = 1e4f; // Rigid springs to maintain shape during high-speed impact
         
         int center_idx = cluster_start_idx;
         int first_rim_idx = cluster_start_idx + 1;

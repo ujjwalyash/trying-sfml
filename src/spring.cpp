@@ -50,7 +50,7 @@ float Spring::get_bounding_box_wall(direction dir){
 }
 
 
-void Spring::calculate_spring_force(float dt){
+void Spring::calculate_spring_force(){
 
     sf::Vector2f rel_pos = m_p2.get_curr_pos() - m_p1.get_curr_pos();
 
@@ -60,17 +60,16 @@ void Spring::calculate_spring_force(float dt){
     float m1 = m_p1.get_mass();
     float m2 = m_p2.get_mass();
 
-    calculate_damping_force(rel_pos, m1, m2, m_p1.get_sqrt_mass(), m_p2.get_sqrt_mass(), dt);
+    calculate_damping_force(rel_pos, m1, m2, m_p1.get_sqrt_mass(), m_p2.get_sqrt_mass());
 
     m_p1.add_spring_acc(deformation * (rel_pos/rel_pos_length) * (m_spring_constant/m1));
     m_p2.add_spring_acc(deformation * (-rel_pos/rel_pos_length) * (m_spring_constant/m2));
 }
 
-void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2, float dt){
+void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2){
 
-    // will dividing but dt earlier give better accuracy?? compared to doing /dt in line 68 instead
-    sf::Vector2f v1_along_spring = (m_p1.get_curr_pos() - m_p1.get_old_pos()).projectedOnto(vec_along_spring)/dt;
-    sf::Vector2f v2_along_spring = (m_p2.get_curr_pos() - m_p2.get_old_pos()).projectedOnto(-vec_along_spring)/dt;
+    sf::Vector2f v1_along_spring = m_p1.get_vel().projectedOnto(vec_along_spring);
+    sf::Vector2f v2_along_spring = m_p2.get_vel().projectedOnto(-vec_along_spring);
 
     sf::Vector2f vel_com = (m1*v1_along_spring + m2*v2_along_spring)/(m1+m2);
 
@@ -87,9 +86,9 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
     
 // }
 
-void handle_all_springs(std::vector<Spring> &springs, float dt){
+void handle_all_springs(std::vector<Spring> &springs){
 
     for(Spring& spring: springs){
-        spring.calculate_spring_force(dt);
+        spring.calculate_spring_force();
     }
 }

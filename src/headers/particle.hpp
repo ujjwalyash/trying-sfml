@@ -13,6 +13,8 @@ extern const float restitution;
 extern const float coefficient_friction;
 extern const float viscosity; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
 
+extern const float env_dt;
+
 enum class direction{left, right};
 // struct direction{
 //     public:
@@ -30,10 +32,10 @@ class Particle{
 
         int m_id;
 
-        sf::Vector2f m_original_old_pos;
+        sf::Vector2f m_original_vel;
         sf::Vector2f m_original_curr_pos;
 
-        sf::Vector2f m_old_pos;
+        sf::Vector2f m_vel;
         sf::Vector2f m_curr_pos;
         
         sf::Vector2f m_spring_acc;
@@ -50,6 +52,8 @@ class Particle{
         float m_mass;
         float m_sqrt_mass;
         
+        float m_damping_factor;
+
         // maybe make radius, mass public const too 
         // but it causes default copy constructor to fail
     public:
@@ -57,23 +61,25 @@ class Particle{
         const structure m_type;
 
     public:
-        Particle(int id, float radius, float mass, sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos, structure type);
+        Particle(int id, float radius, float mass, sf::Vector2<float> curr_pos, sf::Vector2<float> vel, structure type);
 
-        void set_pos(sf::Vector2<float> old_pos, sf::Vector2<float> curr_pos);
+        void set_pos_vel(sf::Vector2<float> curr_pos, sf::Vector2<float> vel);
         void shift_pos(sf::Vector2<float> shift);
         void set_acc(sf::Vector2<float> acc);
         
         sf::Vector2<float> get_curr_pos() const;
-        sf::Vector2<float> get_old_pos() const;
+        sf::Vector2<float> get_vel() const;
         float get_radius() const;
         float get_mass() const;
         float get_sqrt_mass() const;
         int get_id() const;
-        float calculate_total_energy(float dt);
+        float calculate_total_energy();
 
         void add_spring_acc(sf::Vector2f spring_acc);
         
-        void step(float dt);
+        void first_half_step();
+        void second_half_step();
+
         void handle_boundary();
         void reflect(float wall, int axis, int sign);
         void reset();

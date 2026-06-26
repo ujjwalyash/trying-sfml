@@ -27,13 +27,13 @@ class Spring{
 
         float calculate_total_energy();
 
-        void calculate_spring_force(float dt);
+        void calculate_spring_force();
 
         float get_bounding_box_wall(direction dir);
     
     private:
     
-        void calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2, float dt);
+        void calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2);
 };
 
-void handle_all_springs(std::vector<Spring> &springs, float dt);
+void handle_all_springs(std::vector<Spring> &springs);

@@ -23,4 +23,4 @@ class Muscle : public Spring
         
 };
 
-void handle_all_muscles(std::vector<Muscle> &muscles, float dt);
+void handle_all_muscles(std::vector<Muscle> &muscles);

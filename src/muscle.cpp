@@ -24,11 +24,11 @@ void Muscle::reset(){
     m_spring_constant = m_rest_spring_constant;
 }
 
-
-void handle_all_muscles(std::vector<Muscle> &muscles, float dt){
+// contracts the muscle and calculates the force
+void handle_all_muscles(std::vector<Muscle> &muscles){
     int num_muscles = muscles.size();
     for(int i = 0; i < num_muscles; i++){
         muscles[i].handle_nerve_signal();
-        muscles[i].calculate_spring_force(dt);
+        muscles[i].calculate_spring_force();
     }
 }

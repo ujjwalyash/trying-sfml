@@ -192,12 +192,19 @@ void Environment::step(){
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
 
         for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
-            handle_all_muscles(m_muscles, env_dt);
-            handle_all_springs(m_springs, env_dt);
+            
             for(int i = 0; i < m_num_particles; i++){
-                m_particles[i].step(env_dt);
+                m_particles[i].first_half_step();
             }			
+            
+            // update acc
+            handle_all_muscles(m_muscles);
+            handle_all_springs(m_springs);
             handle_all_collisions(m_particles, m_springs, m_muscles);    
+            
+            for(int i = 0; i < m_num_particles; i++){
+                m_particles[i].second_half_step();
+            }			
         }
     }
 
@@ -223,12 +230,19 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
 
         for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
-            handle_all_muscles(m_muscles, env_dt);
-            handle_all_springs(m_springs, env_dt);
+
             for(int i = 0; i < m_num_particles; i++){
-                m_particles[i].step(env_dt);
+                m_particles[i].first_half_step();
             }			
+            
+            // update acc
+            handle_all_muscles(m_muscles);
+            handle_all_springs(m_springs);
             handle_all_collisions(m_particles, m_springs, m_muscles);    
+            
+            for(int i = 0; i < m_num_particles; i++){
+                m_particles[i].second_half_step();
+            }	
         }
 
         if(render_between_cycle){
@@ -257,7 +271,7 @@ float Environment::calculate_reward(){
     float goal_ball_dist = (m_ball_pos-m_goal_pos).length();
     float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
     float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_ball_pos).length();
-    float apex_tip_speed = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_particles[m_creature.get_apex_tip_index()].get_old_pos()).length()/env_dt;
+    float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length()/env_dt;
 
     if(ball_displacement > 5) m_has_touched_ball = true;
 
