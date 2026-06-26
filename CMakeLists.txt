@@ -24,6 +24,7 @@ add_executable(main
                     src/creature.cpp
                     src/muscle.cpp
                     src/environment.cpp
+                    src/collision_handling.cpp
 )
 target_compile_features(main PRIVATE cxx_std_26)
 target_link_libraries(main PRIVATE SFML::Graphics)

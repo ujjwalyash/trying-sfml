@@ -3,6 +3,7 @@
 #include "spring.hpp"
 #include "creature.hpp"
 #include "muscle.hpp"
+#include "collision_handling.hpp"
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/Graphics/Color.hpp>
 #include <SFML/Graphics/RenderWindow.hpp>

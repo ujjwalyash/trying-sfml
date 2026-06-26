@@ -1341,3 +1341,628 @@ current generation: 299
 current best_reward: -1532.56
 time taken: 17.1657s
 
+-- libudev stable: 1
+-- Found UDev: /usr/lib64/libudev.so
+--    include: /usr/include
+-- Found hb-features.h
+-- Found the following HarfBuzz libraries:
+--  HarfBuzz (required): /usr/lib64/libharfbuzz.so
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
+[1/10] Scanning /home/yashujjwal/projects/trying-sfml/src/main.cpp for CXX dependencies
+[2/10] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
+[3/4] Building CXX object CMakeFiles/main.dir/src/main.cpp.o
+[4/4] Linking CXX executable bin/main
+loaded from file: ./saved/0.json
+loaded from file: ./saved/1.json
+loaded from file: ./saved/2.json
+loaded from file: ./saved/3.json
+loaded from file: ./saved/4.json
+loaded from file: ./saved/5.json
+loaded from file: ./saved/6.json
+loaded from file: ./saved/7.json
+loaded from file: ./saved/8.json
+loaded from file: ./saved/9.json
+loaded from file: ./saved/10.json
+loaded from file: ./saved/11.json
+loaded from file: ./saved/12.json
+loaded from file: ./saved/13.json
+loaded from file: ./saved/14.json
+loaded from file: ./saved/15.json
+loaded from file: ./saved/16.json
+loaded from file: ./saved/17.json
+loaded from file: ./saved/18.json
+loaded from file: ./saved/19.json
+loaded from file: ./saved/20.json
+loaded from file: ./saved/21.json
+loaded from file: ./saved/22.json
+loaded from file: ./saved/23.json
+loaded from file: ./saved/24.json
+loaded from file: ./saved/25.json
+loaded from file: ./saved/26.json
+loaded from file: ./saved/27.json
+loaded from file: ./saved/28.json
+loaded from file: ./saved/29.json
+loaded from file: ./saved/30.json
+loaded from file: ./saved/31.json
+loaded from file: ./saved/32.json
+loaded from file: ./saved/33.json
+loaded from file: ./saved/34.json
+loaded from file: ./saved/35.json
+loaded from file: ./saved/36.json
+loaded from file: ./saved/37.json
+loaded from file: ./saved/38.json
+loaded from file: ./saved/39.json
+loaded from file: ./saved/40.json
+loaded from file: ./saved/41.json
+loaded from file: ./saved/42.json
+loaded from file: ./saved/43.json
+loaded from file: ./saved/44.json
+loaded from file: ./saved/45.json
+loaded from file: ./saved/46.json
+loaded from file: ./saved/47.json
+loaded from file: ./saved/48.json
+loaded from file: ./saved/49.json
+loaded from file: ./saved/50.json
+loaded from file: ./saved/51.json
+loaded from file: ./saved/52.json
+loaded from file: ./saved/53.json
+loaded from file: ./saved/54.json
+loaded from file: ./saved/55.json
+loaded from file: ./saved/56.json
+loaded from file: ./saved/57.json
+loaded from file: ./saved/58.json
+loaded from file: ./saved/59.json
+loaded from file: ./saved/60.json
+loaded from file: ./saved/61.json
+loaded from file: ./saved/62.json
+loaded from file: ./saved/63.json
+loaded from file: ./saved/64.json
+loaded from file: ./saved/65.json
+loaded from file: ./saved/66.json
+loaded from file: ./saved/67.json
+loaded from file: ./saved/68.json
+loaded from file: ./saved/69.json
+loaded from file: ./saved/70.json
+loaded from file: ./saved/71.json
+loaded from file: ./saved/72.json
+loaded from file: ./saved/73.json
+loaded from file: ./saved/74.json
+loaded from file: ./saved/75.json
+loaded from file: ./saved/76.json
+loaded from file: ./saved/77.json
+loaded from file: ./saved/78.json
+loaded from file: ./saved/79.json
+loaded from file: ./saved/80.json
+loaded from file: ./saved/81.json
+loaded from file: ./saved/82.json
+loaded from file: ./saved/83.json
+loaded from file: ./saved/84.json
+loaded from file: ./saved/85.json
+loaded from file: ./saved/86.json
+loaded from file: ./saved/87.json
+loaded from file: ./saved/88.json
+loaded from file: ./saved/89.json
+loaded from file: ./saved/90.json
+loaded from file: ./saved/91.json
+loaded from file: ./saved/92.json
+loaded from file: ./saved/93.json
+loaded from file: ./saved/94.json
+loaded from file: ./saved/95.json
+loaded from file: ./saved/96.json
+loaded from file: ./saved/97.json
+loaded from file: ./saved/98.json
+loaded from file: ./saved/99.json
+loaded from file: ./saved/100.json
+loaded from file: ./saved/101.json
+loaded from file: ./saved/102.json
+loaded from file: ./saved/103.json
+loaded from file: ./saved/104.json
+loaded from file: ./saved/105.json
+loaded from file: ./saved/106.json
+loaded from file: ./saved/107.json
+loaded from file: ./saved/108.json
+loaded from file: ./saved/109.json
+loaded from file: ./saved/110.json
+loaded from file: ./saved/111.json
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+current generation: 0
+current best_reward: -3552.13
+time taken: 35.5334s
+
+current generation: 1
+current best_reward: -1582.33
+time taken: 38.4175s
+
+current generation: 2
+current best_reward: -5389.34
+time taken: 30.5114s
+
+current generation: 3
+current best_reward: -2409.53
+time taken: 26.6513s
+
+current generation: 4
+current best_reward: -5632.85
+time taken: 31.0161s
+
+-- libudev stable: 1
+-- Found UDev: /usr/lib64/libudev.so
+--    include: /usr/include
+-- Found hb-features.h
+-- Found the following HarfBuzz libraries:
+--  HarfBuzz (required): /usr/lib64/libharfbuzz.so
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
+[1/10] Scanning /home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp for CXX dependencies
+[2/10] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
+[3/4] Building CXX object CMakeFiles/main.dir/src/collision_handling.cpp.o
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:52:142: warning: unused parameter 'springs' [-Wunused-parameter]
+   52 | bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> obj_2, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                                                                              ^
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:52:172: warning: unused parameter 'muscles' [-Wunused-parameter]
+   52 | bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> obj_2, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                                                                                                            ^
+2 warnings generated.
+[4/4] Linking CXX executable bin/main
+loaded from file: ./saved/0.json
+loaded from file: ./saved/1.json
+loaded from file: ./saved/2.json
+loaded from file: ./saved/3.json
+loaded from file: ./saved/4.json
+loaded from file: ./saved/5.json
+loaded from file: ./saved/6.json
+loaded from file: ./saved/7.json
+loaded from file: ./saved/8.json
+loaded from file: ./saved/9.json
+loaded from file: ./saved/10.json
+loaded from file: ./saved/11.json
+loaded from file: ./saved/12.json
+loaded from file: ./saved/13.json
+loaded from file: ./saved/14.json
+loaded from file: ./saved/15.json
+loaded from file: ./saved/16.json
+loaded from file: ./saved/17.json
+loaded from file: ./saved/18.json
+loaded from file: ./saved/19.json
+loaded from file: ./saved/20.json
+loaded from file: ./saved/21.json
+loaded from file: ./saved/22.json
+loaded from file: ./saved/23.json
+loaded from file: ./saved/24.json
+loaded from file: ./saved/25.json
+loaded from file: ./saved/26.json
+loaded from file: ./saved/27.json
+loaded from file: ./saved/28.json
+loaded from file: ./saved/29.json
+loaded from file: ./saved/30.json
+loaded from file: ./saved/31.json
+loaded from file: ./saved/32.json
+loaded from file: ./saved/33.json
+loaded from file: ./saved/34.json
+loaded from file: ./saved/35.json
+loaded from file: ./saved/36.json
+loaded from file: ./saved/37.json
+loaded from file: ./saved/38.json
+loaded from file: ./saved/39.json
+loaded from file: ./saved/40.json
+loaded from file: ./saved/41.json
+loaded from file: ./saved/42.json
+loaded from file: ./saved/43.json
+loaded from file: ./saved/44.json
+loaded from file: ./saved/45.json
+loaded from file: ./saved/46.json
+loaded from file: ./saved/47.json
+loaded from file: ./saved/48.json
+loaded from file: ./saved/49.json
+loaded from file: ./saved/50.json
+loaded from file: ./saved/51.json
+loaded from file: ./saved/52.json
+loaded from file: ./saved/53.json
+loaded from file: ./saved/54.json
+loaded from file: ./saved/55.json
+loaded from file: ./saved/56.json
+loaded from file: ./saved/57.json
+loaded from file: ./saved/58.json
+loaded from file: ./saved/59.json
+loaded from file: ./saved/60.json
+loaded from file: ./saved/61.json
+loaded from file: ./saved/62.json
+loaded from file: ./saved/63.json
+loaded from file: ./saved/64.json
+loaded from file: ./saved/65.json
+loaded from file: ./saved/66.json
+loaded from file: ./saved/67.json
+loaded from file: ./saved/68.json
+loaded from file: ./saved/69.json
+loaded from file: ./saved/70.json
+loaded from file: ./saved/71.json
+loaded from file: ./saved/72.json
+loaded from file: ./saved/73.json
+loaded from file: ./saved/74.json
+loaded from file: ./saved/75.json
+loaded from file: ./saved/76.json
+loaded from file: ./saved/77.json
+loaded from file: ./saved/78.json
+loaded from file: ./saved/79.json
+loaded from file: ./saved/80.json
+loaded from file: ./saved/81.json
+loaded from file: ./saved/82.json
+loaded from file: ./saved/83.json
+loaded from file: ./saved/84.json
+loaded from file: ./saved/85.json
+loaded from file: ./saved/86.json
+loaded from file: ./saved/87.json
+loaded from file: ./saved/88.json
+loaded from file: ./saved/89.json
+loaded from file: ./saved/90.json
+loaded from file: ./saved/91.json
+loaded from file: ./saved/92.json
+loaded from file: ./saved/93.json
+loaded from file: ./saved/94.json
+loaded from file: ./saved/95.json
+loaded from file: ./saved/96.json
+loaded from file: ./saved/97.json
+loaded from file: ./saved/98.json
+loaded from file: ./saved/99.json
+loaded from file: ./saved/100.json
+loaded from file: ./saved/101.json
+loaded from file: ./saved/102.json
+loaded from file: ./saved/103.json
+loaded from file: ./saved/104.json
+loaded from file: ./saved/105.json
+loaded from file: ./saved/106.json
+loaded from file: ./saved/107.json
+loaded from file: ./saved/108.json
+loaded from file: ./saved/109.json
+loaded from file: ./saved/110.json
+loaded from file: ./saved/111.json
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+current generation: 0
+current best_reward: -3629.25
+time taken: 18.7581s
+
+current generation: 1
+current best_reward: -1621.47
+time taken: 20.3912s
+
+current generation: 2
+current best_reward: -5472.75
+time taken: 19.5716s
+
+current generation: 3
+current best_reward: -2559.02
+time taken: 20.1456s
+
+current generation: 4
+current best_reward: -5509.71
+time taken: 20.1816s
+
+-- libudev stable: 1
+-- Found UDev: /usr/lib64/libudev.so
+--    include: /usr/include
+-- Found hb-features.h
+-- Found the following HarfBuzz libraries:
+--  HarfBuzz (required): /usr/lib64/libharfbuzz.so
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
+[1/12] Scanning /home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp for CXX dependencies
+[2/12] Scanning /home/yashujjwal/projects/trying-sfml/src/main.cpp for CXX dependencies
+[3/12] Scanning /home/yashujjwal/projects/trying-sfml/src/environment.cpp for CXX dependencies
+[4/12] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
+[5/8] Building CXX object CMakeFiles/main.dir/src/collision_handling.cpp.o
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:53:142: warning: unused parameter 'springs' [-Wunused-parameter]
+   53 | bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> obj_2, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                                                                              ^
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:53:172: warning: unused parameter 'muscles' [-Wunused-parameter]
+   53 | bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> obj_2, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                                                                                                            ^
+2 warnings generated.
+[6/8] Building CXX object CMakeFiles/main.dir/src/main.cpp.o
+[7/8] Building CXX object CMakeFiles/main.dir/src/environment.cpp.o
+[8/8] Linking CXX executable bin/main
+loaded from file: ./saved/0.json
+loaded from file: ./saved/1.json
+loaded from file: ./saved/2.json
+loaded from file: ./saved/3.json
+loaded from file: ./saved/4.json
+loaded from file: ./saved/5.json
+loaded from file: ./saved/6.json
+loaded from file: ./saved/7.json
+loaded from file: ./saved/8.json
+loaded from file: ./saved/9.json
+loaded from file: ./saved/10.json
+loaded from file: ./saved/11.json
+loaded from file: ./saved/12.json
+loaded from file: ./saved/13.json
+loaded from file: ./saved/14.json
+loaded from file: ./saved/15.json
+loaded from file: ./saved/16.json
+loaded from file: ./saved/17.json
+loaded from file: ./saved/18.json
+loaded from file: ./saved/19.json
+loaded from file: ./saved/20.json
+loaded from file: ./saved/21.json
+loaded from file: ./saved/22.json
+loaded from file: ./saved/23.json
+loaded from file: ./saved/24.json
+loaded from file: ./saved/25.json
+loaded from file: ./saved/26.json
+loaded from file: ./saved/27.json
+loaded from file: ./saved/28.json
+loaded from file: ./saved/29.json
+loaded from file: ./saved/30.json
+loaded from file: ./saved/31.json
+loaded from file: ./saved/32.json
+loaded from file: ./saved/33.json
+loaded from file: ./saved/34.json
+loaded from file: ./saved/35.json
+loaded from file: ./saved/36.json
+loaded from file: ./saved/37.json
+loaded from file: ./saved/38.json
+loaded from file: ./saved/39.json
+loaded from file: ./saved/40.json
+loaded from file: ./saved/41.json
+loaded from file: ./saved/42.json
+loaded from file: ./saved/43.json
+loaded from file: ./saved/44.json
+loaded from file: ./saved/45.json
+loaded from file: ./saved/46.json
+loaded from file: ./saved/47.json
+loaded from file: ./saved/48.json
+loaded from file: ./saved/49.json
+loaded from file: ./saved/50.json
+loaded from file: ./saved/51.json
+loaded from file: ./saved/52.json
+loaded from file: ./saved/53.json
+loaded from file: ./saved/54.json
+loaded from file: ./saved/55.json
+loaded from file: ./saved/56.json
+loaded from file: ./saved/57.json
+loaded from file: ./saved/58.json
+loaded from file: ./saved/59.json
+loaded from file: ./saved/60.json
+loaded from file: ./saved/61.json
+loaded from file: ./saved/62.json
+loaded from file: ./saved/63.json
+loaded from file: ./saved/64.json
+loaded from file: ./saved/65.json
+loaded from file: ./saved/66.json
+loaded from file: ./saved/67.json
+loaded from file: ./saved/68.json
+loaded from file: ./saved/69.json
+loaded from file: ./saved/70.json
+loaded from file: ./saved/71.json
+loaded from file: ./saved/72.json
+loaded from file: ./saved/73.json
+loaded from file: ./saved/74.json
+loaded from file: ./saved/75.json
+loaded from file: ./saved/76.json
+loaded from file: ./saved/77.json
+loaded from file: ./saved/78.json
+loaded from file: ./saved/79.json
+loaded from file: ./saved/80.json
+loaded from file: ./saved/81.json
+loaded from file: ./saved/82.json
+loaded from file: ./saved/83.json
+loaded from file: ./saved/84.json
+loaded from file: ./saved/85.json
+loaded from file: ./saved/86.json
+loaded from file: ./saved/87.json
+loaded from file: ./saved/88.json
+loaded from file: ./saved/89.json
+loaded from file: ./saved/90.json
+loaded from file: ./saved/91.json
+loaded from file: ./saved/92.json
+loaded from file: ./saved/93.json
+loaded from file: ./saved/94.json
+loaded from file: ./saved/95.json
+loaded from file: ./saved/96.json
+loaded from file: ./saved/97.json
+loaded from file: ./saved/98.json
+loaded from file: ./saved/99.json
+loaded from file: ./saved/100.json
+loaded from file: ./saved/101.json
+loaded from file: ./saved/102.json
+loaded from file: ./saved/103.json
+loaded from file: ./saved/104.json
+loaded from file: ./saved/105.json
+loaded from file: ./saved/106.json
+loaded from file: ./saved/107.json
+loaded from file: ./saved/108.json
+loaded from file: ./saved/109.json
+loaded from file: ./saved/110.json
+loaded from file: ./saved/111.json
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New wo-- libudev stable: 1
+-- Found UDev: /usr/lib64/libudev.so
+--    include: /usr/include
+-- Found hb-features.h
+-- Found the following HarfBuzz libraries:
+--  HarfBuzz (required): /usr/lib64/libharfbuzz.so
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
+[1/10] Scanning /home/yashujjwal/projects/trying-sfml/src/creature.cpp for CXX dependencies
+[2/10] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
+[3/4] Building CXX object CMakeFiles/main.dir/src/creature.cpp.o
+/home/yashujjwal/projects/trying-sfml/src/creature.cpp:651:13: warning: unused variable 'center_idx' [-Wunused-variable]
+  651 |         int center_idx = cluster_start_idx;
+      |             ^~~~~~~~~~
+1 warning generated.
+[4/4] Linking CXX executable bin/main
+loaded from file: ./saved/0.json
+loaded from file: ./saved/1.json
+loaded from file: ./saved/2.json
+loaded from file: ./saved/3.json
+loaded from file: ./saved/4.json
+loaded from file: ./saved/5.json
+loaded from file: ./saved/6.json
+loaded from file: ./saved/7.json
+loaded from file: ./saved/8.json
+loaded from file: ./saved/9.json
+loaded from file: ./saved/10.json
+loaded from file: ./saved/11.json
+loaded from file: ./saved/12.json
+loaded from file: ./saved/13.json
+loaded from file: ./saved/14.json
+loaded from file: ./saved/15.json
+loaded from file: ./saved/16.json
+loaded from file: ./saved/17.json
+loaded from file: ./saved/18.json
+loaded from file: ./saved/19.json
+loaded from file: ./saved/20.json
+loaded from file: ./saved/21.json
+loaded from file: ./saved/22.json
+loaded from file: ./saved/23.json
+loaded from file: ./saved/24.json
+loaded from file: ./saved/25.json
+loaded from file: ./saved/26.json
+loaded from file: ./saved/27.json
+loaded from file: ./saved/28.json
+loaded from file: ./saved/29.json
+loaded from file: ./saved/30.json
+loaded from file: ./saved/31.json
+loaded from file: ./saved/32.json
+loaded from file: ./saved/33.json
+loaded from file: ./saved/34.json
+loaded from file: ./saved/35.json
+loaded from file: ./saved/36.json
+loaded from file: ./saved/37.json
+loaded from file: ./saved/38.json
+loaded from file: ./saved/39.json
+loaded from file: ./saved/40.json
+loaded from file: ./saved/41.json
+loaded from file: ./saved/42.json
+loaded from file: ./saved/43.json
+loaded from file: ./saved/44.json
+loaded from file: ./saved/45.json
+loaded from file: ./saved/46.json
+loaded from file: ./saved/47.json
+loaded from file: ./saved/48.json
+loaded from file: ./saved/49.json
+loaded from file: ./saved/50.json
+loaded from file: ./saved/51.json
+loaded from file: ./saved/52.json
+loaded from file: ./saved/53.json
+loaded from file: ./saved/54.json
+loaded from file: ./saved/55.json
+loaded from file: ./saved/56.json
+loaded from file: ./saved/57.json
+loaded from file: ./saved/58.json
+loaded from file: ./saved/59.json
+loaded from file: ./saved/60.json
+loaded from file: ./saved/61.json
+loaded from file: ./saved/62.json
+loaded from file: ./saved/63.json
+loaded from file: ./saved/64.json
+loaded from file: ./saved/65.json
+loaded from file: ./saved/66.json
+loaded from file: ./saved/67.json
+loaded from file: ./saved/68.json
+loaded from file: ./saved/69.json
+loaded from file: ./saved/70.json
+loaded from file: ./saved/71.json
+loaded from file: ./saved/72.json
+loaded from file: ./saved/73.json
+loaded from file: ./saved/74.json
+loaded from file: ./saved/75.json
+loaded from file: ./saved/76.json
+loaded from file: ./saved/77.json
+loaded from file: ./saved/78.json
+loaded from file: ./saved/79.json
+loaded from file: ./saved/80.json
+loaded from file: ./saved/81.json
+loaded from file: ./saved/82.json
+loaded from file: ./saved/83.json
+loaded from file: ./saved/84.json
+loaded from file: ./saved/85.json
+loaded from file: ./saved/86.json
+loaded from file: ./saved/87.json
+loaded from file: ./saved/88.json
+loaded from file: ./saved/89.json
+loaded from file: ./saved/90.json
+loaded from file: ./saved/91.json
+loaded from file: ./saved/92.json
+loaded from file: ./saved/93.json
+loaded from file: ./saved/94.json
+loaded from file: ./saved/95.json
+loaded from file: ./saved/96.json
+loaded from file: ./saved/97.json
+loaded from file: ./saved/98.json
+loaded from file: ./saved/99.json
+loaded from file: ./saved/100.json
+loaded from file: ./saved/101.json
+loaded from file: ./saved/102.json
+loaded from file: ./saved/103.json
+loaded from file: ./saved/104.json
+loaded from file: ./saved/105.json
+loaded from file: ./saved/106.json
+loaded from file: ./saved/107.json
+loaded from file: ./saved/108.json
+loaded from file: ./saved/109.json
+loaded from file: ./saved/110.json
+loaded from file: ./saved/111.json
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New worker started working 
+New wo-- libudev stable: 1
+-- Found UDev: /usr/lib64/libudev.so
+--    include: /usr/include
+-- Found hb-features.h
+-- Found the following HarfBuzz libraries:
+--  HarfBuzz (required): /usr/lib64/libharfbuzz.so
+-- Configuring done (0.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
+[1/10] Scanning /home/yashujjwal/projects/trying-sfml/src/creature.cpp for CXX dependencies
+[2/10] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd

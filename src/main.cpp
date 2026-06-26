@@ -11,11 +11,14 @@ const float max_y = 1080;
 const float max_x = 1920;
 
 // since i keep both balanced out anyways just make both 0
-const sf::Vector2f gravity = {0, 0};
-const float buoyancy_const = 4.f/3 * 3.141 * 0; // DO NOT MAKE DENSITY 1000
+const sf::Vector2f gravity = {0, 10};
+const float buoyancy_const = 4.f/3 * 3.141 * 10; // DO NOT MAKE DENSITY 1000
 
 const float restitution = 0.8;
-const float coefficient_friction = 1;
+
+// if we have small particles then no need for this but for large circles its needed bc we have no rotation two spheres will just sit on each other
+const float min_rel_vel_for_friction = 0.f;
+const float coefficient_friction = 0.5;
 
 // if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
 // this completely destroys the concept of streamlined bodies 
@@ -398,8 +401,10 @@ int main()
 		std::cout.flush();
 	}
 
-	for(int i = 0; i < population_size; i++){
-		env[rankings[i]].save(i, rewards[rankings[i]]);
+	if(num_generations != 0){
+		for(int i = 0; i < population_size; i++){
+			env[rankings[i]].save(i, rewards[rankings[i]]);
+		}
 	}
 
 	pthread_join(render_thread, NULL);

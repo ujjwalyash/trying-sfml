@@ -38,6 +38,18 @@ float Spring::calculate_total_energy(){
     return 0.5f * m_spring_constant * (deformation * deformation);
 }
 
+float Spring::get_bounding_box_wall(direction dir){
+    switch (dir) {
+        
+        case direction::left:
+            return fmin(m_p1.get_bounding_box_wall(dir), m_p2.get_bounding_box_wall(dir));
+            
+        case direction::right:
+            return fmax(m_p1.get_bounding_box_wall(dir), m_p2.get_bounding_box_wall(dir));    
+    }
+}
+
+
 void Spring::calculate_spring_force(float dt){
 
     sf::Vector2f rel_pos = m_p2.get_curr_pos() - m_p1.get_curr_pos();
@@ -77,7 +89,7 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
 
 void handle_all_springs(std::vector<Spring> &springs, float dt){
 
-    for(Spring spring: springs){
+    for(Spring& spring: springs){
         spring.calculate_spring_force(dt);
     }
 }

@@ -305,7 +305,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     sf::Vector2f shift = {660, 390};
 
     // we cant really make things lighter unless we lower the spring constants
-    const float b_const = 4.f / 3.f * 3.141f * 15.f; 
+    const float b_const = 4.f / 3.f * 3.141f * 10.f; 
     const float head_heaviness = 1.f;
 
     // --- 1. DEFINE ORIGINAL CONTROL VERTICES ---
@@ -607,6 +607,85 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     num_springs = springs.size();
 
     return center_index;
+}
+
+void create_collision_test_rig(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
+    // --- 1. PREVENT POINTER/REFERENCE DRAG (CRITICAL FOR YOUR ENGINE) ---
+    // Total particles: 7 (Left Cluster) + 7 (Right Cluster) = 14 particles total.
+    // Pre-reserving memory ensures that std::vector never reallocates and invalidates Spring references.
+    particles.reserve(30);
+    springs.reserve(100);
+
+    // --- 2. CONFIGURATION PARAMETERS ---
+    const float TEST_RADIUS = 20.0f;       // Large radius as requested
+    const float TEST_MASS = 500000.0f;        // Heavy mass to minimize viscosity damping impact
+    const float CLUSTER_RADIUS = 50.0f;    // Spatial spacing radius from the local center
+    const int RIM_POINTS = 6;              // Hexagonal outer rim layout (6 outer + 1 center = 7 particles per cluster)
+    const float HIGH_SPEED = 200.0f;       // Aggressive initial velocity for collision testing
+
+    // Cluster Centers (positioned horizontally, moving toward each other)
+    sf::Vector2f left_center = { 400.0f, 540.0f };
+    sf::Vector2f right_center = { 1000.0f, 545.0f }; // Slight Y offset to test angular deflection/rotation
+
+    // --- 3. HELPER LAMBDA TO GENERATE A STRUCTURAL CLUSTER ---
+    auto generate_cluster = [&](sf::Vector2f center, sf::Vector2f velocity) {
+        int cluster_start_idx = particles.size();
+
+        // A. Add Center Node
+        particles.push_back(Particle(particles.size() + 1, TEST_RADIUS, TEST_MASS, center, center + velocity * dt, structure::cluster));
+        particles.back().set_acc({0.0f, 0.0f});
+
+        // B. Add Perimeter Nodes (Hexagonal layout, mathematically guaranteeing no overlaps)
+        for (int i = 0; i < RIM_POINTS; i++) {
+            float angle = (i * 2.0f * 3.14159265f) / (float)RIM_POINTS;
+            sf::Vector2f offset = { std::cos(angle) * CLUSTER_RADIUS, std::sin(angle) * CLUSTER_RADIUS };
+            sf::Vector2f pos = center + offset;
+
+            particles.push_back(Particle(particles.size() + 1, TEST_RADIUS, TEST_MASS, pos, pos + velocity * dt, structure::cluster));
+            particles.back().set_acc({0.0f, 0.0f});
+        }
+
+        // C. Weave Structural Springs
+        const float TEST_STIFFNESS = 1e5f; // Rigid springs to maintain shape during high-speed impact
+        
+        int center_idx = cluster_start_idx;
+        int first_rim_idx = cluster_start_idx + 1;
+
+        auto add_test_spring = [&](int idxA, int idxB) {
+            sf::Vector2f pA = particles[idxA].get_curr_pos();
+            sf::Vector2f pB = particles[idxB].get_curr_pos();
+            float exact_length = std::sqrt((pA.x - pB.x)*(pA.x - pB.x) + (pA.y - pB.y)*(pA.y - pB.y));
+            springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, TEST_STIFFNESS));
+        };
+
+        for (int i = 0; i < RIM_POINTS; i+=2) {
+            int current_rim = first_rim_idx + i;
+            int next_rim = first_rim_idx + ((i + 1) % RIM_POINTS);
+
+            // Rim Structural Edge
+            add_test_spring(current_rim, next_rim);
+
+            // Center Spoke
+            // add_test_spring(center_idx, current_rim);
+
+            // Cross-diameter support spring (avoids structural flattening)
+            // int opposite_rim = first_rim_idx + ((i + (RIM_POINTS / 2)) % RIM_POINTS);
+            // if (i < RIM_POINTS / 2) {
+            //     add_test_spring(current_rim, opposite_rim);
+            // }
+        }
+    };
+
+    // --- 4. EXECUTE BUILD ---
+    // Left cluster moving right fast
+    generate_cluster(left_center, { HIGH_SPEED, 0.0f });
+
+    // Right cluster moving left fast
+    generate_cluster(right_center, { -HIGH_SPEED, 0.0f });
+
+    // Sync reference metrics back to the engine runner loop
+    num_particles = particles.size();
+    num_springs = springs.size();
 }
 
 /*

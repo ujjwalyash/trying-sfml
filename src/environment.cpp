@@ -13,12 +13,13 @@ Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     m_goal_pos = goal_pos;
     
     // after creating football in sperm creation springs vector is resized, the springs break
-    // temp fix for now
+    // TODO: temp fix for now -- change refs to index in springs
     m_particles.reserve(300);
     m_springs.reserve(300);
     m_muscles.reserve(10);
     
-    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
+    create_collision_test_rig(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
+    // m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
@@ -196,7 +197,7 @@ void Environment::step(){
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].step(env_dt);
             }			
-            handle_all_collisions(m_particles);    
+            handle_all_collisions(m_particles, m_springs, m_muscles);    
         }
     }
 
@@ -212,6 +213,7 @@ void Environment::step(){
     
 }
 
+// !(ALMOST)DUPLICATE CODE
 void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle){
     
 	std::vector<float> observation(env_observation_size);
@@ -226,7 +228,7 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].step(env_dt);
             }			
-            handle_all_collisions(m_particles);    
+            handle_all_collisions(m_particles, m_springs, m_muscles);    
         }
 
         if(render_between_cycle){

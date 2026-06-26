@@ -13,10 +13,16 @@ extern const float restitution;
 extern const float coefficient_friction;
 extern const float viscosity; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
 
+enum class direction{left, right};
+// struct direction{
+//     public:
+//         static const int left = 0, right = 1;
+// };
 
 enum class structure{
     creature,
-    ball
+    ball,
+    cluster
 };
 
 class Particle{
@@ -47,6 +53,7 @@ class Particle{
         // maybe make radius, mass public const too 
         // but it causes default copy constructor to fail
     public:
+        // used to determine if particle belongs to ball -- bc only ball particles are needed to be randomly shift when environment is reset 
         const structure m_type;
 
     public:
@@ -71,10 +78,9 @@ class Particle{
         void reflect(float wall, int axis, int sign);
         void reset();
 
+        float get_bounding_box_wall(direction dir);
+
         // why pass by non const reference -- if you want this just make the shape public
         // change it to const reference in return value
         // const sf::CircleShape& get_shape();
 };
-
-void handle_two_body_collision(Particle& p1, Particle& p2);
-void handle_all_collisions(std::vector<Particle>& particles);

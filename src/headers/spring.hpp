@@ -10,6 +10,9 @@ class Spring{
         Particle& m_p1;
         Particle& m_p2;
 
+        // line goes from p1 to p2
+
+
     protected: // class Muscle needs to vary these hence not private
 
         float m_natural_length;
@@ -25,6 +28,8 @@ class Spring{
         float calculate_total_energy();
 
         void calculate_spring_force(float dt);
+
+        float get_bounding_box_wall(direction dir);
     
     private:
     
