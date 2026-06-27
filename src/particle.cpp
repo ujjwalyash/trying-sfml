@@ -13,7 +13,7 @@ Particle::Particle(int id, float radius, float mass, sf::Vector2<float> curr_pos
      m_cube_radius(radius*radius*radius),
      m_mass(mass),
      m_sqrt_mass(sqrt(mass)),
-     m_damping_factor(fmin(1, (viscosity*m_radius*env_dt)/(m_mass))),
+    //  m_damping_factor(fmin(1, (viscosity*m_radius*env_dt)/(m_mass))),
      m_type(type)
 {
     m_buoyancy_acc = -buoyancy_const*(m_cube_radius)*gravity/m_mass;
@@ -83,7 +83,8 @@ void Particle::first_half_step(){
 
 void Particle::second_half_step(){
     
-    m_acc = gravity + m_buoyancy_acc + m_spring_acc - m_damping_factor*m_vel;
+    // m_acc = gravity + m_buoyancy_acc + m_spring_acc - m_damping_factor*m_vel;
+    m_acc = gravity + m_buoyancy_acc + m_spring_acc;
     m_spring_acc.x = 0; m_spring_acc.y = 0;
     
     m_vel = m_vel + 0.5f * m_acc * env_dt;

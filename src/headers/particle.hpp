@@ -52,7 +52,6 @@ class Particle{
         float m_mass;
         float m_sqrt_mass;
         
-        float m_damping_factor;
 
         // maybe make radius, mass public const too 
         // but it causes default copy constructor to fail

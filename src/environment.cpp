@@ -18,11 +18,14 @@ Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     m_springs.reserve(300);
     m_muscles.reserve(10);
     
-    create_collision_test_rig(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
     // m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
+    
+    create_high_drag_block(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
+    create_self_aligning_arrow(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
+    // create_collision_test_rig(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
 
     Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, env_dt);
     // 20 -- 12 -- 8
@@ -188,6 +191,9 @@ void Environment::step(){
 	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
+
+    // update muscle lengths
+    handle_all_muscle_contraction(m_muscles);
     
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
 
@@ -198,7 +204,7 @@ void Environment::step(){
             }			
             
             // update acc
-            handle_all_muscles(m_muscles);
+            handle_all_muscle_forces(m_muscles);
             handle_all_springs(m_springs);
             handle_all_collisions(m_particles, m_springs, m_muscles);    
             
@@ -226,6 +232,9 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
 	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
+
+    // update muscle lengths
+    handle_all_muscle_contraction(m_muscles);
     
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
 
@@ -236,7 +245,7 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
             }			
             
             // update acc
-            handle_all_muscles(m_muscles);
+            handle_all_muscle_forces(m_muscles);
             handle_all_springs(m_springs);
             handle_all_collisions(m_particles, m_springs, m_muscles);    
             

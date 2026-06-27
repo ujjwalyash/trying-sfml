@@ -6,25 +6,49 @@
 #include <cmath>
 // #include <iostream>
 
-Spring::Spring(Particle& p1, Particle& p2, float len, float spring_const)
+Spring::Spring(Particle& p1, Particle& p2, float len, float spring_const, bool outside_body)
 
-    : m_p1(p1), m_p2(p2),
-    m_natural_length(len), m_spring_constant(spring_const),
-    m_sqrt_spring_constant(sqrt(m_spring_constant))
+    :m_p1(p1), m_p2(p2),
+     m_present_outside_body(outside_body),
+     m_mass(m_p1.get_mass()+m_p2.get_mass()),
+     m_radius(0.5f*(m_p1.get_radius()+m_p2.get_radius())),
+     m_natural_length(len), m_spring_constant(spring_const),
+     m_sqrt_spring_constant(sqrt(m_spring_constant))
 {
     // this is too late refs cant exist without initialization hence
     // initialization needs to be done before constructor body starts
     // m_p1 = p1;
     // m_p2 = p2;
+    m_damping_factor = (viscosity * m_natural_length / ((log(m_natural_length/m_radius) + 0.5) * m_mass));
+
+    float d = (m_p1.get_mass()-m_p2.get_mass())*m_natural_length / (2*m_mass);
+    // dont multiply by mass since damping factor already has mass
+    m_moment_interia_along_com = (m_natural_length*m_natural_length/12 + d*d);
     
     assert(len > p1.get_radius() + p2.get_radius());
 }
 
 std::array<sf::Vertex, 2> Spring::get_line(){
+
+    sf::Color color = sf::Color::White;
+    sf::Vector2f spring_vector = m_p2.get_curr_pos() - m_p1.get_curr_pos();
+    sf::Vector2f vel_com = (m_p2.get_vel() * m_p2.get_mass() + m_p1.get_vel() * m_p1.get_mass()) / (m_p1.get_mass() + m_p2.get_mass());
+
+    if(m_present_outside_body){
+        // this flipped bc y axis is downward .perpendicualar rotates 90 deg clockwise not anti clock
+        if(vel_com.dot(-spring_vector.perpendicular()) > 0){
+        // if(vel_com.dot(spring_vector.perpendicular()) > 0){
+            color = sf::Color::Red;
+        }
+        else{
+            color = sf::Color::Green;
+        }
+    }
+
     std::array<sf::Vertex, 2> line =
     {
-        sf::Vertex{m_p1.get_curr_pos()},
-        sf::Vertex{m_p2.get_curr_pos()}
+        sf::Vertex{m_p1.get_curr_pos(),color},
+        sf::Vertex{m_p2.get_curr_pos(),color}
     };
 
     return line;
@@ -52,6 +76,7 @@ float Spring::get_bounding_box_wall(direction dir){
 
 void Spring::calculate_spring_force(){
 
+    // ! this direction is important -- p1 to p2 not the other way
     sf::Vector2f rel_pos = m_p2.get_curr_pos() - m_p1.get_curr_pos();
 
     float rel_pos_length = rel_pos.length();
@@ -71,20 +96,46 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
     sf::Vector2f v1_along_spring = m_p1.get_vel().projectedOnto(vec_along_spring);
     sf::Vector2f v2_along_spring = m_p2.get_vel().projectedOnto(-vec_along_spring);
 
-    sf::Vector2f vel_com = (m1*v1_along_spring + m2*v2_along_spring)/(m1+m2);
+    sf::Vector2f vel_com = (m1*m_p1.get_vel() + m2*m_p2.get_vel())/(m1+m2);
+    sf::Vector2f vel_com_along_spring = vel_com.projectedOnto(vec_along_spring);
+
+    if(m_present_outside_body){
+        calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
+    }
 
     // change to using reduced mass later -- that is faster
     float spring_const_for_p1 = m_spring_constant * (m1+m2)/m2;
     float spring_const_for_p2 = m_spring_constant * (m1+m2)/m1;
 
     // keep this underdamped do not change -1.f to -2.f
-    m_p1.add_spring_acc(-1.f*fsqrt(spring_const_for_p1)/sqrt_m1 * (v1_along_spring-vel_com));
-    m_p2.add_spring_acc(-1.f*fsqrt(spring_const_for_p2)/sqrt_m2 * (v2_along_spring-vel_com));
+    m_p1.add_spring_acc(-1.f*fsqrt(spring_const_for_p1)/sqrt_m1 * (v1_along_spring-vel_com_along_spring));
+    m_p2.add_spring_acc(-1.f*fsqrt(spring_const_for_p2)/sqrt_m2 * (v2_along_spring-vel_com_along_spring));
 }
 
-// void Spring::calculate_viscous_force(){
+void Spring::calculate_viscous_force(sf::Vector2f const& vel_com, sf::Vector2f const& vec_along_spring, sf::Vector2f const& vel_com_along_spring, float m1, float m2){
     
-// }
+    sf::Vector2f perp_viscous_acc = {0, 0};
+    if(vel_com.dot(-vec_along_spring.perpendicular()) > 0){
+        ////apply perp force too
+        
+        // perp to len
+        perp_viscous_acc = -(fminf(1.f/env_dt, 1.f * m_damping_factor)) * (vel_com - vel_com_along_spring);
+        
+    }
+    // additional 0.5f bc only one side will be exposed to the outside
+    sf::Vector2f parallel_viscous_acc = -(fminf(1.f/env_dt, 0.25f * m_damping_factor)) * vel_com_along_spring;
+    
+    float angular_acc = parallel_viscous_acc.length() * m_radius / m_moment_interia_along_com;
+    
+    sf::Vector2f dir_perp_spring = {0, 0};
+    if(angular_acc != 0){
+        dir_perp_spring = parallel_viscous_acc.perpendicular().normalized();
+    }
+    
+    m_p1.add_spring_acc(perp_viscous_acc + parallel_viscous_acc + dir_perp_spring * (angular_acc * m2/m_mass * m_natural_length));
+    m_p2.add_spring_acc(perp_viscous_acc + parallel_viscous_acc - dir_perp_spring * (angular_acc * m1/m_mass * m_natural_length));
+    
+}
 
 void handle_all_springs(std::vector<Spring> &springs){
 

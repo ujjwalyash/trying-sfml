@@ -4,3 +4,19 @@ cmake -B build -G Ninja
 ./run.sh
 ./run.sh > output.txt
 ./run.sh
+git status
+git pull
+git config pull.rebase false
+git pull
+./run.sh 
+clear
+./run.sh 
+clear
+./run.sh 
+./run.sh >> output.txt 
+./run.sh
+celar
+clear
+./run.sh
+clear
+./run.sh

@@ -12,10 +12,12 @@ class Muscle : public Spring
 
         float m_rest_spring_constant;
         float m_max_spring_constant_scaling;
+        
+        float m_rest_damping_factor;
 
     public:
 
-        Muscle(Particle& p1, Particle& p2, float len, float spring_const, float contraction_limit=0.4, float max_spring_constant_scaling=10);
+        Muscle(Particle& p1, Particle& p2, float len, float spring_const, bool outside_body, float contraction_limit=0.4, float max_spring_constant_scaling=10);
         
         void handle_nerve_signal();
         void set_activation(float acti);
@@ -23,4 +25,5 @@ class Muscle : public Spring
         
 };
 
-void handle_all_muscles(std::vector<Muscle> &muscles);
+void handle_all_muscle_contraction(std::vector<Muscle> &muscles);
+void handle_all_muscle_forces(std::vector<Muscle> &muscles);

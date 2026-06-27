@@ -12,7 +12,7 @@ const float max_x = 1920;
 
 // since i keep both balanced out anyways just make both 0
 const sf::Vector2f gravity = {0, 10};
-const float buoyancy_const = 4.f/3 * 3.141 * 10; // DO NOT MAKE DENSITY 1000
+const float buoyancy_const = 4.f/3 * 3.141 * 10 * 0.f; // DO NOT MAKE DENSITY 1000
 
 const float restitution = 0.8;
 
@@ -23,7 +23,7 @@ const float coefficient_friction = 0.5;
 // if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
 // this completely destroys the concept of streamlined bodies 
 // TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
-const float viscosity = 0.02 * 20; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
+const float viscosity = 4.f * 3.141f * (1e-3) * 100; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
 
 // env params
 const int env_fps = 60;
@@ -121,6 +121,13 @@ void * worker(void *){
 	return NULL;
 }
 
+inline sf::Vector2f get_random_ball_pos(){
+	return {(float)(rand()%((int)max_x-200) + 100), (float)(rand()%((int)max_y-200) + 100)};
+}
+inline sf::Vector2f get_random_goal_pos(){
+	return {(float)(rand()%(int)max_x), (float)(rand()%(int)max_y)};
+}
+
 void* render_current_gen(void *){
 
 	bool paused = true;
@@ -132,9 +139,7 @@ void* render_current_gen(void *){
 
 	// COPY
 	int curr_gen = gen;
-	sf::Vector2f render_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-	sf::Vector2f render_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-	Environment env_used_for_render(render_ball_pos, render_goal_pos);
+	Environment env_used_for_render(get_random_ball_pos(), get_random_goal_pos());
 	env_used_for_render.copy_brain(env[rankings[env_rank]]);
 	
 	// YOU cANT copy env -- bc springs have refs not indexes so after copy new env still points to old env's particles
@@ -176,10 +181,7 @@ void* render_current_gen(void *){
 					env_used_for_render.copy_brain(env[rankings[env_rank]]);
 					// env_used_for_render.emplace(env[rankings[env_rank]]);
 					
-                    render_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-                    render_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-					
-					env_used_for_render.reset(render_ball_pos, render_goal_pos);
+					env_used_for_render.reset(get_random_ball_pos(), get_random_goal_pos());
 					env_used_for_render.reset_reward();
 
                     num_steps_done = 0;
@@ -271,10 +273,6 @@ void* render_current_gen(void *){
 
 int main()
 {	
-
-    sf::Vector2f first_goal_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-    sf::Vector2f first_ball_pos = {(float)(rand()%1920), (float)(rand()%1080)};
-	
 	// BADD ALL ENVIRONMENTS WILL END UP WITH SAME INTIAL VALUES of neural netwrok DUE TO THIS
     // !std::vector<Environment> env(population_size, Environment(first_ball_pos, first_goal_pos));    
 	// here the env object is created ONLY ONCE and copied to every entry in the vector
@@ -284,8 +282,8 @@ int main()
 
 	for (int i = 0; i < (int)population_size; ++i) {
 		// if a saved with id does not exist the constructor
-		if(load_old_gen) env.emplace_back(i, first_ball_pos, first_goal_pos);
-		else env.emplace_back(first_ball_pos, first_goal_pos);
+		if(load_old_gen) env.emplace_back(i, get_random_ball_pos(), get_random_goal_pos());
+		else env.emplace_back(get_random_ball_pos(), get_random_goal_pos());
 	}
 
 	// save-load testing
@@ -341,8 +339,8 @@ int main()
 		clock.restart();
 		// generate sequence of ball and goal positions
 		for(int i = 0; i < num_episode_per_generation; i++){
-			goal_pos[i] = {(float)(rand()%1920), (float)(rand()%1080)};
-			ball_pos[i] = {(float)(rand()%1920), (float)(rand()%1080)};
+			ball_pos[i] = get_random_ball_pos();
+			goal_pos[i] = get_random_goal_pos();
 		}
 
 		// reset rewards

@@ -419,28 +419,21 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     const float FLEXIBLE_SPINE = 1e4f;  
     const float ACTUATOR       = 1e3f;  
 
-    auto add_spring = [&](int idxA, int idxB, float stiffness) {
+    auto add_spring = [&](int idxA, int idxB, float stiffness, bool outside_body) {
         float dx = positions[idxA].x - positions[idxB].x;
         float dy = positions[idxA].y - positions[idxB].y;
         float exact_length = std::sqrt(dx * dx + dy * dy);
         assert(exact_length != 0);
-        springs.push_back(Spring(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness));
+        springs.push_back(Spring(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness, outside_body));
     };
 
-    auto add_muscle = [&](int idxA, int idxB, float stiffness) {
+    auto add_muscle = [&](int idxA, int idxB, float stiffness, bool outside_body) {
         float dx = positions[idxA].x - positions[idxB].x;
         float dy = positions[idxA].y - positions[idxB].y;
         float exact_length = std::sqrt(dx * dx + dy * dy);
         assert(exact_length != 0);
-        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness));
+        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness, outside_body));
     };
-
-    // A. SOLID HEAD SPOKES & OUTER RING
-    for(int i = 1; i < left_tail_indices[0]; i++) {
-        add_spring(0, i, RIGID_TENDON);
-        int next_idx = (i == left_tail_indices[0] - 1) ? 1 : i + 1;
-        add_spring(i, next_idx, RIGID_TENDON);
-    }
 
     // B. ANCHOR TAIL ROOTS TO THE BASE OF THE HEAD
     int head_left_base = apex_indices[6];  
@@ -448,13 +441,25 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     int head_left_bottom = apex_indices[6] - 2;  
     int head_right_bottom = apex_indices[4] + 2; 
     int bottom_tip = apex_indices[5]; 
+
+    // A. SOLID HEAD SPOKES & OUTER RING
+    for(int i = 1; i < left_tail_indices[0]; i++) {
+        add_spring(0, i, RIGID_TENDON, false);
+        int next_idx = (i == left_tail_indices[0] - 1) ? 1 : i + 1;
+        if(i >= head_right_base && i < head_left_base){
+            add_spring(i, next_idx, RIGID_TENDON, false);
+        }
+        else{
+            add_spring(i, next_idx, RIGID_TENDON, true);
+        }
+    }
     
-    add_spring(head_left_base, left_tail_indices[0], RIGID_TENDON);
-    add_spring(head_right_base, right_tail_indices[0], RIGID_TENDON);
-    add_spring(head_left_bottom, left_tail_indices[0], RIGID_TENDON);
-    add_spring(head_right_bottom, right_tail_indices[0], RIGID_TENDON);
-    add_spring(bottom_tip, left_tail_indices[0], RIGID_TENDON);
-    add_spring(bottom_tip, right_tail_indices[0], RIGID_TENDON);
+    add_spring(left_tail_indices[0], head_left_base, RIGID_TENDON, true);
+    add_spring(head_right_base, right_tail_indices[0], RIGID_TENDON, true);
+    add_spring(head_left_bottom, left_tail_indices[0], RIGID_TENDON, false);
+    add_spring(head_right_bottom, right_tail_indices[0], RIGID_TENDON, false);
+    add_spring(bottom_tip, left_tail_indices[0], RIGID_TENDON, false);
+    add_spring(bottom_tip, right_tail_indices[0], RIGID_TENDON, false);
 
     // add_spring(head_left_base,   left_tail_indices[1], RIGID_TENDON);
     // add_spring(head_right_base, right_tail_indices[1], RIGID_TENDON);
@@ -466,12 +471,12 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     for(int i = 0; i < num_tail_segments; i++) {
         
         // 1. Horizontal cross-rungs (Rigidly holds the thin micro-ladder shape profile)
-        add_spring(left_tail_indices[i], right_tail_indices[i], RIGID_TENDON);
+        add_spring(left_tail_indices[i], right_tail_indices[i], RIGID_TENDON, false);
 
         if(i < num_tail_segments - 1) {
             // 2. Shear diagonals (Prevents the thin strands from buckling or overlapping)
-            add_spring(left_tail_indices[i], right_tail_indices[i + 1], RIGID_TENDON);
-            add_spring(right_tail_indices[i], left_tail_indices[i + 1], RIGID_TENDON);
+            add_spring(left_tail_indices[i], right_tail_indices[i + 1], RIGID_TENDON, false);
+            add_spring(right_tail_indices[i], left_tail_indices[i + 1], RIGID_TENDON, false);
 
             // 3. Selective Actuation Strategy:
             // Instead of activating all 20 segments, we turn only 4 strategic segments into 
@@ -488,11 +493,11 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
             float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
 
             if (is_active_muscle) {
-                add_muscle(right_tail_indices[i], right_tail_indices[i + 1], ACTUATOR * scaling);
-                add_muscle(left_tail_indices[i], left_tail_indices[i + 1], ACTUATOR * scaling);
+                add_muscle(right_tail_indices[i], right_tail_indices[i + 1], ACTUATOR * scaling, true);
+                add_muscle(left_tail_indices[i + 1], left_tail_indices[i], ACTUATOR * scaling, true);
             } else {
-                add_spring(right_tail_indices[i], right_tail_indices[i + 1], FLEXIBLE_SPINE * scaling);
-                add_spring(left_tail_indices[i], left_tail_indices[i + 1], FLEXIBLE_SPINE * scaling);
+                add_spring(right_tail_indices[i], right_tail_indices[i + 1], FLEXIBLE_SPINE * scaling, true);
+                add_spring(left_tail_indices[i + 1], left_tail_indices[i], FLEXIBLE_SPINE * scaling, true);
             }
         }
     }
@@ -578,11 +583,11 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     const float BALL_SKIN_STIFFNESS  = 5e5f; // Perimeter structural strength
     const float BALL_SPOKE_STIFFNESS = 3e4f; // Internal pressure preservation
 
-    auto add_ball_spring = [&](int idxA, int idxB, float stiffness) {
+    auto add_ball_spring = [&](int idxA, int idxB, float stiffness, bool outside) {
         float dx = positions[idxA - start_particle_idx].x - positions[idxB - start_particle_idx].x;
         float dy = positions[idxA - start_particle_idx].y - positions[idxB - start_particle_idx].y;
         float exact_length = std::sqrt(dx * dx + dy * dy);
-        springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness));
+        springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness, outside));
     };
 
     for (int i = 0; i < EDGE_POINTS; i++) {
@@ -590,15 +595,15 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
         int next_edge_idx = first_edge_index + ((i + 1) % EDGE_POINTS);
 
         // A. Structural Rim Wheel (Forms the circular skin of the football)
-        add_ball_spring(current_edge_idx, next_edge_idx, BALL_SKIN_STIFFNESS);
+        add_ball_spring(current_edge_idx, next_edge_idx, BALL_SKIN_STIFFNESS, true);
 
         // B. Central Pressure Spokes (Prevents the football from collapsing inward)
-        add_ball_spring(center_node_index, current_edge_idx, BALL_SPOKE_STIFFNESS);
+        add_ball_spring(center_node_index, current_edge_idx, BALL_SPOKE_STIFFNESS, false);
 
         // C. Cross-Diametric Bracing (Maintains perfect roundness during high impact)
         int opposite_edge_idx = first_edge_index + ((i + (EDGE_POINTS / 2)) % EDGE_POINTS);
         if (i < EDGE_POINTS / 2) { 
-            add_ball_spring(current_edge_idx, opposite_edge_idx, BALL_SPOKE_STIFFNESS * 0.5f);
+            add_ball_spring(current_edge_idx, opposite_edge_idx, BALL_SPOKE_STIFFNESS * 0.5f, false);
         }
     }
 
@@ -609,19 +614,133 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     return center_index;
 }
 
+void create_self_aligning_arrow(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
+    particles.reserve(particles.size() + 4);
+    springs.reserve(springs.size() + 10);
+
+    const float RADIUS = 5.0f;
+    const float MASS = 50.0f;
+    const float STIFFNESS = 2e4f;
+    
+    const sf::Vector2f center = { 1600.0f, 300.0f };
+    const sf::Vector2f velocity = { 0.0f, 0.0f }; 
+
+    int start_idx = particles.size();
+
+    // Spawn pointing 30 degrees offset so we can watch it self-correct
+    float angle_offset = 45.0f * (3.14159265f / 180.0f); 
+
+    auto rotate_vector = [&](sf::Vector2f vec, float rad) -> sf::Vector2f {
+        return { vec.x * std::cos(rad) - vec.y * std::sin(rad), vec.x * std::sin(rad) + vec.y * std::cos(rad) };
+    };
+
+    // Unrotated base coordinates
+    sf::Vector2f tip_local   = {  60.0f,   0.0f };  // Sharp point
+    sf::Vector2f baseR_local = rotate_vector(tip_local, 2*3.141f/3.f);  // Lower tail
+    // sf::Vector2f baseR_local = { -40.0f,  40.0f };  // Lower tail
+    sf::Vector2f baseL_local = rotate_vector(tip_local, 4*3.141f/3.f);  // Upper tail
+    // sf::Vector2f baseL_local = { -40.0f, -40.0f };  // Upper tail
+
+    sf::Vector2f p_tip   = center + rotate_vector(tip_local, angle_offset);
+    sf::Vector2f p_baseR = center + rotate_vector(baseR_local, angle_offset);
+    sf::Vector2f p_baseL = center + rotate_vector(baseL_local, angle_offset);
+
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, p_tip,   velocity, structure::cluster)); // start_idx + 0
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, p_baseR, velocity, structure::cluster)); // start_idx + 1
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, p_baseL, velocity, structure::cluster)); // start_idx + 2
+    
+    // Central balance node
+    // particles.push_back(Particle(particles.size() + 1, RADIUS, MASS/10, center,  velocity, structure::cluster)); // start_idx + 3
+
+    // --- 2. SPRINGS WEAVING ---
+    auto add_spring = [&](int idxA, int idxB, bool is_outer) {
+        sf::Vector2f posA = particles[idxA].get_curr_pos();
+        sf::Vector2f posB = particles[idxB].get_curr_pos();
+        float length = std::sqrt((posA.x - posB.x)*(posA.x - posB.x) + (posA.y - posB.y)*(posA.y - posB.y));
+        springs.push_back(Spring(particles[idxA], particles[idxB], length, STIFFNESS, is_outer));
+    };
+
+    // Outer Perimeter (Strictly CLOCKWISE: Outside is on the Left of the vector p1 -> p2)
+    add_spring(start_idx + 0, start_idx + 1, true);  // From Tip down to Lower Rear Wing
+    add_spring(start_idx + 1, start_idx + 2, true);  // From Lower Rear Wing straight up to Upper Rear Wing
+    add_spring(start_idx + 2, start_idx + 0, true);  // From Upper Rear Wing back down to the Tip
+
+    // // Structural interior
+    // add_spring(start_idx + 3, start_idx + 0, false);
+    // add_spring(start_idx + 3, start_idx + 1, false);
+    // add_spring(start_idx + 3, start_idx + 2, false);
+
+    num_particles = particles.size();
+    num_springs = springs.size();
+}
+
+void create_high_drag_block(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
+    // particles.reserve(particles.size() + 5);
+    // springs.reserve(springs.size() + 10);
+
+    const float RADIUS = 15.0f;
+    const float MASS = 500.0f;
+    const float STIFFNESS = 2e4f;
+    const sf::Vector2f center = { 300.0f, 300.0f };
+    const sf::Vector2f velocity = { 2.0f, 10.0f }; 
+    const float half_side = 45.0f;
+
+    int start_idx = particles.size();
+
+    // --- 1. PARTICLES ---
+    // Corner positions mapped out
+    sf::Vector2f p_topLeft     = center + sf::Vector2f{ -half_side, -half_side }; 
+    sf::Vector2f p_topRight    = center + sf::Vector2f{  half_side, -half_side }; 
+    sf::Vector2f p_bottomRight = center + sf::Vector2f{  half_side,  half_side }; 
+    sf::Vector2f p_bottomLeft  = center + sf::Vector2f{ -half_side,  half_side }; 
+
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, p_topLeft,     -velocity*20.f , structure::cluster)); // start_idx + 0
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, p_topRight,    velocity, structure::cluster)); // start_idx + 1
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, p_bottomRight, velocity, structure::cluster)); // start_idx + 2
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, p_bottomLeft,  velocity, structure::cluster)); // start_idx + 3
+    
+    // Center node
+    particles.push_back(Particle(particles.size() + 1, RADIUS, MASS, center, velocity, structure::cluster));        // start_idx + 4
+
+    // --- 2. SPRINGS WEAVING ---
+    auto add_spring = [&](int idxA, int idxB, bool is_outer) {
+        sf::Vector2f posA = particles[idxA].get_curr_pos();
+        sf::Vector2f posB = particles[idxB].get_curr_pos();
+        float length = std::sqrt((posA.x - posB.x)*(posA.x - posB.x) + (posA.y - posB.y)*(posA.y - posB.y));
+        springs.push_back(Spring(particles[idxA], particles[idxB], length, STIFFNESS, is_outer));
+    };
+
+    // Outer Perimeter (Strictly CLOCKWISE: Outside environment is now on the left)
+    add_spring(start_idx + 0, start_idx + 1, true);  // Top Face (Left to Right)
+    add_spring(start_idx + 1, start_idx + 2, true);  // Front/Right Face (Top to Bottom)
+    add_spring(start_idx + 2, start_idx + 3, true);  // Bottom Face (Right to Left)
+    add_spring(start_idx + 3, start_idx + 0, true);  // Back/Left Face (Bottom to Top)
+
+    // Internal structural core (is_outer = false)
+    add_spring(start_idx + 4, start_idx + 0, false);
+    add_spring(start_idx + 4, start_idx + 1, false);
+    add_spring(start_idx + 4, start_idx + 2, false);
+    add_spring(start_idx + 4, start_idx + 3, false);
+    add_spring(start_idx + 0, start_idx + 2, false); 
+    add_spring(start_idx + 1, start_idx + 3, false); 
+
+    num_particles = particles.size();
+    num_springs = springs.size();
+}
+
 void create_collision_test_rig(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
     // --- 1. PREVENT POINTER/REFERENCE DRAG (CRITICAL FOR YOUR ENGINE) ---
     // Total particles: 7 (Left Cluster) + 7 (Right Cluster) = 14 particles total.
     // Pre-reserving memory ensures that std::vector never reallocates and invalidates Spring references.
-    particles.reserve(30);
-    springs.reserve(100);
+    // particles.reserve(30);
+    // springs.reserve(100);
 
     // --- 2. CONFIGURATION PARAMETERS ---
     const float TEST_RADIUS = 15.0f;       // Large radius as requested
     const float TEST_MASS = 500.0f;        // Heavy mass to minimize viscosity damping impact
     const float CLUSTER_RADIUS = 50.0f;    // Spatial spacing radius from the local center
     const int RIM_POINTS = 6;              // Hexagonal outer rim layout (6 outer + 1 center = 7 particles per cluster)
-    const float HIGH_SPEED = 200.0f;       // Aggressive initial velocity for collision testing
+    const float HIGH_SPEED = 20.0f;       // Aggressive initial velocity for collision testing
 
     // Cluster Centers (positioned horizontally, moving toward each other)
     sf::Vector2f left_center = { 400.0f, 540.0f };
@@ -651,11 +770,11 @@ void create_collision_test_rig(int& num_particles, std::vector<Particle>& partic
         int center_idx = cluster_start_idx;
         int first_rim_idx = cluster_start_idx + 1;
 
-        auto add_test_spring = [&](int idxA, int idxB) {
+        auto add_test_spring = [&](int idxA, int idxB, bool out) {
             sf::Vector2f pA = particles[idxA].get_curr_pos();
             sf::Vector2f pB = particles[idxB].get_curr_pos();
             float exact_length = std::sqrt((pA.x - pB.x)*(pA.x - pB.x) + (pA.y - pB.y)*(pA.y - pB.y));
-            springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, TEST_STIFFNESS));
+            springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, TEST_STIFFNESS, out));
         };
 
         for (int i = 0; i < RIM_POINTS; i+=2) {
@@ -663,7 +782,7 @@ void create_collision_test_rig(int& num_particles, std::vector<Particle>& partic
             int next_rim = first_rim_idx + ((i + 1) % RIM_POINTS);
 
             // Rim Structural Edge
-            add_test_spring(current_rim, next_rim);
+            add_test_spring(current_rim, next_rim, true);
 
             // Center Spoke
             // add_test_spring(center_idx, current_rim);
@@ -687,310 +806,3 @@ void create_collision_test_rig(int& num_particles, std::vector<Particle>& partic
     num_particles = particles.size();
     num_springs = springs.size();
 }
-
-/*
-// void create_creature_motor_sperm(Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){
-    
-//     particles.clear();
-//     springs.clear();
-    
-//     sf::Vector2<float> old_pos, vel, curr_pos, acc;
-
-//     // --- CRITICAL PARAMETERS (PRESERVED UNCHANGED) ---
-//     const float b_const = 4.f / 3.f * 3.141f * 20.f; 
-
-//     // --- 1. DEFINE ORIGINAL CONTROL VERTICES ---
-//     sf::Vector2f corners[9];
-//     corners[0] = {300.0f, 150.0f}; // Head Center Core
-//     corners[1] = {300.0f, 124.0f}; // 1. Top Apex
-//     corners[2] = {307.5f, 137.0f}; // 2. Top-Right Mid-Wall
-//     corners[3] = {315.0f, 150.0f}; // 3. Right Lateral Apex
-//     corners[4] = {307.5f, 163.0f}; // 4. Bottom-Right Mid-Wall
-//     corners[5] = {300.0f, 176.0f}; // 5. Bottom Apex (Tail Base)
-//     corners[6] = {292.5f, 163.0f}; // 6. Bottom-Left Mid-Wall
-//     corners[7] = {285.0f, 150.0f}; // 7. Left Lateral Apex
-//     corners[8] = {292.5f, 137.0f}; // 8. Top-Left Mid-Wall
-
-//     // Original guide landmarks for interpolation path
-//     sf::Vector2f tail_landmarks[] = {
-//         corners[5],       
-//         {300.0f, 205.0f}, 
-//         {300.0f, 235.0f}, 
-//         {300.0f, 265.0f}, 
-//         {300.0f, 295.0f}, 
-//         {300.0f, 325.0f}  
-//     };
-    
-//     float tail_radii[] = {1.2f, 1.6f, 1.4f, 1.2f, 1.0f, 0.8f};
-
-//     std::vector<sf::Vector2f> positions;
-//     std::vector<float> mass;
-//     std::vector<float> radius;
-
-//     // --- 2. GENERATE DENSE HEAD SHELL ---
-//     positions.push_back(corners[0]);
-//     radius.push_back(1.5f);
-//     mass.push_back(1.04f * b_const * (1.5f * 1.5f * 1.5f)); 
-
-//     int apex_indices[9];
-//     const int HEAD_SUBDIVISIONS = 4; 
-
-//     for(int i = 1; i <= 8; i++) {
-//         apex_indices[i] = positions.size(); 
-//         int next_corner_idx = (i == 8) ? 1 : i + 1;
-        
-//         sf::Vector2f pA = corners[i];
-//         sf::Vector2f pB = corners[next_corner_idx];
-
-//         for(int s = 0; s < HEAD_SUBDIVISIONS; s++) {
-//             float t = (float)s / (float)HEAD_SUBDIVISIONS;
-//             positions.push_back(pA + t * (pB - pA));
-//             radius.push_back(1.2f);
-//             mass.push_back(1.2f * b_const * (1.2f * 1.2f * 1.2f)); // Preserved 1.2f factor
-//         }
-//     }
-
-//     // --- 3. GENERATE SINGLE-LINE SPINE CORE (Ultra-Slim Filament) ---
-//     std::vector<int> spine_indices;
-//     spine_indices.push_back(apex_indices[5]); // Tail connects to head base
-
-//     const int TAIL_SUBDIVISIONS = 4; 
-//     for(int i = 0; i < 5; i++) {
-//         sf::Vector2f tA = tail_landmarks[i];
-//         sf::Vector2f tB = tail_landmarks[i + 1];
-//         float rA = tail_radii[i];  float rB = tail_radii[i + 1];
-
-//         for(int s = 1; s <= TAIL_SUBDIVISIONS; s++) {
-//             float t = (float)s / (float)TAIL_SUBDIVISIONS;
-//             sf::Vector2f center_pos = tA + t * (tB - tA);
-//             float current_radius = rA + t * (rB - rA);
-            
-//             spine_indices.push_back(positions.size());
-//             positions.push_back(center_pos);
-//             radius.push_back(current_radius);
-//             mass.push_back(1.01f * b_const * (current_radius * current_radius * current_radius));
-//         }
-//     }
-
-//     // --- 4. GENERATE INTERNAL MICRO-MOTOR TERMINALS ---
-//     // These reside entirely within the spine line profile to keep visuals sleek
-//     std::vector<int> motor_L(spine_indices.size(), -1);
-//     std::vector<int> motor_R(spine_indices.size(), -1);
-//     const float MOTOR_LEVER_ARM = 3.5f; // Extremely tight internal radius
-
-//     for(size_t i = 1; i < spine_indices.size() - 1; i++) {
-//         sf::Vector2f core_pos = positions[spine_indices[i]];
-//         float r_motor = 0.3f; // Ultra-lightweight internal coordinate point
-//         float m_motor = 1.01f * b_const * (r_motor * r_motor * r_motor);
-
-//         // Left Motor Chassis Pin
-//         motor_L[i] = positions.size();
-//         positions.push_back(core_pos + sf::Vector2f(-MOTOR_LEVER_ARM, 0.0f));
-//         radius.push_back(r_motor);
-//         mass.push_back(m_motor);
-
-//         // Right Motor Chassis Pin
-//         motor_R[i] = positions.size();
-//         positions.push_back(core_pos + sf::Vector2f(MOTOR_LEVER_ARM, 0.0f));
-//         radius.push_back(r_motor);
-//         mass.push_back(m_motor);
-//     }
-
-//     num_particles = positions.size(); 
-
-//     // --- 5. INSTANTIATE PARTICLES IN ENGINE ---
-//     for(int i = 0; i < num_particles; i++){
-//         old_pos = positions[i] * 3.f;
-//         vel.x = 0.01f * i; vel.y = 0.01f * i; 
-//         curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
-//         acc = {0.0f, 0.0f};
-
-//         particles.push_back(Particle(i + 1, radius[i], mass[i], old_pos, curr_pos, structure::creature));
-//         particles[i].set_acc(acc);
-//     }
-
-//     // --- 6. CONSTRUCT INDEPENDENT MOTOR NETWORK (SPRINGS) ---
-//     const float RIGID_TENDON   = 1e5f;  
-//     const float FLEXIBLE_SPINE = 5e3f;  
-//     const float ACTUATOR       = 1e2f;  
-
-//     auto add_spring = [&](int idxA, int idxB, float stiffness) {
-//         float dx = positions[idxA].x - positions[idxB].x;
-//         float dy = positions[idxA].y - positions[idxB].y;
-//         float exact_length = std::sqrt(dx * dx + dy * dy) * 3.f;
-//         springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness));
-//     };
-
-//     // A. SOLID HEAD SPOKES & OUTER RING
-//     for(int i = 1; i < spine_indices[1]; i++) {
-//         add_spring(0, i, RIGID_TENDON);
-//         int next_idx = (i == spine_indices[1] - 1) ? 1 : i + 1;
-//         add_spring(i, next_idx, RIGID_TENDON);
-//     }
-
-//     // B. INEXTENSIBLE SPINE CONNECTIONS
-//     // Sequential links are locked completely solid so length never shifts
-//     for(size_t i = 0; i < spine_indices.size() - 1; i++) {
-//         add_spring(spine_indices[i], spine_indices[i+1], RIGID_TENDON);
-//     }
-
-//     // C. RIGID MOTOR CHASSIS MOUNTING (Welding T-Bars to Upstream Segment)
-//     for(size_t i = 1; i < spine_indices.size() - 1; i++) {
-//         // Welded directly to the current joint vertex
-//         add_spring(spine_indices[i], motor_L[i], RIGID_TENDON);
-//         add_spring(spine_indices[i], motor_R[i], RIGID_TENDON);
-        
-//         // Cross-braced to the previous segment vertex to lock rotational alignment
-//         add_spring(spine_indices[i-1], motor_L[i], RIGID_TENDON);
-//         add_spring(spine_indices[i-1], motor_R[i], RIGID_TENDON);
-//     }
-
-//     // D. LOCALIZED MOTOR DRIVES & PASSIVE FLEXIBLE JOINTS
-//     // Controls localized joint rotation. To keep your GA search space perfectly compact,
-//     // we activate only 4 high-torque joint motor servos (ACTUATOR). The remaining 
-//     // joints act as passive flexible couplers (FLEXIBLE_SPINE) to propagate the wave cleanly.
-//     for(size_t i = 1; i < spine_indices.size() - 1; i++) {
-        
-//         // 4 distinct localized motor units down the flagellum backbone
-//         bool is_active_servo = (i == 1 || i == 5 || i == 10 || i == 15);
-//         float motor_stiffness = is_active_servo ? ACTUATOR : FLEXIBLE_SPINE;
-
-//         // Drive links directly control the angle of the downstream segment
-//         add_spring(motor_L[i], spine_indices[i+1], motor_stiffness);
-//         add_spring(motor_R[i], spine_indices[i+1], motor_stiffness);
-//     }
-
-//     num_springs = springs.size();
-// }
-
-// void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt){
-    
-//     // Back to a clean 23 Particles: No weird outriggers needed anymore
-//     num_particles = 23;
-//     particles.clear();
-//     springs.clear();
-    
-//     sf::Vector2<float> old_pos, vel, curr_pos, acc;
-
-//     // --- 1. DEFINE BIOLOGICAL PROPERTIES (Mass, Radius, Initial Positions) ---
-//     std::vector<float> x_coords(num_particles);
-//     std::vector<float> y_coords(num_particles);
-//     std::vector<float> mass(num_particles);
-//     std::vector<float> radius(num_particles);
-
-//     // [Capsid Head Core] - Heavy, dense center of mass (Keeps it oriented)
-//     x_coords[0] = 300.0f; y_coords[0] = 140.0f; mass[0] = 6.0f; radius[0] = 1.5f;
-
-//     // [Slim Capsid Outer Loop] - Clean, streamlined bacteriophage head profile
-//     x_coords[1] = 300.0f; y_coords[1] = 110.0f; mass[1] = 0.3f; radius[1] = 1.8f; // Top Apex
-//     x_coords[2] = 312.0f; y_coords[2] = 125.0f; mass[2] = 0.3f; radius[2] = 1.8f; // Top-Right
-//     x_coords[3] = 312.0f; y_coords[3] = 155.0f; mass[3] = 0.8f; radius[3] = 1.5f; // Bottom-Right Base
-//     x_coords[4] = 300.0f; y_coords[4] = 165.0f; mass[4] = 1.0f; radius[4] = 1.5f; // Neck Center
-//     x_coords[5] = 288.0f; y_coords[5] = 155.0f; mass[5] = 0.8f; radius[5] = 1.5f; // Bottom-Left Base
-//     x_coords[6] = 288.0f; y_coords[6] = 125.0f; mass[6] = 0.3f; radius[6] = 1.8f; // Top-Left
-
-//     // [Central Sheath & Baseplate Trunk] - High-density vertical backbone (Sinking ballast)
-//     x_coords[7] = 300.0f; y_coords[7] = 190.0f; mass[7] = 5.0f; radius[7] = 1.2f; // Mid Sheath
-//     x_coords[8] = 300.0f; y_coords[8] = 220.0f; mass[8] = 6.0f; radius[8] = 1.2f; // Baseplate Center
-//     x_coords[9] = 292.0f; y_coords[9] = 220.0f; mass[9] = 2.0f; radius[9] = 1.2f; // Left Hip Joint
-//     x_coords[10]= 308.0f; y_coords[10]= 220.0f; mass[10]= 2.0f; radius[10]= 1.2f; // Right Hip Joint
-
-//     // [Special Muscle Insertion Points - Legs] - Tucked tight to hips for clean look
-//     x_coords[11] = 295.0f; y_coords[11] = 210.0f; mass[11] = 0.3f; radius[11] = 1.0f; 
-//     x_coords[12] = 295.0f; y_coords[12] = 230.0f; mass[12] = 0.3f; radius[12] = 1.0f; 
-//     x_coords[13] = 305.0f; y_coords[13] = 210.0f; mass[13] = 0.3f; radius[13] = 1.0f; 
-//     x_coords[14] = 305.0f; y_coords[14] = 230.0f; mass[14] = 0.3f; radius[14] = 1.0f; 
-
-//     // [Tail Fibers / Moving Legs] - Low mass, high radius (Highly buoyant swimming paddles)
-//     // Outer Leg Pair
-//     x_coords[15] = 272.0f; y_coords[15] = 240.0f; mass[15] = 0.4f; radius[15] = 1.4f; // Left Knee 1
-//     x_coords[16] = 255.0f; y_coords[16] = 270.0f; mass[16] = 0.1f; radius[16] = 2.2f; // Left Tip 1
-//     x_coords[17] = 328.0f; y_coords[17] = 240.0f; mass[17] = 0.4f; radius[17] = 1.4f; // Right Knee 1
-//     x_coords[18] = 345.0f; y_coords[18] = 270.0f; mass[18] = 0.1f; radius[18] = 2.2f; // Right Tip 1
-//     // Inner Leg Pair
-//     x_coords[19] = 282.0f; y_coords[19] = 245.0f; mass[19] = 0.4f; radius[19] = 1.4f; // Left Knee 2
-//     x_coords[20] = 268.0f; y_coords[20] = 285.0f; mass[20] = 0.1f; radius[20] = 2.2f; // Left Tip 2
-//     x_coords[21] = 318.0f; y_coords[21] = 245.0f; mass[21] = 0.4f; radius[21] = 1.4f; // Right Knee 2
-//     x_coords[22] = 332.0f; y_coords[22] = 285.0f; mass[22] = 0.1f; radius[22] = 2.2f; // Right Tip 2
-
-//     // --- 2. INITIALIZE PARTICLES ---
-//     for(int i = 0; i < num_particles; i++){
-//         old_pos.x = x_coords[i];
-//         old_pos.y = y_coords[i];
-        
-//         vel.x = 0.1f * i; 
-//         vel.y = 0.1f * i;
-        
-//         curr_pos.x = vel.x * dt + old_pos.x; 
-//         curr_pos.y = vel.y * dt + old_pos.y;
-        
-//         acc.x = 0.0f; 
-//         acc.y = 0.0f;
-
-//         particles.push_back(Particle(i + 1, radius[i], mass[i], old_pos, curr_pos, structure::creature));
-//         particles[i].set_acc(acc);
-//     }
-
-//     // --- 3. CREATE CONNECTIVITY MATRIX (Springs) ---
-//     const float TENDON = 1e5f;
-//     const float MUSCLE = 1e2f;
-
-//     auto add_spring = [&](int idxA, int idxB, float stiffness) {
-//         float dx = x_coords[idxA] - x_coords[idxB];
-//         float dy = y_coords[idxA] - y_coords[idxB];
-//         float exact_length = std::sqrt(dx * dx + dy * dy);
-//         springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness));
-//     };
-
-//     // A. SLIM HEAD STRUCTURAL EXOSKELETON (Tendons)
-//     for(int i = 1; i <= 6; i++) add_spring(0, i, TENDON); 
-//     for(int i = 1; i <= 5; i++) add_spring(i, i + 1, TENDON); 
-//     add_spring(6, 1, TENDON);
-
-//     // B. ANTI-ROTATION SOLID TRUSS NECK (Tendons)
-//     // Connecting the head's base base corners (3 and 5) directly to the spine (7) with high stiffness
-//     add_spring(4, 7, TENDON); // Center neck bone
-//     add_spring(3, 7, TENDON); // Right neck structural brace (Stops left/right tilting)
-//     add_spring(5, 7, TENDON); // Left neck structural brace (Stops left/right tilting)
-
-//     // C. RIGID SPINE & BASEPLATE (Tendons)
-//     add_spring(7, 8,  TENDON); // Mid Spine to Baseplate Center
-//     add_spring(8, 9,  TENDON); // Center to Left Hip
-//     add_spring(8, 10, TENDON); // Center to Right Hip
-//     add_spring(7, 9,  TENDON); 
-//     add_spring(7, 10, TENDON); 
-
-//     // D. SECURE LEG MUSCLE ANCHORS TO TRUNK (Tendons)
-//     add_spring(11, 7, TENDON); add_spring(11, 9, TENDON);
-//     add_spring(12, 8, TENDON); add_spring(12, 9, TENDON);
-//     add_spring(13, 7, TENDON); add_spring(13, 10, TENDON);
-//     add_spring(14, 8, TENDON); add_spring(14, 10, TENDON);
-
-//     // E. LEG STRUCTURAL BONES (Tendons)
-//     add_spring(9,  15, TENDON); add_spring(15, 16, TENDON); 
-//     add_spring(10, 17, TENDON); add_spring(17, 18, TENDON); 
-//     add_spring(9,  19, TENDON); add_spring(19, 20, TENDON); 
-//     add_spring(10, 21, TENDON); add_spring(21, 22, TENDON); 
-
-//     // F. ACTUATED LEG MUSCLES (Muscles)
-
-//     // --- Leg 1 (Left Outer) Muscles ---
-//     add_spring(11, 15, MUSCLE); add_spring(12, 15, MUSCLE);
-//     add_spring(11, 16, MUSCLE); add_spring(12, 16, MUSCLE);
-
-//     // --- Leg 2 (Right Outer) Muscles ---
-//     add_spring(13, 17, MUSCLE); add_spring(14, 17, MUSCLE);
-//     add_spring(13, 18, MUSCLE); add_spring(14, 18, MUSCLE);
-
-//     // --- Leg 3 (Left Inner) Muscles ---
-//     add_spring(11, 19, MUSCLE); add_spring(12, 19, MUSCLE);
-//     add_spring(11, 20, MUSCLE); add_spring(12, 20, MUSCLE);
-
-//     // --- Leg 4 (Right Inner) Muscles ---
-//     add_spring(13, 21, MUSCLE); add_spring(14, 21, MUSCLE);
-//     add_spring(13, 22, MUSCLE); add_spring(14, 22, MUSCLE);
-
-//     num_springs = springs.size();
-// }
-
-*/
