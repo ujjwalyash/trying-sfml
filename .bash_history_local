@@ -20,3 +20,25 @@ clear
 ./run.sh
 clear
 ./run.sh
+./run.sh > output.txt 
+./run.sh
+clear
+perf
+perf record -g ./build/bin/main
+perf record ./build/bin/main
+perf report ./build/bin/main
+man perf
+man perf record
+./run.sh 
+perf record ./build/bin/main
+perf record --call-graph dwarf ./build/bin/main
+./run.sh 
+perf record --call-graph dwarf -F 99 ./build/bin/main
+./run.sh 
+perf record --call-graph dwarf -F 99 ./build/bin/main
+./run.sh 
+perf record --call-graph dwarf -F 99 ./build/bin/main
+./run.sh > output.txt 
+./run.sh
+perf record --call-graph dwarf -F 99 ./build/bin/main
+./run.sh

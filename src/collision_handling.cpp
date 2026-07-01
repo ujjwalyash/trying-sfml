@@ -61,13 +61,13 @@ bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> o
         case (0 + num_of_object_types*0):
             // obj_2 is further right on x axis
 
-            // boudning box intersection check -- 
+            // boudning interval intersection check -- 
             if(particles[obj_2.second].get_curr_pos().x - particles[obj_2.second].get_radius() < particles[obj_1.second].get_curr_pos().x + particles[obj_1.second].get_radius()){
                 
                 // the fine check is done inside the func
                 handle_particle_particle_collision(particles[obj_1.second], particles[obj_2.second]);
                 
-                // even if no actuall collision return true since the bounding box did collide
+                // even if no actuall collision return true since the bounding interval did collide
                 return true;
             }
 

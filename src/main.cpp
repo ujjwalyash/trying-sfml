@@ -12,9 +12,9 @@ const float max_x = 1920;
 
 // since i keep both balanced out anyways just make both 0
 const sf::Vector2f gravity = {0, 10};
-const float buoyancy_const = 4.f/3 * 3.141 * 10 * 0.f; // DO NOT MAKE DENSITY 1000
+const float buoyancy_const = 4.f/3.f * 3.141f * 10.f; // DO NOT MAKE DENSITY 1000
 
-const float restitution = 0.8;
+const float restitution = 0.8f;
 
 // if we have small particles then no need for this but for large circles its needed bc we have no rotation two spheres will just sit on each other
 const float min_rel_vel_for_friction = 0.f;
@@ -22,8 +22,8 @@ const float coefficient_friction = 0.5;
 
 // if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
 // this completely destroys the concept of streamlined bodies 
-// TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
-const float viscosity = 4.f * 3.141f * (1e-3) * 100; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
+// // TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
+const float viscosity = 4.f * 3.141f * (1e-3) * 10; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
 
 // env params
 const int env_fps = 60;
@@ -122,7 +122,13 @@ void * worker(void *){
 }
 
 inline sf::Vector2f get_random_ball_pos(){
-	return {(float)(rand()%((int)max_x-200) + 100), (float)(rand()%((int)max_y-200) + 100)};
+	// sf::Vector2f disp_from_center = {(float)(rand()%(int)(max_x - 120) - 100), (float)(rand()%(int)(max_y/2.f - 60) - 100)};
+	float dist = (float)(rand()%(int)(max_y-60)) + 120;
+	float ang = (float)(rand()%360);
+	sf::Vector2f disp_from_center = {dist, 0};
+	disp_from_center = disp_from_center.rotatedBy(sf::degrees(ang));
+
+	return {disp_from_center.x + max_x/2.f, disp_from_center.y + max_y/2.f};
 }
 inline sf::Vector2f get_random_goal_pos(){
 	return {(float)(rand()%(int)max_x), (float)(rand()%(int)max_y)};

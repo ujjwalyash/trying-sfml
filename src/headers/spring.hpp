@@ -17,9 +17,10 @@ class Spring{
         float m_radius;
         float m_natural_length;
         float m_spring_constant;
-        float m_sqrt_spring_constant;
-        
+
         float m_damping_factor;
+        
+        float m_viscous_factor;
         float m_moment_interia_along_com;
         
     public:
