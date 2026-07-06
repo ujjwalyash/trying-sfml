@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <EigenRand/EigenRand>
 #include <json.hpp>
+#include <format>
 
 // row vec
 typedef Eigen::Matrix<float, 1, Eigen::Dynamic> VectorXdf;

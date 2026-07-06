@@ -42,3 +42,15 @@ perf record --call-graph dwarf -F 99 ./build/bin/main
 ./run.sh
 perf record --call-graph dwarf -F 99 ./build/bin/main
 ./run.sh
+git status
+git push
+git rm --cached perf.data 
+git push
+git rm --cached perf.data 
+git history
+git commits
+git info
+git help
+git log
+clear
+git log

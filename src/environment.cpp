@@ -199,15 +199,22 @@ void Environment::step(){
 
         for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
             
+            //todo: move this to gpu
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].first_half_step();
             }			
             
             // update acc
+            //todo: move this to gpu
             handle_all_muscle_forces(m_muscles);
+            //todo: move this to gpu
             handle_all_springs(m_springs);
+            
+
+            //* sync gpu here
             handle_all_collisions(m_particles, m_springs, m_muscles);    
             
+            //todo: move this to gpu
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].second_half_step();
             }			
@@ -226,7 +233,7 @@ void Environment::step(){
     
 }
 
-// !(ALMOST)DUPLICATE CODE
+// keeping this cpu only
 void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle){
     
 	std::vector<float> observation(env_observation_size);

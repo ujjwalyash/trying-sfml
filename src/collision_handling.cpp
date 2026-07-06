@@ -1,4 +1,5 @@
 #include "headers/collision_handling.hpp"
+#include <algorithm>
 #include <iostream>
 
 float get_bounding_box_wall(direction dir, std::pair<int, int> object_info, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
@@ -84,7 +85,7 @@ bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> o
         // // ! DUPLICATE CODE
         // case (1 + num_of_object_types*0):
 
-        default:
+        // default:
     }
 
     return false;
