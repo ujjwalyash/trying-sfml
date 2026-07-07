@@ -1,9 +1,9 @@
 cmake_minimum_required(VERSION 3.28)
 
-set(CMAKE_CXX_COMPILER "g++") 
-# set(CMAKE_CXX_COMPILER "clang++") 
+# set(CMAKE_CXX_COMPILER "g++") 
+set(CMAKE_CXX_COMPILER "clang++") 
 
-project(CMakeSFMLProject LANGUAGES CXX)
+project(CMakeSFMLProject LANGUAGES CXX CUDA)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -22,6 +22,10 @@ FetchContent_MakeAvailable(SFML)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_CUDA_STANDARD 20)
+set(CMAKE_CUDA_STANDARD_REQUIRED ON)
+# set(CMAKE_CUDA_ARCHITECTURES 86)
+set(CMAKE_CUDA_ARCHITECTURES native)
 
 add_executable(main 
                 src/main.cpp
@@ -31,19 +35,23 @@ add_executable(main
                 src/muscle.cpp
                 src/environment.cpp
                 src/collision_handling.cpp
+
+                src/cuda.cu
 )
 
 # Turn on strict compiler warnings (The "Teacher Mode")
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
 target_compile_options(main PRIVATE 
--Wall          # Turns on all basic warnings
--Wextra        # Turns on extra useful warnings
--Wpedantic     # Forces strict adherence to the C++ standard
--Wshadow       # Warns if you accidentally reuse a variable name
--g
-
--O3
--march=native
+#     -Wall          # Turns on all basic warnings
+#     -Wextra        # Turns on extra useful warnings
+#     -Wpedantic     # Forces strict adherence to the C++ standard
+#     -Wshadow       # Warns if you accidentally reuse a variable name
+      $<$<COMPILE_LANGUAGE:CXX>: -Wshadow -Wpedantic -Wextra -Wall>
+    
+    -g
+    
+    # -O3
+    # -march=native
 )
 endif()
 

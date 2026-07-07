@@ -7,535 +7,247 @@
 -- Configuring done (0.2s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
-[1/10] Scanning /home/yashujjwal/projects/trying-sfml/src/main.cpp for CXX dependencies
-[2/10] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
-[3/4] Building CXX object CMakeFiles/main.dir/src/main.cpp.o
-[4/4] Linking CXX executable bin/main
-loaded from file: ./saved/0.json
-loaded from file: ./saved/1.json
-loaded from file: ./saved/2.json
-loaded from file: ./saved/3.json
-loaded from file: ./saved/4.json
-loaded from file: ./saved/5.json
-loaded from file: ./saved/6.json
-loaded from file: ./saved/7.json
-loaded from file: ./saved/8.json
-loaded from file: ./saved/9.json
-loaded from file: ./saved/10.json
-loaded from file: ./saved/11.json
-loaded from file: ./saved/12.json
-loaded from file: ./saved/13.json
-loaded from file: ./saved/14.json
-loaded from file: ./saved/15.json
-loaded from file: ./saved/16.json
-loaded from file: ./saved/17.json
-loaded from file: ./saved/18.json
-loaded from file: ./saved/19.json
-loaded from file: ./saved/20.json
-loaded from file: ./saved/21.json
-loaded from file: ./saved/22.json
-loaded from file: ./saved/23.json
-loaded from file: ./saved/24.json
-loaded from file: ./saved/25.json
-loaded from file: ./saved/26.json
-loaded from file: ./saved/27.json
-loaded from file: ./saved/28.json
-loaded from file: ./saved/29.json
-loaded from file: ./saved/30.json
-loaded from file: ./saved/31.json
-loaded from file: ./saved/32.json
-loaded from file: ./saved/33.json
-loaded from file: ./saved/34.json
-loaded from file: ./saved/35.json
-loaded from file: ./saved/36.json
-loaded from file: ./saved/37.json
-loaded from file: ./saved/38.json
-loaded from file: ./saved/39.json
-loaded from file: ./saved/40.json
-loaded from file: ./saved/41.json
-loaded from file: ./saved/42.json
-loaded from file: ./saved/43.json
-loaded from file: ./saved/44.json
-loaded from file: ./saved/45.json
-loaded from file: ./saved/46.json
-loaded from file: ./saved/47.json
-loaded from file: ./saved/48.json
-loaded from file: ./saved/49.json
-loaded from file: ./saved/50.json
-loaded from file: ./saved/51.json
-loaded from file: ./saved/52.json
-loaded from file: ./saved/53.json
-loaded from file: ./saved/54.json
-loaded from file: ./saved/55.json
-loaded from file: ./saved/56.json
-loaded from file: ./saved/57.json
-loaded from file: ./saved/58.json
-loaded from file: ./saved/59.json
-loaded from file: ./saved/60.json
-loaded from file: ./saved/61.json
-loaded from file: ./saved/62.json
-loaded from file: ./saved/63.json
-loaded from file: ./saved/64.json
-loaded from file: ./saved/65.json
-loaded from file: ./saved/66.json
-loaded from file: ./saved/67.json
-loaded from file: ./saved/68.json
-loaded from file: ./saved/69.json
-loaded from file: ./saved/70.json
-loaded from file: ./saved/71.json
-loaded from file: ./saved/72.json
-loaded from file: ./saved/73.json
-loaded from file: ./saved/74.json
-loaded from file: ./saved/75.json
-loaded from file: ./saved/76.json
-loaded from file: ./saved/77.json
-loaded from file: ./saved/78.json
-loaded from file: ./saved/79.json
-loaded from file: ./saved/80.json
-loaded from file: ./saved/81.json
-loaded from file: ./saved/82.json
-loaded from file: ./saved/83.json
-loaded from file: ./saved/84.json
-loaded from file: ./saved/85.json
-loaded from file: ./saved/86.json
-loaded from file: ./saved/87.json
-loaded from file: ./saved/88.json
-loaded from file: ./saved/89.json
-loaded from file: ./saved/90.json
-loaded from file: ./saved/91.json
-loaded from file: ./saved/92.json
-loaded from file: ./saved/93.json
-loaded from file: ./saved/94.json
-loaded from file: ./saved/95.json
-loaded from file: ./saved/96.json
-loaded from file: ./saved/97.json
-loaded from file: ./saved/98.json
-loaded from file: ./saved/99.json
-loaded from file: ./saved/100.json
-loaded from file: ./saved/101.json
-loaded from file: ./saved/102.json
-loaded from file: ./saved/103.json
-loaded from file: ./saved/104.json
-loaded from file: ./saved/105.json
-loaded from file: ./saved/106.json
-loaded from file: ./saved/107.json
-loaded from file: ./saved/108.json
-loaded from file: ./saved/109.json
-loaded from file: ./saved/110.json
-loaded from file: ./saved/111.json
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-New worker started working 
-current generation: 0
-current best_reward: -2916
-time taken: 8.4929s
-
-current generation: 1
-current best_reward: -5786.74
-time taken: 9.22688s
-
-current generation: 2
-current best_reward: -8585.35
-time taken: 9.60854s
-
-current generation: 3
-current best_reward: -4859.62
-time taken: 9.87117s
-
-current generation: 4
-current best_reward: -4502.38
-time taken: 9.83883s
-
-current generation: 5
-current best_reward: -5029.22
-time taken: 10.1047s
-
-current generation: 6
-current best_reward: -5961.77
-time taken: 9.88198s
-
-current generation: 7
-current best_reward: -2785.96
-time taken: 9.99285s
-
-current generation: 8
-current best_reward: -5526.59
-time taken: 9.92823s
-
-current generation: 9
-current best_reward: -8144.33
-time taken: 9.88803s
-
-current generation: 10
-current best_reward: -2880.38
-time taken: 9.14623s
-
-current generation: 11
-current best_reward: -3731.19
-time taken: 10.2941s
-
-current generation: 12
-current best_reward: -4408.56
-time taken: 10.3024s
-
-current generation: 13
-current best_reward: -4163.55
-time taken: 10.5076s
-
-current generation: 14
-current best_reward: -5586.77
-time taken: 10.2638s
-
-current generation: 15
-current best_reward: -4312.29
-time taken: 10.3862s
-
-current generation: 16
-current best_reward: -4305.91
-time taken: 10.2177s
-
-current generation: 17
-current best_reward: -4926.53
-time taken: 10.3958s
-
-current generation: 18
-current best_reward: -6833.3
-time taken: 10.3376s
-
-current generation: 19
-current best_reward: -5030.96
-time taken: 10.3653s
-
-current generation: 20
-current best_reward: -4637.6
-time taken: 10.3483s
-
-current generation: 21
-current best_reward: -4188.71
-time taken: 10.0494s
-
-current generation: 22
-current best_reward: -3106.68
-time taken: 10.1604s
-
-current generation: 23
-current best_reward: -6079.97
-time taken: 10.0309s
-
-current generation: 24
-current best_reward: 64.7557
-time taken: 3.86197s
-
-current generation: 25
-current best_reward: -3878.67
-time taken: 10.3987s
-
-current generation: 26
-current best_reward: -4451.73
-time taken: 10.2251s
-
-current generation: 27
-current best_reward: -6777.11
-time taken: 10.3825s
-
-current generation: 28
-current best_reward: -5542.58
-time taken: 10.114s
-
-current generation: 29
-current best_reward: -4878.74
-time taken: 10.4032s
-
-current generation: 30
-current best_reward: -4794.52
-time taken: 10.2267s
-
-current generation: 31
-current best_reward: -4013.08
-time taken: 10.0072s
-
-current generation: 32
-current best_reward: -7634.26
-time taken: 10.1439s
-
-current generation: 33
-current best_reward: -3577.7
-time taken: 10.0898s
-
-current generation: 34
-current best_reward: -6740.62
-time taken: 10.2016s
-
-current generation: 35
-current best_reward: -3346.48
-time taken: 10.271s
-
-current generation: 36
-current best_reward: -4062.69
-time taken: 10.2055s
-
-current generation: 37
-current best_reward: -4082.2
-time taken: 10.3781s
-
-current generation: 38
-current best_reward: -5723.02
-time taken: 10.0548s
-
-current generation: 39
-current best_reward: -3524.66
-time taken: 10.0824s
-
-current generation: 40
-current best_reward: -4538.27
-time taken: 10.2606s
-
-current generation: 41
-current best_reward: -4592.86
-time taken: 10.2257s
-
-current generation: 42
-current best_reward: -2241.02
-time taken: 10.2616s
-
-current generation: 43
-current best_reward: -3459.1
-time taken: 10.3406s
-
-current generation: 44
-current best_reward: -6070.9
-time taken: 10.2642s
-
-current generation: 45
-current best_reward: -4180.71
-time taken: 9.95942s
-
-current generation: 46
-current best_reward: -4768.59
-time taken: 9.90415s
-
-current generation: 47
-current best_reward: -7103.05
-time taken: 9.64536s
-
-current generation: 48
-current best_reward: -6152.13
-time taken: 9.71127s
-
-current generation: 49
-current best_reward: -5554.1
-time taken: 9.64202s
-
-current generation: 50
-current best_reward: -4397.27
-time taken: 9.89518s
-
-current generation: 51
-current best_reward: -7169.68
-time taken: 10.0692s
-
-current generation: 52
-current best_reward: -4691.12
-time taken: 9.42159s
-
-current generation: 53
-current best_reward: -3797.8
-time taken: 9.64923s
-
-current generation: 54
-current best_reward: -5458.37
-time taken: 10.0282s
-
-current generation: 55
-current best_reward: -3469.63
-time taken: 9.55798s
-
-current generation: 56
-current best_reward: -7155.85
-time taken: 9.78977s
-
-current generation: 57
-current best_reward: -2815.82
-time taken: 9.86568s
-
-current generation: 58
-current best_reward: -4288.66
-time taken: 9.60215s
-
-current generation: 59
-current best_reward: -3009.82
-time taken: 9.32291s
-
-current generation: 60
-current best_reward: -5685.86
-time taken: 9.25053s
-
-current generation: 61
-current best_reward: -7857.64
-time taken: 9.73328s
-
-current generation: 62
-current best_reward: -6640.34
-time taken: 9.20693s
-
-current generation: 63
-current best_reward: -4745.22
-time taken: 9.28151s
-
-current generation: 64
-current best_reward: -8195.06
-time taken: 9.44639s
-
-current generation: 65
-current best_reward: -4620.41
-time taken: 9.77341s
-
-current generation: 66
-current best_reward: -5056.85
-time taken: 9.12456s
-
-current generation: 67
-current best_reward: -5183.1
-time taken: 9.23245s
-
-current generation: 68
-current best_reward: -5548.78
-time taken: 9.59609s
-
-current generation: 69
-current best_reward: -5032.05
-time taken: 9.2781s
-
-current generation: 70
-current best_reward: -3274.16
-time taken: 9.2978s
-
-current generation: 71
-current best_reward: -8233.38
-time taken: 9.34496s
-
-current generation: 72
-current best_reward: -4588.21
-time taken: 9.37318s
-
-current generation: 73
-current best_reward: -2275.15
-time taken: 10.3587s
-
-current generation: 74
-current best_reward: -5698.3
-time taken: 9.54032s
-
-current generation: 75
-current best_reward: -7381.5
-time taken: 9.65646s
-
-current generation: 76
-current best_reward: -3841.58
-time taken: 9.27234s
-
-current generation: 77
-current best_reward: -3299.67
-time taken: 9.47152s
-
-current generation: 78
-current best_reward: -3562.11
-time taken: 9.44936s
-
-current generation: 79
-current best_reward: -6040.86
-time taken: 9.40779s
-
-current generation: 80
-current best_reward: -5939.75
-time taken: 9.04394s
-
-current generation: 81
-current best_reward: -5587.55
-time taken: 9.17559s
-
-current generation: 82
-current best_reward: -4513.05
-time taken: 9.50949s
-
-current generation: 83
-current best_reward: -5847.15
-time taken: 9.03235s
-
-current generation: 84
-current best_reward: -3446.09
-time taken: 9.58629s
-
-current generation: 85
-current best_reward: -4293.09
-time taken: 9.34648s
-
-current generation: 86
-current best_reward: -2869.08
-time taken: 9.07887s
-
-current generation: 87
-current best_reward: -2504.53
-time taken: 9.07674s
-
-current generation: 88
-current best_reward: -3854.28
-time taken: 9.10735s
-
-current generation: 89
-current best_reward: -3808.59
-time taken: 9.28999s
-
-current generation: 90
-current best_reward: -5808.66
-time taken: 9.1507s
-
-current generation: 91
-current best_reward: -3975.63
-time taken: 9.58283s
-
-current generation: 92
-current best_reward: -4983.38
-time taken: 9.01096s
-
-current generation: 93
-current best_reward: -8474.95
-time taken: 9.29619s
-
-current generation: 94
-current best_reward: -5829.46
-time taken: 9.88186s
-
-current generation: 95
-current best_reward: -4533.72
-time taken: 9.36519s
-
-current generation: 96
-current best_reward: -5151.8
-time taken: 9.28376s
-
-current generation: 97
-current best_reward: -3439.86
-time taken: 9.39177s
-
-current generation: 98
-current best_reward: -4061.13
-time taken: 8.85605s
-
-current generation: 99
-current best_reward: -4450.88
-time taken: 8.9565s
-
+[1/17] Scanning /home/yashujjwal/projects/trying-sfml/src/muscle.cpp for CXX dependencies
+[2/17] Scanning /home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp for CXX dependencies
+[3/17] Scanning /home/yashujjwal/projects/trying-sfml/src/particle.cpp for CXX dependencies
+[4/17] Scanning /home/yashujjwal/projects/trying-sfml/src/spring.cpp for CXX dependencies
+[5/17] Scanning /home/yashujjwal/projects/trying-sfml/src/creature.cpp for CXX dependencies
+[6/17] Scanning /home/yashujjwal/projects/trying-sfml/src/environment.cpp for CXX dependencies
+[7/17] Scanning /home/yashujjwal/projects/trying-sfml/src/main.cpp for CXX dependencies
+[8/17] Generating CXX dyndep file CMakeFiles/main.dir/CXX.dd
+[9/17] Building CXX object CMakeFiles/main.dir/src/muscle.cpp.o
+[10/17] Building CXX object CMakeFiles/main.dir/src/particle.cpp.o
+FAILED: [code=1] CMakeFiles/main.dir/src/particle.cpp.o 
+/usr/lib64/ccache/g++ -DSFML_STATIC -isystem /home/yashujjwal/projects/trying-sfml/src/external -isystem /home/yashujjwal/projects/trying-sfml/build/_deps/sfml-src/include -g -std=gnu++20 -Wshadow -Wpedantic -Wextra -Wall -g -MD -MT CMakeFiles/main.dir/src/particle.cpp.o -MF CMakeFiles/main.dir/src/particle.cpp.o.d -fmodules-ts -fmodule-mapper=CMakeFiles/main.dir/src/particle.cpp.o.modmap -MD -fdeps-format=p1689r5 -x c++ -o CMakeFiles/main.dir/src/particle.cpp.o -c /home/yashujjwal/projects/trying-sfml/src/particle.cpp
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp: In constructor ‘Particle::Particle(int, int, float, float, sf::Vector2<float>, sf::Vector2<float>, structure, bool)’:
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:29:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   29 |         gpu_mem.particles_pos_x[m_global_id] = curr_pos.x;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:30:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   30 |         gpu_mem.particles_pos_y[m_global_id] = curr_pos.y;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:32:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   32 |         gpu_mem.particles_vel_x[m_global_id] = vel.x;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:33:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   33 |         gpu_mem.particles_vel_y[m_global_id] = vel.y;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:35:38: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   35 |         gpu_mem.particles_const_acc_x[m_global_id] = gravity.x;
+      |                                      ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:36:38: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   36 |         gpu_mem.particles_const_acc_y[m_global_id] = gravity.y;
+      |                                      ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:38:38: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   38 |         gpu_mem.particles_const_acc_x[m_global_id] += buoyancy_acc.x;
+      |                                      ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:39:38: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   39 |         gpu_mem.particles_const_acc_y[m_global_id] += buoyancy_acc.y;
+      |                                      ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:41:36: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   41 |         gpu_mem.particles_net_acc_x[m_global_id] = gpu_mem.particles_const_acc_x[m_global_id];
+      |                                    ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:41:81: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   41 |         gpu_mem.particles_net_acc_x[m_global_id] = gpu_mem.particles_const_acc_x[m_global_id];
+      |                                                                                 ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:42:36: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   42 |         gpu_mem.particles_net_acc_y[m_global_id] = gpu_mem.particles_const_acc_y[m_global_id];
+      |                                    ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:42:81: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   42 |         gpu_mem.particles_net_acc_y[m_global_id] = gpu_mem.particles_const_acc_y[m_global_id];
+      |                                                                                 ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:44:39: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   44 |         gpu_mem.particles_spring_acc_x[m_global_id] = 0;
+      |                                       ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:45:39: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   45 |         gpu_mem.particles_spring_acc_y[m_global_id] = 0;
+      |                                       ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:47:33: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   47 |         gpu_mem.particles_radius[m_global_id] = m_radius;
+      |                                 ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp: In member function ‘void Particle::set_pos_vel(sf::Vector2<float>, sf::Vector2<float>)’:
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:61:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   61 |         gpu_mem.particles_pos_x[m_global_id] = curr_pos.x;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:62:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   62 |         gpu_mem.particles_pos_y[m_global_id] = curr_pos.y;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:64:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   64 |         gpu_mem.particles_vel_x[m_global_id] = vel.x;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:65:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   65 |         gpu_mem.particles_vel_y[m_global_id] = vel.y;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp: In member function ‘void Particle::shift_pos(sf::Vector2<float>)’:
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:74:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   74 |         gpu_mem.particles_pos_x[m_global_id] += shift.x;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:75:32: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+   75 |         gpu_mem.particles_pos_y[m_global_id] += shift.y;
+      |                                ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp: In member function ‘void Particle::set_acc(sf::Vector2<float>)’:
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:152:36: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+  152 |         gpu_mem.particles_net_acc_x[m_global_id] = acc.x;
+      |                                    ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:153:36: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+  153 |         gpu_mem.particles_net_acc_y[m_global_id] = acc.y;
+      |                                    ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp: In member function ‘void Particle::add_spring_acc(sf::Vector2f)’:
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:171:39: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+  171 |         gpu_mem.particles_spring_acc_x[m_global_id] += spring_acc.x;
+      |                                       ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:172:39: error: invalid types ‘<unresolved overloaded function type>[int]’ for array subscript
+  172 |         gpu_mem.particles_spring_acc_y[m_global_id] += spring_acc.y;
+      |                                       ^
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp: In member function ‘float Particle::get_bounding_box_wall(direction)’:
+/home/yashujjwal/projects/trying-sfml/src/particle.cpp:188:1: warning: control reaches end of non-void function [-Wreturn-type]
+  188 | }
+      | ^
+[11/17] Building CXX object CMakeFiles/main.dir/src/spring.cpp.o
+/home/yashujjwal/projects/trying-sfml/src/spring.cpp: In member function ‘void Spring::calculate_damping_force(sf::Vector2f, float, float, float, float)’:
+/home/yashujjwal/projects/trying-sfml/src/spring.cpp:97:95: warning: unused parameter ‘sqrt_m1’ [-Wunused-parameter]
+   97 | void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2){
+      |                                                                                         ~~~~~~^~~~~~~
+/home/yashujjwal/projects/trying-sfml/src/spring.cpp:97:110: warning: unused parameter ‘sqrt_m2’ [-Wunused-parameter]
+   97 | void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2){
+      |                                                                                                        ~~~~~~^~~~~~~
+/home/yashujjwal/projects/trying-sfml/src/spring.cpp: In member function ‘float Spring::get_bounding_box_wall(direction)’:
+/home/yashujjwal/projects/trying-sfml/src/spring.cpp:77:1: warning: control reaches end of non-void function [-Wreturn-type]
+   77 | }
+      | ^
+[12/17] Building CXX object CMakeFiles/main.dir/src/collision_handling.cpp.o
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp: In function ‘void sort(std::vector<std::pair<int, int> >&, std::vector<Particle>&, std::vector<Spring>&, std::vector<Muscle>&)’:
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:20:116: warning: unused parameter ‘springs’ [-Wunused-parameter]
+   20 | void sort(std::vector<std::pair<int, int>>& combined_array, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                               ~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:20:146: warning: unused parameter ‘muscles’ [-Wunused-parameter]
+   20 | void sort(std::vector<std::pair<int, int>>& combined_array, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                                                             ~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp: In function ‘bool collision_check_and_handle(std::pair<int, int>, std::pair<int, int>, std::vector<Particle>&, std::vector<Spring>&, std::vector<Muscle>&)’:
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:55:142: warning: unused parameter ‘springs’ [-Wunused-parameter]
+   55 | bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> obj_2, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                                                         ~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+/home/yashujjwal/projects/trying-sfml/src/collision_handling.cpp:55:172: warning: unused parameter ‘muscles’ [-Wunused-parameter]
+   55 | bool collision_check_and_handle(std::pair<int, int> obj_1, std::pair<int, int> obj_2, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+      |                                                                                                                                                       ~~~~~~~~~~~~~~~~~~~~~^~~~~~~
+[13/17] Building CUDA object CMakeFiles/main.dir/src/cuda.cu.o
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(49): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_vel_x") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_vel_x() const { return ptrs[0]; }
+                                                                                                       ^
+
+Remark: The warnings can be suppressed with "-diag-suppress <warning-number>"
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(49): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_vel_x() const { return ptrs[0]; }
+                                                                                                       ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(50): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_vel_y") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_vel_y() const { return ptrs[1]; }
+                                                                                                       ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(50): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_vel_y() const { return ptrs[1]; }
+                                                                                                       ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(52): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_pos_x") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_pos_x() const { return ptrs[2]; }
+                                                                                                       ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(52): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_pos_x() const { return ptrs[2]; }
+                                                                                                       ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(53): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_pos_y") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_pos_y() const { return ptrs[3]; }
+                                                                                                       ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(53): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_pos_y() const { return ptrs[3]; }
+                                                                                                       ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(55): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_spring_acc_x") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_spring_acc_x() const { return ptrs[4]; }
+                                                                                                              ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(55): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_spring_acc_x() const { return ptrs[4]; }
+                                                                                                              ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(56): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_spring_acc_y") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_spring_acc_y() const { return ptrs[5]; }
+                                                                                                              ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(56): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_spring_acc_y() const { return ptrs[5]; }
+                                                                                                              ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(58): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_const_acc_x") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_const_acc_x() const { return ptrs[6]; }
+                                                                                                             ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(58): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_const_acc_x() const { return ptrs[6]; }
+                                                                                                             ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(59): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_const_acc_y") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_const_acc_y() const { return ptrs[7]; }
+                                                                                                             ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(59): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_const_acc_y() const { return ptrs[7]; }
+                                                                                                             ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(61): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_net_acc_x") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_net_acc_x() const { return ptrs[8]; }
+                                                                                                           ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(61): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_net_acc_x() const { return ptrs[8]; }
+                                                                                                           ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(62): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_net_acc_y") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_net_acc_y() const { return ptrs[9]; }
+                                                                                                           ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(62): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_net_acc_y() const { return ptrs[9]; }
+                                                                                                           ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(64): warning #20013-D: calling a constexpr __host__ function("operator[]") from a __host__ __device__ function("particles_radius") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_radius() const { return ptrs[10]; }
+                                                                                                        ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(64): warning #20015-D: calling a constexpr __host__ function from a __host__ __device__ function is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+      __attribute__((host)) __attribute__((device)) inline float* particles_radius() const { return ptrs[10]; }
+                                                                                                        ^
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(49): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_vel_x const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(50): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_vel_y const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(52): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_pos_x const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(53): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_pos_y const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(55): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_spring_acc_x const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(56): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_spring_acc_y const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(58): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_const_acc_x const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(59): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_const_acc_y const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(61): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_net_acc_x const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(62): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_net_acc_y const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp(64): warning #20013-D: calling a constexpr __host__ function("std::array<float *, (unsigned long)12ul> ::operator [](unsigned long) const") from a __host__ __device__ function("GPU_unified_mem::particles_radius const") is not allowed. The experimental flag '--expt-relaxed-constexpr' can be used to allow this (note: for a __tile__/__tile_global__ caller, the flag guarantees support only for calls that are required by language rules to be evaluated at compile time).
+
+[14/17] Building CXX object CMakeFiles/main.dir/src/main.cpp.o
+[15/17] Building CXX object CMakeFiles/main.dir/src/environment.cpp.o
+[16/17] Building CXX object CMakeFiles/main.dir/src/creature.cpp.o
+/home/yashujjwal/projects/trying-sfml/src/creature.cpp: In function ‘int create_football(int&, std::vector<Particle>&, int&, std::vector<Spring>&, int)’:
+/home/yashujjwal/projects/trying-sfml/src/creature.cpp:575:22: warning: variable ‘acc’ set but not used [-Wunused-but-set-variable]
+  575 |         sf::Vector2f acc = { 0.0f, 0.0f };
+      |                      ^~~
+ninja: build stopped: subcommand failed.

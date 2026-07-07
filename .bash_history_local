@@ -54,3 +54,22 @@ git help
 git log
 clear
 git log
+git commitsclear
+clear
+./run.sh
+g++ 
+g++ --version
+./run.sh
+hotspot perf.data 
+perf record --call-graph dwarf -F 99 ./build/bin/main
+./run.sh 
+perf record --call-graph dwarf -F 99 ./build/bin/main
+hotspot perf.data 
+./run.sh 
+clear
+./run.sh 
+[A
+./run.sh 
+./run.sh > output.txt
+pwd
+./build/bin/main 

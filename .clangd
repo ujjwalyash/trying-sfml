@@ -3,3 +3,5 @@ CompileFlags:
     - -fmodules-ts
     - -fmodule-mapper=*
     - -fdeps-format=*
+    - -forward-unknown-to-host-compiler
+    - -arch=native

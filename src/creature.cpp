@@ -296,7 +296,7 @@ void Creature::get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, s
 }
 
 Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
-                                            , int& num_muscles, std::vector<Muscle>& muscles, float dt){
+                                            , int& num_muscles, std::vector<Muscle>& muscles, int env_id){
 
     sf::Vector2<float> old_pos, vel, curr_pos, acc;
 
@@ -403,8 +403,8 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         // curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
         acc = {0.0f, 0.0f};
 
-        particles.push_back(Particle(i + 1 + id_offset, radius[i], mass[i], old_pos, vel, structure::creature));
-        particles[particles.size()-1].set_acc(acc);
+        particles.push_back(Particle(env_id, i + id_offset, radius[i], mass[i], old_pos, vel, structure::creature));
+        // particles[particles.size()-1].set_acc(acc);
 
         if(positions[i] == corners[1] or positions[i] == corners[3]
                 or positions[i] == corners[7] or i == (int)positions.size()-1){
@@ -517,7 +517,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     return data;
 }
 
-int create_football(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
+int create_football(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int env_id) {
 
     const float ball_float_sink_factor = 1.f; 
 
@@ -574,9 +574,9 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
         // sf::Vector2f curr_pos = vel * dt + old_pos;
         sf::Vector2f acc = { 0.0f, 0.0f };
 
-        int global_id = start_particle_idx + i + 1; 
-        particles.push_back(Particle(global_id, radius[i], mass[i], old_pos, vel, structure::ball));
-        particles.back().set_acc(acc);
+        int global_id = start_particle_idx + i; 
+        particles.push_back(Particle(env_id, global_id, radius[i], mass[i], old_pos, vel, structure::ball));
+        // particles.back().set_acc(acc);
     }
 
     // --- 6. WEAVE THE SPRING CONSTANT NETWORK ---
@@ -613,6 +613,8 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
 
     return center_index;
 }
+
+/*
 
 void create_self_aligning_arrow(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt) {
     particles.reserve(particles.size() + 4);
@@ -806,3 +808,5 @@ void create_collision_test_rig(int& num_particles, std::vector<Particle>& partic
     num_particles = particles.size();
     num_springs = springs.size();
 }
+
+*/

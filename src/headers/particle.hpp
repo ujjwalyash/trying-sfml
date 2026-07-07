@@ -2,18 +2,7 @@
 #include <SFML/Graphics/CircleShape.hpp>
 #include <SFML/System/Vector2.hpp>
 
-// params
-extern const float max_y;
-extern const float max_x;
-
-extern const sf::Vector2f gravity;
-extern const float buoyancy_const; // DO NOT MAKE DENSITY 1000
-
-extern const float restitution;
-extern const float coefficient_friction;
-extern const float viscosity; // *10 bc viscosity is only applied at point masses which have small radius so we scale it
-
-extern const float env_dt;
+#include "common.hpp"
 
 enum class direction{left, right};
 // struct direction{
@@ -30,7 +19,11 @@ enum class structure{
 class Particle{
     private:
 
+        int m_env_id;
         int m_id;
+        int m_global_id;
+
+        bool m_cpu_only;
 
         sf::Vector2f m_original_vel;
         sf::Vector2f m_original_curr_pos;
@@ -60,7 +53,7 @@ class Particle{
         const structure m_type;
 
     public:
-        Particle(int id, float radius, float mass, sf::Vector2<float> curr_pos, sf::Vector2<float> vel, structure type);
+        Particle(int env_id, int id, float radius, float mass, sf::Vector2<float> curr_pos, sf::Vector2<float> vel, structure type, bool cpu_only = false);
 
         void set_pos_vel(sf::Vector2<float> curr_pos, sf::Vector2<float> vel);
         void shift_pos(sf::Vector2<float> shift);
@@ -71,7 +64,7 @@ class Particle{
         float get_radius() const;
         float get_mass() const;
         float get_sqrt_mass() const;
-        int get_id() const;
+        int get_global_id() const;
         float calculate_total_energy();
 
         void add_spring_acc(sf::Vector2f spring_acc);
@@ -81,7 +74,9 @@ class Particle{
 
         void handle_boundary();
         void reflect(float wall, int axis, int sign);
+
         void reset();
+        void check();
 
         float get_bounding_box_wall(direction dir);
 

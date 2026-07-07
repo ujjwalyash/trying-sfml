@@ -5,46 +5,20 @@
 #include <iostream>
 #include <pthread.h>
 #include <cassert>
-
-// physics params
-const float max_y = 1080;
-const float max_x = 1920;
-
-// since i keep both balanced out anyways just make both 0
-const sf::Vector2f gravity = {0, 10};
-const float buoyancy_const = 4.f/3.f * 3.141f * 10.f; // DO NOT MAKE DENSITY 1000
-
-const float restitution = 0.8f;
-
-// if we have small particles then no need for this but for large circles its needed bc we have no rotation two spheres will just sit on each other
-const float min_rel_vel_for_friction = 0.f;
-const float coefficient_friction = 0.5;
-
-// if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
-// this completely destroys the concept of streamlined bodies 
-// // TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
-const float viscosity = 4.f * 3.141f * (1e-3) * 10; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
-
-// env params
-const int env_fps = 60;
-const int env_num_frames_per_creature_action = (float)env_fps/10; // every 100ms 
-const int env_num_iterations_per_frame = 16;
-const float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
-const int env_max_steps_per_episode = 500;
-const int env_observation_size = 12;
+#include <unistd.h>
 
 // to ensure no other file can access these -- ie global vars restricted to this file
 namespace{
 	
 	// 18 threads for 20 core cpu too much
 	const int num_workers = 16;
+	const int env_per_worker = population_size / num_workers;
 
 	// simulation params
-	const int population_size = 112;
 	static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
 
 	const int num_episode_per_generation = 1;
-	const int num_generations = 0;
+	const int num_generations = 1;
 
 	const float top_unchanged_percentage = 0.3;
 	const float elimination_percentage = 0.4;
@@ -71,6 +45,11 @@ namespace{
 	pthread_cond_t worker_cond_var;
 	// to wake up main thread when everything's done
 	pthread_cond_t main_thread_cond_var;
+
+	// cpu - gpu coordination
+	// which stage of step are ALL env in right now
+	// tells the workers what to call
+	int stage = 0;
 };
 
 void * worker(void *){
@@ -92,25 +71,46 @@ void * worker(void *){
 		
 		// commit to the job
 		curr_job = num_envs_started;
-		num_envs_started++;
+
+		//! this is to minimize false sharing by giving as large as possible chunks to each thread
+		num_envs_started += env_per_worker;
+		// num_envs_started++;
 		
 		// relese lock
 		pthread_mutex_unlock(&lk_num_ens_started);
 		
-		// useless but doesnt hurt will remove later
-		assert(curr_job != -1);
+		//// useless but doesnt hurt will remove later
+		// assert(curr_job != -1);
 
 		// now do the job
-		for(int ep_no = 0; ep_no < num_episode_per_generation; ep_no++){
-			env[curr_job].run_episode();
-			// TODO: do not reset muscles/praticles just move the target -- ball and creature stays as is 
-			// TODO: but in the early stage creature never touches ball so fine rn
-			env[curr_job].reset(ball_pos[ep_no], goal_pos[ep_no]);
+		for(int job_num = 0; job_num < env_per_worker; job_num++){
+			
+			for(int ep_no = 0; ep_no < num_episode_per_generation; ep_no++){
+				switch (stage){
+					case -1:
+						env[curr_job + job_num].reset(ball_pos[ep_no], goal_pos[ep_no]);
+						break;
+					case 0:
+						env[curr_job + job_num].step_stage_0();
+						break;
+					case 1:
+						env[curr_job + job_num].step_stage_1();
+						break;
+					case 2:
+						env[curr_job + job_num].step_stage_2();
+						break;
+					default:
+						std::cerr << "unknown stage: " << stage << '\n';
+						exit(-1);
+				}
+				// TODO: do not reset muscles/praticles just move the target -- ball and creature stays as is 
+				// TODO: but in the early stage creature never touches ball so fine rn
+			}
 		}
-
 		// increment the done counter
 		pthread_mutex_lock(&lk_num_ens_done);
-		num_envs_done++;
+		num_envs_done += env_per_worker;
+		// num_envs_done++;
 		if(num_envs_done == population_size){
 			// everything done wake up main thread to continue
 			pthread_cond_broadcast(&main_thread_cond_var);
@@ -119,6 +119,50 @@ void * worker(void *){
 	}
 	
 	return NULL;
+}
+
+void create_workers(){
+	// initialize mutex
+	pthread_mutex_init(&lk_num_ens_started, NULL);
+	pthread_mutex_init(&lk_num_ens_done, NULL);
+
+	// to ensure no worker starts working right away -- all go to sleep
+	pthread_mutex_lock(&lk_num_ens_started);
+	num_envs_started = population_size;
+	pthread_mutex_unlock(&lk_num_ens_started);
+
+	pthread_mutex_lock(&lk_num_ens_done);
+	num_envs_done = population_size;
+	pthread_mutex_unlock(&lk_num_ens_done);
+	for(int i = 0; i < num_workers; i++){
+		// bad i should pobably keep track of the pthread_t objects
+		pthread_t worker_thread;
+		pthread_create(&worker_thread, NULL, worker, NULL);		
+	}
+}
+
+// starts workers -- returns only after ALL work is finished
+void launch_threads(){
+		// evaluate all creatures
+		// reset job count
+		pthread_mutex_lock(&lk_num_ens_started);
+		num_envs_started = 0;
+		pthread_mutex_unlock(&lk_num_ens_started);
+
+		pthread_mutex_lock(&lk_num_ens_done);
+		num_envs_done = 0;
+		pthread_mutex_unlock(&lk_num_ens_done);
+
+		// wake up all workers
+		pthread_cond_broadcast(&worker_cond_var);
+		
+		// barrier -- wait for all threads to finish working
+		pthread_mutex_lock(&lk_num_ens_done);
+		// if everything is not done yet sleep -- will be woken up the last working thread
+		while(num_envs_done != population_size){
+			pthread_cond_wait(&main_thread_cond_var, &lk_num_ens_done);
+		}
+		pthread_mutex_unlock(&lk_num_ens_done);
 }
 
 inline sf::Vector2f get_random_ball_pos(){
@@ -285,25 +329,13 @@ int main()
 
 	// now ok. this also prevents copy of the big envi objects when resized
 	env.reserve(population_size);
+	allocate_cuda_memory();
 
 	for (int i = 0; i < (int)population_size; ++i) {
 		// if a saved with id does not exist the constructor
 		if(load_old_gen) env.emplace_back(i, get_random_ball_pos(), get_random_goal_pos());
 		else env.emplace_back(get_random_ball_pos(), get_random_goal_pos());
 	}
-
-	// save-load testing
-	// for(int i = 0; i < population_size; i++){
-	// 	env[i].save(i, 0);
-	// }
-	
-	// for(int i = 0; i < population_size; i++){
-	// 	Environment temp(i, first_ball_pos, first_goal_pos);
-	// 	assert(temp.get_creature().get_brain().get_weights() == env[i].get_creature().get_brain().get_weights());
-	// 	assert(temp.get_creature().get_brain().get_biases() == env[i].get_creature().get_brain().get_biases());
-	// 	assert(temp.get_curr_reward() == env[i].get_curr_reward());
-	// }
-	// exit(0);
 
     std::vector<float> rewards(population_size, 0);    
 
@@ -319,25 +351,8 @@ int main()
 	pthread_t render_thread;
 	pthread_create(&render_thread, NULL, render_current_gen, NULL);
 	
-	// initialize mutex
-	pthread_mutex_init(&lk_num_ens_started, NULL);
-	pthread_mutex_init(&lk_num_ens_done, NULL);
-
-	// create workers
-	
-	// to ensure no worker starts working right away -- all go to sleep
-	pthread_mutex_lock(&lk_num_ens_started);
-	num_envs_started = population_size;
-	pthread_mutex_unlock(&lk_num_ens_started);
-
-	pthread_mutex_lock(&lk_num_ens_done);
-	num_envs_done = population_size;
-	pthread_mutex_unlock(&lk_num_ens_done);
-	for(int i = 0; i < num_workers; i++){
-		// bad i should pobably keep track of the pthread_t objects
-		pthread_t worker_thread;
-		pthread_create(&worker_thread, NULL, worker, NULL);		
-	}
+	// only creates then, they don't start working until launch_thread called
+	create_workers();
 
 	sf::Clock clock;
 	for(gen = 0; gen < num_generations; gen++){
@@ -355,26 +370,50 @@ int main()
 			rewards[i] = 0;
 		}
 		
-		// evaluate all creatures
-		// reset job count
-		pthread_mutex_lock(&lk_num_ens_started);
-		num_envs_started = 0;
-		pthread_mutex_unlock(&lk_num_ens_started);
-
-		pthread_mutex_lock(&lk_num_ens_done);
-		num_envs_done = 0;
-		pthread_mutex_unlock(&lk_num_ens_done);
-
-		// wake up all workers
-		pthread_cond_broadcast(&worker_cond_var);
+		//* everything inside gpu now only rewards come back to cpu at the end
+		//* 1. sort_acc_x coors
+		//*  -- do not update acc till the end only write to shared mem --
+		//* 1.5. load everything needed to shared mem
+		//* 2. handle coll
+		//* 3. update springs
+		//* 4* write back the acc into shared mem
+		//* 5. do second_step -- we have acc in shared mee
+		//* 6. do first_step -- we have acc in shared mem
+		//* 7. copy everything back to global mem
+		//* 8. return
 		
-		// barrier -- wait for all threads to finish working
-		pthread_mutex_lock(&lk_num_ens_done);
-		// if everything is not done yet sleep -- will be woken up the last working thread
-		while(num_envs_done != population_size){
-			pthread_cond_wait(&main_thread_cond_var, &lk_num_ens_done);
+
+		// resets env
+		stage = -1;
+		launch_threads();
+
+		// only returns after work is done
+		for(int step = 0; step < env_max_steps_per_episode; step++){
+
+			// TODO: think about false sharing among threads working on close by data
+			stage = 0;
+			launch_threads();
+			
+			for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
+				
+				for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
+					
+					// launch_first_half_step();
+					launch_big_kernel();
+					
+					cudaSynchronize();
+					stage = 1;
+					launch_threads();
+					
+					launch_second_half_step();
+				}
+			}
+			
+			cudaSynchronize();
+
+			stage = 2;
+			launch_threads();
 		}
-		pthread_mutex_unlock(&lk_num_ens_done);
 		
 		// copy rewards before sorting -- probably faster but so negligible compared to the sims 
 		for(int i = 0; i < population_size; i++){
@@ -411,5 +450,6 @@ int main()
 		}
 	}
 
+	free_cuda_memory();
 	pthread_join(render_thread, NULL);
 }

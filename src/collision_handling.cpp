@@ -2,19 +2,19 @@
 #include <algorithm>
 #include <iostream>
 
-float get_bounding_box_wall(direction dir, std::pair<int, int> object_info, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
-    switch (object_info.first) {
-        case 0:
-            return particles[object_info.second].get_bounding_box_wall(dir);
-        case 1:
-            return springs[object_info.second].get_bounding_box_wall(dir);
-        case 2:
-            return muscles[object_info.second].get_bounding_box_wall(dir);
+// float get_bounding_box_wall(direction dir, std::pair<int, int> object_info, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
+//     switch (object_info.first) {
+//         case 0:
+//             return particles[object_info.second].get_bounding_box_wall(dir);
+//         case 1:
+//             return springs[object_info.second].get_bounding_box_wall(dir);
+//         case 2:
+//             return muscles[object_info.second].get_bounding_box_wall(dir);
 
-        default:
-            exit(-1);
-    }
-}
+//         default:
+//             exit(-1);
+//     }
+// }
 
 // sorts combined_array by x coordinate of leftmost boundary of the bounding box
 void sort(std::vector<std::pair<int, int>>& combined_array, std::vector<Particle>& particles, std::vector<Spring>& springs, std::vector<Muscle>& muscles){
@@ -23,7 +23,8 @@ void sort(std::vector<std::pair<int, int>>& combined_array, std::vector<Particle
     std::vector<int> left_walls(n, -1);
     for(int i = 0; i < n; i++){
         // TODO: many if conds checekd here instead add left wall to combined_array itself during the formation of combined_array
-        left_walls[i] = get_bounding_box_wall(direction::left, combined_array[i], particles, springs, muscles);
+        left_walls[i] = particles[combined_array[i].second].get_bounding_box_wall(direction::left);
+        // left_walls[i] = get_bounding_box_wall(direction::left, combined_array[i], particles, springs, muscles);
     }
 
     std::sort(combined_array.begin(), combined_array.end(), 

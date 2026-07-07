@@ -8,17 +8,18 @@ Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // CREATE THE BALL BEFROE THE CREATURE
     // if you do afterwords and the vector moves to a bigger size
     // all the springs which hold references will be invalidated
-        
+    
+    m_id = -1;
     m_original_ball_pos = ball_pos;
     m_goal_pos = goal_pos;
     
     // after creating football in sperm creation springs vector is resized, the springs break
     // TODO: temp fix for now -- change refs to index in springs
-    m_particles.reserve(300);
-    m_springs.reserve(300);
-    m_muscles.reserve(10);
+    m_particles.reserve(env_num_particles);
+    m_springs.reserve(env_num_springs);
+    m_muscles.reserve(env_num_muscles);
     
-    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
+    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_id);
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
@@ -27,7 +28,12 @@ Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // create_self_aligning_arrow(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
     // create_collision_test_rig(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
 
-    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, env_dt);
+    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_id);
+    
+    assert(m_num_particles == env_num_particles);
+    assert(m_num_springs == env_num_springs);
+    assert(m_num_muscles == env_num_muscles);
+ 
     // 20 -- 12 -- 8
     std::vector<int> layer_sizes{m_num_muscles+env_observation_size, 12, m_num_muscles};
     // 2 wasteful initliaizations 
@@ -47,20 +53,26 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // if you do afterwords and the vector moves to a bigger size
     // all the springs which hold references will be invalidated
         
+    m_id = id;
     m_original_ball_pos = ball_pos;
     m_goal_pos = goal_pos;
     
     // after creating football in sperm creation springs vector is resized, the springs break
     // temp fix for now
-    m_particles.reserve(400);
-    m_springs.reserve(400);
-    m_muscles.reserve(10);
+    m_particles.reserve(env_num_particles);
+    m_springs.reserve(env_num_springs);
+    m_muscles.reserve(env_num_muscles);
     
-    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
+    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_id);
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
-    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, env_dt);
+    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_id);
+    
+    assert(m_num_particles == env_num_particles);
+    assert(m_num_springs == env_num_springs);
+    assert(m_num_muscles == env_num_muscles);
+    
     // 20 -- 12 -- 8
     std::vector<int> layer_sizes{m_num_muscles+env_observation_size, 12, m_num_muscles};
 
@@ -115,11 +127,19 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
     // m_reward = 0;
     m_episode_end = false;
     m_has_touched_ball = false;
+
+    check();
 }
 
-void Environment::run_episode(){
-    while(not m_episode_end){
-        step();
+// void Environment::run_episode(){
+//     while(not m_episode_end){
+//         step();
+//     }
+// }
+
+void Environment::check(){
+    for(int i = 0; i < m_num_particles; i++){
+        m_particles[i].check();
     }
 }
 
@@ -186,41 +206,52 @@ void Environment::render(sf::RenderWindow& window){
 
 
 // DUPLICATE FUNCTIONS bc you cant give references default params -- try pointer 
-void Environment::step(){
+void Environment::step_stage_0(){	
     
+    // stage 0
 	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
-
+    
     // update muscle lengths
     handle_all_muscle_contraction(m_muscles);
-    
-    for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
+    // stage 0
 
-        for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
-            
-            //todo: move this to gpu
+    check();
+}
+
+// for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
+
+//     for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
+        // launch_first_half_step();
+        
+void Environment::step_stage_1(){	
+            // stage 1
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].first_half_step();
             }			
+            check();
             
             // update acc
             //todo: move this to gpu
             handle_all_muscle_forces(m_muscles);
+            // check();
             //todo: move this to gpu
             handle_all_springs(m_springs);
+            check();
             
-
-            //* sync gpu here
             handle_all_collisions(m_particles, m_springs, m_muscles);    
             
-            //todo: move this to gpu
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].second_half_step();
-            }			
-        }
-    }
+            }		
+            // stage 1
+            	
+}
+            // launch_second_half_step();
 
+void Environment::step_stage_2(){	
+    // stage 2
     m_ball_pos = m_particles[m_goal_center_index].get_curr_pos();
 
     float reward = calculate_reward();
@@ -230,7 +261,9 @@ void Environment::step(){
 
     if(m_num_steps_done > env_max_steps_per_episode)
         m_episode_end = true;
-    
+    // stage 2
+
+    check();
 }
 
 // keeping this cpu only

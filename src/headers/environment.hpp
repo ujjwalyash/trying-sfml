@@ -9,20 +9,12 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Graphics/Text.hpp>
 
-
-// simulation params
-
-extern const int env_fps;
-extern const int env_num_frames_per_creature_action; // every 100ms 
-extern const int env_num_iterations_per_frame;
-extern const float env_dt;
-extern const int env_max_steps_per_episode;
-extern const int env_observation_size;
-
 class Environment
 {
     private:
         
+        int m_id;
+
         int m_num_particles = 0; 
         int m_num_springs = 0;
         std::vector<Particle> m_particles;
@@ -41,9 +33,9 @@ class Environment
         
         float m_reward = 0; 
         int m_num_steps_done = 0;
-        bool m_episode_end = 0;
-
+        
     public:
+        bool m_episode_end = 0;
 
         Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos);
         Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos);
@@ -57,14 +49,17 @@ class Environment
         void render(sf::RenderWindow& window);
         
         // step till m_episode_end
-        void run_episode();
+        // void run_episode();
         
         // proceed forward with num_iterations step each with time_interval m_dt
         // also calculates rewards, end_condition, new_target pos
         // we have a set of fixed sequenece of target_pos generated randomly for each
         // generation and step will switch targets too as required
         // EACH STEP DOES 0.1s not 1/60 = 0.016;
-        void step();
+        void step_stage_0();
+        void step_stage_1();
+        void step_stage_2();
+
         void step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle = false);
 
         // returns the reward for one step
@@ -80,4 +75,6 @@ class Environment
         void save(int id, float total_reard);
 
         void copy_brain(Environment const& env);
+
+        void check();
 };

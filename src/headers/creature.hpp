@@ -82,10 +82,10 @@ class Creature{
 
 };
 
-int create_football              (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
-void create_collision_test_rig(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
-void create_high_drag_block(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
-void create_self_aligning_arrow(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
+int create_football              (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int env_id);
+// void create_collision_test_rig(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
+// void create_high_drag_block(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
+// void create_self_aligning_arrow(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, float dt);
 
 // return type for creation functions below
 struct Creature_data{
@@ -93,7 +93,7 @@ struct Creature_data{
     std::vector<int> s_sensing_points;
 };
 
-Creature_data create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
+Creature_data create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, int env_id);
 
 void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
 void create_creature_motor_sperm  (Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
