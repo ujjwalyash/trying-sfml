@@ -159,6 +159,11 @@ void handle_particle_particle_collision(Particle& p1, Particle& p2){
     
     sf::Vector2f p1_vel_along_loc = p1_vel_before_collision.projectedOnto(line_of_contact);
     sf::Vector2f p2_vel_along_loc = p2_vel_before_collision.projectedOnto(-line_of_contact);
+
+    // already moving apart
+    if(line_of_contact.dot(p2_vel_along_loc - p1_vel_along_loc) >= 0){
+        return;
+    }
     
     sf::Vector2f p1_vel_perp_loc = p1_vel_before_collision - p1_vel_along_loc;
     sf::Vector2f p2_vel_perp_loc = p2_vel_before_collision - p2_vel_along_loc;
@@ -175,9 +180,9 @@ void handle_particle_particle_collision(Particle& p1, Particle& p2){
     sf::Vector2f p1_vel_after_collision = p1_vel_before_collision + (impulse_along_loc + impulse_perp_loc)/m1;
     sf::Vector2f p2_vel_after_collision = p2_vel_before_collision - (impulse_along_loc + impulse_perp_loc)/m2;
 
-    sf::Vector2f p1_new_pos = p1.get_curr_pos() - (overlap/dist*0.5f)*line_of_contact;
-    sf::Vector2f p2_new_pos = p2.get_curr_pos() + (overlap/dist*0.5f)*line_of_contact;
+    // sf::Vector2f p1_new_pos = p1.get_curr_pos() - (overlap/dist*0.5f)*line_of_contact;
+    // sf::Vector2f p2_new_pos = p2.get_curr_pos() + (overlap/dist*0.5f)*line_of_contact;
 
-    p1.set_pos_vel(p1_new_pos, p1_vel_after_collision);
-    p2.set_pos_vel(p2_new_pos, p2_vel_after_collision);
+    p1.set_pos_vel(p1.get_curr_pos(), p1_vel_after_collision);
+    p2.set_pos_vel(p2.get_curr_pos(), p2_vel_after_collision);
 }

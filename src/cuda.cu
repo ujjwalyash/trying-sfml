@@ -1,4 +1,5 @@
 #include "headers/cuda.cuh"
+#include "headers/helper_math.cuh"
 
 GPU_unified_mem gpu_mem{};
 
@@ -9,7 +10,7 @@ void cudaSynchronize(){
 //* memory management
 void allocate_cuda_memory(){
     
-	int vector_length = population_size * env_num_particles;
+    int vector_length = population_size * env_num_particles;
     for(float* & ptr: gpu_mem.ptrs_particle){
         checkCudaErrors(cudaMallocManaged(&ptr, vector_length*sizeof(float)));
         // std::cout << "allocated " << ptr << '\n';
@@ -22,9 +23,9 @@ void allocate_cuda_memory(){
     }
     
     // allocate constant memory
-    cudaMemcpyToSymbol(gpu_env_dt, &env_dt, sizeof(float));
-    cudaMemcpyToSymbol(gpu_max_x, &max_x, sizeof(float));
-    cudaMemcpyToSymbol(gpu_max_y, &max_y, sizeof(float));
+    // cudaMemcpyToSymbol(gpu_env_dt, &env_dt, sizeof(float));
+    // cudaMemcpyToSymbol(gpu_max_x, &max_x, sizeof(float));
+    // cudaMemcpyToSymbol(gpu_max_y, &max_y, sizeof(float));
 
     checkCudaErrors(cudaDeviceSynchronize());
 }    
@@ -63,48 +64,92 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     constexpr int num_threads = env_num_muscles + env_num_springs;
     static_assert(num_threads >= 2 * env_num_particles, "num_threads < 2 * env_num_particles");
 
-    constexpr int NUM_ARRAYS = 12;
+    constexpr int NUM_ARRAYS_PAR = 12;
+    constexpr int NUM_ARRAYS_SPR = 5;
 
     // decalre everyhting in shared mem
     __shared__ float s_particles_vel_x[env_num_particles];
     __shared__ float s_particles_vel_y[env_num_particles];
     __shared__ float s_particles_pos_x[env_num_particles];
     __shared__ float s_particles_pos_y[env_num_particles];
-    __shared__ float s_particles_spring_acc_x[env_num_particles];
-    __shared__ float s_particles_spring_acc_y[env_num_particles];
-    __shared__ float s_particles_const_acc_x[env_num_particles];
-    __shared__ float s_particles_const_acc_y[env_num_particles];
     __shared__ float s_particles_net_acc_x[env_num_particles];
     __shared__ float s_particles_net_acc_y[env_num_particles];
-    __shared__ float s_particles_radius[env_num_particles];
+    __shared__ float s_particles_spring_acc_x[env_num_particles];
+    __shared__ float s_particles_spring_acc_y[env_num_particles];
+    
+    // const float* __restrict__ s_particles_const_acc_x = gpu_mem.particles_const_acc_x();
+    // const float* __restrict__ s_particles_const_acc_y = gpu_mem.particles_const_acc_y();
+    // const float* __restrict__ s_particles_mass = gpu_mem.particles_mass();
+    // const float* __restrict__ s_particles_radius = gpu_mem.particles_radius();
+    __shared__ float s_particles_const_acc_x[env_num_particles];
+    __shared__ float s_particles_const_acc_y[env_num_particles];
     __shared__ float s_particles_mass[env_num_particles];
+    __shared__ float s_particles_radius[env_num_particles];
     
+    __shared__ float s_springs_nat_len[num_threads];
+    __shared__ float s_springs_const[num_threads];
+    __shared__ float s_springs_damping_factor[num_threads];
+    __shared__ float s_springs_viscous_factor[num_threads];
+    __shared__ float s_springs_moi_along_com[num_threads];
+   
+    const float* __restrict__ s_springs_outside_body = gpu_mem.springs_outside_body();
+    const float* __restrict__ s_springs_radius = gpu_mem.springs_radius();
+    const float* __restrict__ s_springs_p1 = gpu_mem.springs_p1();
+    const float* __restrict__ s_springs_p2 = gpu_mem.springs_p2();
+
     
-    float* global_ptrs[NUM_ARRAYS] = {
+    float* global_ptrs[NUM_ARRAYS_PAR + NUM_ARRAYS_SPR] = {
         gpu_mem.particles_vel_x(), gpu_mem.particles_vel_y(),
         gpu_mem.particles_pos_x(), gpu_mem.particles_pos_y(),
-        gpu_mem.particles_spring_acc_x(), gpu_mem.particles_spring_acc_y(),
-        gpu_mem.particles_const_acc_x(), gpu_mem.particles_const_acc_y(),
         gpu_mem.particles_net_acc_x(), gpu_mem.particles_net_acc_y(),
-        gpu_mem.particles_radius(), gpu_mem.particles_mass()
+        gpu_mem.particles_spring_acc_x(), gpu_mem.particles_spring_acc_y(),
+        
+        gpu_mem.particles_const_acc_x(), gpu_mem.particles_const_acc_y(),
+        gpu_mem.particles_radius(), 
+        gpu_mem.particles_mass(),
+
+
+        gpu_mem.springs_nat_len(), 
+        gpu_mem.springs_const(),
+        gpu_mem.springs_damping_factor(),
+        gpu_mem.springs_viscous_factor(),
+        gpu_mem.springs_moi_along_com(),
+        
+        // gpu_mem.springs_outside_body(),
+        // gpu_mem.springs_radius(),
+        // gpu_mem.springs_p1() ,gpu_mem.springs_p2()
     };
 
-    float* shared_ptrs[NUM_ARRAYS] = {
+    float* shared_ptrs[NUM_ARRAYS_PAR + NUM_ARRAYS_SPR] = {
         s_particles_vel_x, s_particles_vel_y,
         s_particles_pos_x, s_particles_pos_y,
-        s_particles_spring_acc_x, s_particles_spring_acc_y,
-        s_particles_const_acc_x, s_particles_const_acc_y,
         s_particles_net_acc_x, s_particles_net_acc_y,
-        s_particles_radius, s_particles_mass
+        s_particles_spring_acc_x, s_particles_spring_acc_y,
+
+        s_particles_const_acc_x, s_particles_const_acc_y,
+        s_particles_radius,
+        s_particles_mass,
+
+        s_springs_nat_len,
+        s_springs_const,
+        s_springs_damping_factor,
+        s_springs_viscous_factor, 
+        s_springs_moi_along_com, 
+        // s_springs_outside_body,
+        // s_springs_radius,
+        // s_springs_p1, s_springs_p2
     };
     
-    // load everything needed to shared mem
+    //* load everything needed to shared mem
     // first 5 (32*5 = 160 > 148(num_parts)) warps load the first half of things
+    //TODO: change to load 4 floats at a time
     static_assert(5 * 32 >= env_num_particles);
+
+    // load particle data
     if(warp_id < 5){
         if(idx < env_num_particles){
             #pragma unroll // Tells compiler to flatten this loop for max performance
-            for (int i = 0; i < NUM_ARRAYS/2; i++) {
+            for (int i = 0; i < NUM_ARRAYS_PAR/2; i++) {
                 shared_ptrs[i][idx] = global_ptrs[i][idx + global_offset];
             }
         }
@@ -113,71 +158,333 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         int offset = 5 * 32;
         if(idx - offset < env_num_particles){
             #pragma unroll // Tells compiler to flatten this loop for max performance
-            for (int i = NUM_ARRAYS/2; i < NUM_ARRAYS; i++) {
+            for (int i = NUM_ARRAYS_PAR/2; i < NUM_ARRAYS_PAR; i++) {
                 shared_ptrs[i][idx - offset] = global_ptrs[i][idx - offset + global_offset];
             }
         }
     }
 
-    __syncthreads();
+    // load spring data
+    #pragma unroll // Tells compiler to flatten this loop for max performance
+    for (int i = 0; i < NUM_ARRAYS_SPR; i++) {
+        shared_ptrs[i+NUM_ARRAYS_PAR][idx] = global_ptrs[i+NUM_ARRAYS_PAR][idx + global_offset];
+    }
 
-    for(int i = 0; i < env_num_particles; i++){
-        #pragma unroll // Tells compiler to flatten this loop for max performance
-        for (int k = 0; k < NUM_ARRAYS; k++) {
-            assert(shared_ptrs[k][i] == global_ptrs[k][i + global_offset]);
+    // no need bc in next step if idx < num_part then this idx would have already loaded
+    // whats needed in first half step
+    // __syncthreads();
+
+    for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
+				
+        for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
+
+            //* first half step
+            if(idx < env_num_particles){
+                s_particles_vel_x[idx] += 0.5f * s_particles_net_acc_x[idx] * gpu_env_dt;
+                s_particles_vel_y[idx] += 0.5f * s_particles_net_acc_y[idx] * gpu_env_dt;
+                
+                // m_curr_pos += m_vel*env_dt;
+                s_particles_pos_x[idx] += s_particles_vel_x[idx] * gpu_env_dt;
+                s_particles_pos_y[idx] += s_particles_vel_y[idx] * gpu_env_dt;
+            }
+            __syncthreads();
+
+
+
+
+            // total num_springs + num_muscles threads in a block
+            //TODO: test with a thread of each particle and it calc force for springs attched to it
+            //TODO: it will elim atomicwrites but some threads may do a lot of work since time is max(all threads) bad
+            //* calculate all 3 spring forces for all springs here for idx only
+            float2 p1_spring_acc = make_float2(0, 0);
+            float2 p2_spring_acc = make_float2(0, 0);
+            int p1 = s_springs_p1[idx];
+            int p2 = s_springs_p2[idx];
+            float m1 = s_particles_mass[p1];
+            float m2 = s_particles_mass[p2];
+            float2 rel_pos = make_float2(s_particles_pos_x[p2] - s_particles_pos_x[p1],
+                                                s_particles_pos_y[p2] - s_particles_pos_y[p1]);
+            
+            //* Spring::calculate_spring_force()
+            float deformation = length(rel_pos) - s_springs_nat_len[idx];
+            rel_pos = normalize(rel_pos);
+
+            //! really big spring const multiplied to small deformation --> bad
+            p1_spring_acc += (deformation * ( rel_pos)) * (s_springs_const[idx] / m1);
+            p2_spring_acc += (deformation * (-rel_pos)) * (s_springs_const[idx] / m2);
+            
+            //* Spring::calculate_damping_force()
+            float2 vel_vec = make_float2(s_particles_vel_x[p2] - s_particles_vel_x[p1],
+                                            s_particles_vel_y[p2] - s_particles_vel_y[p1]);
+            vel_vec /= (m1+m2);
+            // project vel_vel along spring(rel_pos)
+            // rel_pos is normalised already
+            vel_vec = dot(vel_vec, rel_pos) * rel_pos;
+                
+            p1_spring_acc += -(s_springs_damping_factor[idx]) * (m2*(-vel_vec));
+            p2_spring_acc += -(s_springs_damping_factor[idx]) * (m1*(vel_vec));
+
+            //* Spring::calculate_viscous_force()
+            if(s_springs_outside_body[idx]){
+                //* TRUST that nvcc will inline all this 
+                float2 v1 = make_float2(s_particles_vel_x[p1], s_particles_vel_y[p1]);
+                float2 v2 = make_float2(s_particles_vel_x[p2], s_particles_vel_y[p2]);
+                float2 vel_com = (m1 * v1 + m2 * v2) / (m1 + m2);
+                float2 vel_com_along_spring = dot(vel_com, rel_pos) * rel_pos;
+
+                float2 perp_spring = make_float2(-rel_pos.y, rel_pos.x);
+
+                float2 perp_viscous_acc = make_float2(0.f, 0.f);
+                if(dot(vel_com, -perp_spring) > 0.f){
+                    perp_viscous_acc = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * (vel_com - vel_com_along_spring);
+                }
+
+                float2 parallel_viscous_acc = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * vel_com_along_spring;
+
+                float total_mass = m1 + m2;
+                float angular_acc = length(parallel_viscous_acc) * s_springs_radius[idx] / s_springs_moi_along_com[idx];
+
+                float2 dir_perp_spring = make_float2(0.f, 0.f);
+                if(angular_acc != 0.f){
+                    float2 perp_of_parallel = make_float2(-parallel_viscous_acc.y, parallel_viscous_acc.x);
+                    dir_perp_spring = normalize(perp_of_parallel);
+                }
+
+                p1_spring_acc += perp_viscous_acc + parallel_viscous_acc + dir_perp_spring * (angular_acc * m2 / total_mass * s_springs_nat_len[idx]);
+                p2_spring_acc += perp_viscous_acc + parallel_viscous_acc - dir_perp_spring * (angular_acc * m1 / total_mass * s_springs_nat_len[idx]);
+            }
+
+            // atomic wrtie back for accs
+            atomicAdd(&s_particles_spring_acc_x[p1], p1_spring_acc.x);
+            atomicAdd(&s_particles_spring_acc_y[p1], p1_spring_acc.y);
+            
+            atomicAdd(&s_particles_spring_acc_x[p2], p2_spring_acc.x);
+            atomicAdd(&s_particles_spring_acc_y[p2], p2_spring_acc.y);
+
+            // no need to sync here bc collision handling wont need the accs
+
+
+            //* collision handle
+
+            // sort by x
+            typedef cub::BlockRadixSort<float, num_threads, 1, int> BlockSort;
+            __shared__ typename BlockSort::TempStorage temp_storage;
+            __shared__ float left_wall[env_num_particles];
+
+            __shared__ int sorted_inds[env_num_particles];
+
+            float thread_key[1];
+            int thread_value[1];
+            if(idx < env_num_particles){
+                thread_key[0] = s_particles_pos_x[idx];
+                thread_value[0] = idx; 
+                left_wall[idx] = s_particles_pos_x[idx] - s_particles_radius[idx];
+            }
+            else{
+                thread_key[0] = max_x + 1;
+                thread_value[0] = -1; 
+            }
+            
+            // all threads in block must enter together -- can't be in a divergent if branch
+            BlockSort(temp_storage).Sort(thread_key, thread_value);
+            
+            if(idx < env_num_particles){
+                sorted_inds[idx] = thread_value[0];
+            }
+            __syncthreads();   
+            
+            // each idx will handle ALL collision of particle idx with particles to idx's right
+            if(idx < env_num_particles){
+                int p1 = sorted_inds[idx];
+
+                for(int k = idx+1; k < env_num_particles; k++){
+                    int p2 = sorted_inds[k];
+                    if(p2 < 0) break;
+
+                    if(left_wall[p2] > s_particles_pos_x[p1] - s_particles_radius[p1]){
+                        break;
+                    }
+                    handle_particle_particle_collision(
+                        s_particles_pos_x, s_particles_pos_y,
+                        s_particles_vel_x, s_particles_vel_y,
+                        s_particles_radius,
+                        s_particles_mass[p1], s_particles_mass[p2],
+                        p1, p2);
+                }
+            }
+
+            __syncthreads();
+            // //* second half step
+
+            if(idx < env_num_particles){
+                // m_acc = gravity + m_buoyancy_acc + m_spring_acc;
+                //! assignment not +=
+                s_particles_net_acc_x[idx] = s_particles_spring_acc_x[idx] + s_particles_const_acc_x[idx];
+                s_particles_net_acc_y[idx] = s_particles_spring_acc_y[idx] + s_particles_const_acc_y[idx];
+                
+                s_particles_spring_acc_x[idx] = 0.f;
+                s_particles_spring_acc_y[idx] = 0.f;
+
+                // m_vel += 0.5f * m_acc * env_dt;
+                s_particles_vel_x[idx] += 0.5f * s_particles_net_acc_x[idx] * gpu_env_dt;
+                s_particles_vel_y[idx] += 0.5f * s_particles_net_acc_y[idx] * gpu_env_dt;
+
+                handle_boundary(
+                    s_particles_pos_x, s_particles_pos_y,
+                    s_particles_vel_x, s_particles_vel_y,
+                    s_particles_radius, idx);
+            }
+
+            __syncthreads();
+            
         }
     }
-    // some threads pass by this and in the dummy test modify shared memeory causing assert to fails
-    __syncthreads();
-
-    //dummy test
-    if(idx < env_num_particles){
-        s_particles_vel_x[idx] += 0.5f * s_particles_net_acc_x[idx] * gpu_env_dt;
-        s_particles_vel_y[idx] += 0.5f * s_particles_net_acc_y[idx] * gpu_env_dt;
-        
-        // m_curr_pos += m_vel*env_dt;
-        s_particles_pos_x[idx] += s_particles_vel_x[idx] * gpu_env_dt;
-        s_particles_pos_y[idx] += s_particles_vel_y[idx] * gpu_env_dt;
-    }
-
-    // total num_springs + num_muscles threads in a block
-    // update all springs
 
 
-
-    // write back everything
+    //* write back shared to global 
+    // store particle data
     if(warp_id < 5){
         if(idx < env_num_particles){
-            gpu_mem.particles_vel_x()[idx + global_offset] = s_particles_vel_x[idx];
-            gpu_mem.particles_vel_y()[idx + global_offset] = s_particles_vel_y[idx];
-
-            gpu_mem.particles_pos_x()[idx + global_offset] = s_particles_pos_x[idx];
-            gpu_mem.particles_pos_y()[idx + global_offset] = s_particles_pos_y[idx];
-
-            gpu_mem.particles_spring_acc_x()[idx + global_offset] = s_particles_spring_acc_x[idx];
-            gpu_mem.particles_spring_acc_y()[idx + global_offset] = s_particles_spring_acc_y[idx];
+            #pragma unroll // Tells compiler to flatten this loop for max performance
+            for (int i = 0; i < NUM_ARRAYS_PAR/2; i++) {
+                global_ptrs[i][idx + global_offset] = shared_ptrs[i][idx];
+            }
         }
     }
     else if(warp_id < 10){
-
         int offset = 5 * 32;
         if(idx - offset < env_num_particles){
-
-            gpu_mem.particles_const_acc_x()[idx - offset + global_offset] = s_particles_const_acc_x[idx - offset];
-            gpu_mem.particles_const_acc_y()[idx - offset + global_offset] = s_particles_const_acc_y[idx - offset];
-            
-            gpu_mem.particles_net_acc_x()[idx - offset + global_offset] = s_particles_net_acc_x[idx - offset];
-            gpu_mem.particles_net_acc_y()[idx - offset + global_offset] = s_particles_net_acc_y[idx - offset];
-            
-            gpu_mem.particles_radius()[idx - offset  + global_offset] = s_particles_radius[idx - offset];
+            #pragma unroll // Tells compiler to flatten this loop for max performance
+            for (int i = NUM_ARRAYS_PAR/2; i < NUM_ARRAYS_PAR; i++) {
+                global_ptrs[i][idx - offset + global_offset] = shared_ptrs[i][idx - offset];
+            }
         }
     }
 
+    // sotre spring data
+    #pragma unroll // Tells compiler to flatten this loop for max performance
+    for (int i = 0; i < NUM_ARRAYS_SPR; i++) {
+        global_ptrs[i+NUM_ARRAYS_PAR][idx + global_offset] = shared_ptrs[i+NUM_ARRAYS_PAR][idx];
+    }
+
+    /*
+    // __syncthreads();
+
+    // auto check = [](float a, float b, int i, int k){
+    //     if(a != b){
+    //         printf("\n%f -- %f, k=%d, i=%i", a,b,k,i);
+    //     }
+
+    //     return a == b;
+    // };
+
+    // #pragma unroll // Tells compiler to flatten this loop for max performance
+    // for (int k = 0; k < NUM_ARRAYS_PAR; k++) {
+    //     for(int i = 0; i < env_num_particles; i++){
+    //         assert(check(shared_ptrs[k][i], global_ptrs[k][i + global_offset], i, k));
+    //     }
+    // }
+    // // #pragma unroll // Tells compiler to flatten this loop for max performance
+    // for (int k = NUM_ARRAYS_PAR; k < NUM_ARRAYS_SPR + NUM_ARRAYS_PAR; k++) {
+    //         for(int i = 0; i < num_threads; i++){
+    //         assert(check(shared_ptrs[k][i], global_ptrs[k][i + global_offset], i, k));
+    //     }
+    // }
+    // // some threads pass by this and in the dummy test modify shared memeory causing assert to fails
+    // __syncthreads();
+    */
 }
 
-__device__ void calculate_spring_force(float * ){
+__device__ void handle_particle_particle_collision(
+    float* s_particles_pos_x, float* s_particles_pos_y,
+    float* s_particles_vel_x, float* s_particles_vel_y,
+    float* s_particles_radius,
+    float m1, float m2,
+    int p1, int p2)
+{
+    float2 pos1 = make_float2(s_particles_pos_x[p1], s_particles_pos_y[p1]);
+    float2 pos2 = make_float2(s_particles_pos_x[p2], s_particles_pos_y[p2]);
+    float2 line_of_contact = pos2 - pos1;
 
+    float r1 = s_particles_radius[p1];
+    float r2 = s_particles_radius[p2];
+
+    float dist = length(line_of_contact);
+    float overlap = (r1 + r2) - dist;
+    if (overlap <= 0.f) return;
+
+    float2 v1 = make_float2(s_particles_vel_x[p1], s_particles_vel_y[p1]);
+    float2 v2 = make_float2(s_particles_vel_x[p2], s_particles_vel_y[p2]);
+
+    // projectedOnto(b) == (dot(a,b)/dot(b,b)) * b
+    float2 v1_along = (dot(v1, line_of_contact) / dot(line_of_contact, line_of_contact)) * line_of_contact;
+    float2 v2_along = (dot(v2, line_of_contact) / dot(line_of_contact, line_of_contact)) * line_of_contact;
+
+    // already moving apart
+    if(dot(line_of_contact, v2_along - v1_along) >= 0.f) return;
+
+    float2 v1_perp = v1 - v1_along;
+    float2 v2_perp = v2 - v2_along;
+
+    // wrt p1
+    float2 rel_vel_perp = v2_perp - v1_perp;
+    float rel_vel_perp_len = length(rel_vel_perp);
+
+    float c1 = (m1 - m2 * gpu_restitution) / (m1 + m2);
+    float c2 = (1.f + gpu_restitution) * (m2 / (m1 + m2));
+
+    float2 impulse_along = ((c1 * v1_along + c2 * v2_along) - v1_along) * m1;
+
+    float magnitude_impulse_friction = fminf(
+        gpu_coefficient_friction * length(impulse_along),
+        fmaxf(rel_vel_perp_len, gpu_min_rel_vel_for_friction) * fminf(m1, m2));
+
+    float2 impulse_perp = magnitude_impulse_friction * rel_vel_perp /
+        (rel_vel_perp_len != 0.f ? rel_vel_perp_len : 1.f);
+
+    float2 delta_v1 =  (impulse_along + impulse_perp) / m1;
+    float2 delta_v2 = -1.f * (impulse_along + impulse_perp) / m2;
+
+    // multiple threads can touch the same particle (idx=p1 for one pair,
+    // idx=i=p2 for another pair running concurrently), so writes must be atomic
+    atomicAdd(&s_particles_vel_x[p1], delta_v1.x);
+    atomicAdd(&s_particles_vel_y[p1], delta_v1.y);
+
+    atomicAdd(&s_particles_vel_x[p2], delta_v2.x);
+    atomicAdd(&s_particles_vel_y[p2], delta_v2.y);
 }
+
+__device__ void handle_boundary(
+    float* s_particles_pos_x, float* s_particles_pos_y,
+    float* s_particles_vel_x, float* s_particles_vel_y,
+    float* s_particles_radius, int idx)
+{
+    float radius = s_particles_radius[idx];
+
+    if (s_particles_pos_x[idx] + radius > gpu_max_x) {
+        // m_curr_pos.x = 2*gpu_max_x - (m_curr_pos.x + radius) - radius;
+        s_particles_pos_x[idx] = 2.f * gpu_max_x - (s_particles_pos_x[idx] + radius) - radius;
+        s_particles_vel_x[idx] = -s_particles_vel_x[idx];
+    }
+    else if (s_particles_pos_x[idx] - radius < 0.f) {
+        // m_curr_pos.x = 2*0 - (m_curr_pos.x - radius) + radius;
+        s_particles_pos_x[idx] = -(s_particles_pos_x[idx] - radius) + radius;
+        s_particles_vel_x[idx] = -s_particles_vel_x[idx];
+    }
+
+    if (s_particles_pos_y[idx] + radius > gpu_max_y) {
+        s_particles_pos_y[idx] = 2.f * gpu_max_y - (s_particles_pos_y[idx] + radius) - radius;
+        s_particles_vel_y[idx] = -s_particles_vel_y[idx];
+    }
+    else if (s_particles_pos_y[idx] - radius < 0.f) {
+        s_particles_pos_y[idx] = -(s_particles_pos_y[idx] - radius) + radius;
+        s_particles_vel_y[idx] = -s_particles_vel_y[idx];
+    }
+}
+
+
+
+/*
 
 void launch_first_half_step(){
 
@@ -205,6 +512,7 @@ __global__ void first_half_step(GPU_unified_mem gpu_mem){
 
 }
 
+
 void launch_second_half_step(){
 
     
@@ -220,7 +528,7 @@ __global__ void second_half_step(GPU_unified_mem gpu_mem){
     assert(gpu_env_dt == 1.f/(60 * 16));
 
     // m_acc = gravity + m_buoyancy_acc + m_spring_acc;
-    //! assignemnt not +=
+    // assignemnt not +=
     if(idx < grid_sz*block_sz){
 
         gpu_mem.particles_net_acc_x()[idx] = gpu_mem.particles_spring_acc_x()[idx] + gpu_mem.particles_const_acc_x()[idx];
@@ -273,3 +581,5 @@ __device__ void handle_boundary(GPU_unified_mem gpu_mem, int idx){
 // __global__ void reset(GPU_unified_mem gpu_mem){
 
 // }
+
+*/

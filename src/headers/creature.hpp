@@ -71,6 +71,7 @@ class Creature{
         // will be moved to the derived class
         // passing the entire particles array not a good practice(maybe)
         void get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles);
+        void get_observation_gpu(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles);
         int get_apex_tip_index();
 
         Neural_Net const& get_brain() const;

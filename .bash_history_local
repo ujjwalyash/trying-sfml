@@ -73,3 +73,19 @@ clear
 ./run.sh > output.txt
 pwd
 ./build/bin/main 
+./run.sh > output.txt
+./run.sh
+./run.sh > output.txt 
+./run.sh
+clear
+./run.sh
+./run.sh > output.txt 
+./run.sh
+./run.sh > output.txt 
+./run.sh
+./run.sh > output.txt 
+./run.sh
+./run.sh > output.txt 
+./run.sh
+clear
+./run.sh

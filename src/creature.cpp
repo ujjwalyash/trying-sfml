@@ -294,6 +294,47 @@ void Creature::get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, s
     obs[10] = 2.f*(particles[m_sensing_points[3]].get_curr_pos().x/max_x) - 1.f;
     obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos().y/max_y) - 1.f;
 }
+void Creature::get_observation_gpu(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles){
+    
+    // use a parameter somewhere instead of hardcoding 12
+    assert(obs.size() == 12);
+    std::vector<int> vals(12);
+    // for ball
+    float mn = 10000;
+    float mx = 0;
+    for(int i = 0; i < 4; i++){
+        vals[i] = (ball_pos-particles[m_sensing_points[i]].get_curr_pos_gpu()).length();
+        mn = fmin(mn, vals[i]);
+        mx = fmax(mx, vals[i]);
+    }
+
+    float dem = mx-mn;
+    for(int i = 0; i < 4; i++){
+        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
+    }
+
+    // for goal
+    mn = 10000;
+    mx = 0;
+    for(int i = 4; i < 8; i++){
+        vals[i] = (goal_pos-particles[m_sensing_points[i-4]].get_curr_pos_gpu()).length();
+        mn = fmin(mn, vals[i]);
+        mx = fmax(mx, vals[i]);
+    }
+
+    dem = mx-mn;
+    for(int i = 4; i < 8; i++){
+        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
+    }
+
+    // for walls
+    // points 0, 3
+    obs[8] = 2.f*(particles[m_sensing_points[0]].get_curr_pos_gpu().x/max_x) - 1.f;
+    obs[9] = 2.f*(particles[m_sensing_points[0]].get_curr_pos_gpu().y/max_y) - 1.f;
+    
+    obs[10] = 2.f*(particles[m_sensing_points[3]].get_curr_pos_gpu().x/max_x) - 1.f;
+    obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos_gpu().y/max_y) - 1.f;
+}
 
 Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
                                             , int& num_muscles, std::vector<Muscle>& muscles, int env_id){
@@ -302,6 +343,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
 
     // --- CRITICAL PARAMETERS (PRESERVED UNCHANGED) ---
     int id_offset = num_particles;
+    int spring_id = num_springs + num_muscles;
     sf::Vector2f shift = {660, 390};
 
     // we cant really make things lighter unless we lower the spring constants
@@ -399,7 +441,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // THIS DOES NOT CHANGE RADIUS OF PARTICLES JUST THE DISTANCES
     for(int i = 0; i < (int)positions.size(); i++){
         old_pos = positions[i] + shift;
-        vel.x = 0.01f * i; vel.y = 0.01f * i; 
+        vel.x = 0.0f * i; vel.y = 0.0f * i; 
         // curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
         acc = {0.0f, 0.0f};
 
@@ -424,7 +466,8 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         float dy = positions[idxA].y - positions[idxB].y;
         float exact_length = std::sqrt(dx * dx + dy * dy);
         assert(exact_length != 0);
-        springs.push_back(Spring(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness, outside_body));
+        springs.push_back(Spring(particles[idxA+id_offset], particles[idxB+id_offset], env_id, spring_id, exact_length, stiffness, outside_body));
+        spring_id++;
     };
 
     auto add_muscle = [&](int idxA, int idxB, float stiffness, bool outside_body) {
@@ -432,7 +475,8 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         float dy = positions[idxA].y - positions[idxB].y;
         float exact_length = std::sqrt(dx * dx + dy * dy);
         assert(exact_length != 0);
-        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], exact_length, stiffness, outside_body));
+        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], env_id, spring_id, exact_length, stiffness, outside_body));
+        spring_id++;
     };
 
     // B. ANCHOR TAIL ROOTS TO THE BASE OF THE HEAD
@@ -539,6 +583,7 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
 
     // Track starting index offset if particles already exist in the vectors
     int start_particle_idx = particles.size();
+    int spring_id = springs.size();
 
     // Temp vectors to calculate setup arrays before instantiation
     std::vector<sf::Vector2f> positions;
@@ -587,7 +632,8 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
         float dx = positions[idxA - start_particle_idx].x - positions[idxB - start_particle_idx].x;
         float dy = positions[idxA - start_particle_idx].y - positions[idxB - start_particle_idx].y;
         float exact_length = std::sqrt(dx * dx + dy * dy);
-        springs.push_back(Spring(particles[idxA], particles[idxB], exact_length, stiffness, outside));
+        springs.push_back(Spring(particles[idxA], particles[idxB], env_id, spring_id, exact_length, stiffness, outside));
+        spring_id++;
     };
 
     for (int i = 0; i < EDGE_POINTS; i++) {

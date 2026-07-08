@@ -47,6 +47,7 @@ class Environment
         
         // draws everything on window, does not clear, display
         void render(sf::RenderWindow& window);
+        void render_gpu(sf::RenderWindow& window);
         
         // step till m_episode_end
         // void run_episode();
@@ -65,6 +66,7 @@ class Environment
         // returns the reward for one step
         // checks for end condition
         float calculate_reward();
+        float calculate_reward_gpu();
 
         float get_curr_reward();
         void reset_reward();

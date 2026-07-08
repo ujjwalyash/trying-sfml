@@ -4,15 +4,17 @@
 #include <SFML/System/Vector2.hpp>
 #include <cassert>
 #include <cmath>
-// #include <iostream>
+#include <iostream>
 
-Spring::Spring(Particle& p1, Particle& p2, float len, float spring_const, bool outside_body)
+Spring::Spring(Particle& p1, Particle& p2, int env_id, int idx, float len, float spring_const, bool outside_body)
 
     :m_p1(p1), m_p2(p2),
      m_present_outside_body(outside_body),
      m_mass(m_p1.get_mass()+m_p2.get_mass()),
      m_radius(0.5f*(m_p1.get_radius()+m_p2.get_radius())),
-     m_natural_length(len), m_spring_constant(spring_const)
+     m_natural_length(len), m_spring_constant(spring_const),
+     m_id(idx),
+     m_env_id(env_id)
 {
     // this is too late refs cant exist without initialization hence
     // initialization needs to be done before constructor body starts
@@ -29,6 +31,22 @@ Spring::Spring(Particle& p1, Particle& p2, float len, float spring_const, bool o
     float m1 = m_p1.get_mass();
     float m2 = m_p2.get_mass();
     m_damping_factor = sqrtf(m_spring_constant * (m1+m2)/(m1*m2));
+
+    // std::cout << "spring env_id, id: " << env_id << " " <<  idx << '\n';
+
+    if(env_id >= 0){
+        constexpr int total_springs_per_env = env_num_springs + env_num_muscles;
+        gpu_mem.springs_nat_len()[env_id*total_springs_per_env + idx] = m_natural_length;
+        gpu_mem.springs_const()[env_id*total_springs_per_env + idx] = m_spring_constant;
+        gpu_mem.springs_damping_factor()[env_id*total_springs_per_env + idx] = m_damping_factor;
+        gpu_mem.springs_viscous_factor()[env_id*total_springs_per_env + idx] = m_viscous_factor;
+        gpu_mem.springs_moi_along_com()[env_id*total_springs_per_env + idx] = m_moment_interia_along_com;
+        gpu_mem.springs_outside_body()[env_id*total_springs_per_env + idx] = m_present_outside_body;
+        gpu_mem.springs_radius()[env_id*total_springs_per_env + idx] = m_radius;
+
+        gpu_mem.springs_p1()[env_id*total_springs_per_env + idx] = m_p1.get_local_id();
+        gpu_mem.springs_p2()[env_id*total_springs_per_env + idx] = m_p2.get_local_id();
+    }
 }
 
 std::array<sf::Vertex, 2> Spring::get_line(){
@@ -52,6 +70,31 @@ std::array<sf::Vertex, 2> Spring::get_line(){
     {
         sf::Vertex{m_p1.get_curr_pos(),color},
         sf::Vertex{m_p2.get_curr_pos(),color}
+    };
+
+    return line;
+}
+std::array<sf::Vertex, 2> Spring::get_line_gpu(){
+
+    sf::Color color = sf::Color::White;
+    sf::Vector2f spring_vector = m_p2.get_curr_pos_gpu() - m_p1.get_curr_pos_gpu();
+    sf::Vector2f vel_com = (m_p2.get_vel_gpu() * m_p2.get_mass() + m_p1.get_vel_gpu() * m_p1.get_mass()) / (m_p1.get_mass() + m_p2.get_mass());
+
+    if(m_present_outside_body){
+        // this flipped bc y axis is downward .perpendicualar rotates 90 deg clockwise not anti clock
+        if(vel_com.dot(-spring_vector.perpendicular()) > 0){
+        // if(vel_com.dot(spring_vector.perpendicular()) > 0){
+            color = sf::Color::Red;
+        }
+        else{
+            color = sf::Color::Green;
+        }
+    }
+
+    std::array<sf::Vertex, 2> line =
+    {
+        sf::Vertex{m_p1.get_curr_pos_gpu(),color},
+        sf::Vertex{m_p2.get_curr_pos_gpu(),color}
     };
 
     return line;
@@ -106,13 +149,9 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
         calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
     }
 
-    // change to using reduced mass later -- that is faster
-    // why didnt i jsut store this >?????
-    // float spring_const_for_p1 = m_spring_constant * (m1+m2)/m2;
-    // float spring_const_for_p2 = m_spring_constant * (m1+m2)/m1;
-
-    // keep this underdamped do not change -1.f to -2.f
-    // using fsqrt here is bad this function is called for every spring every step -- the most active func
+    // sf::Vector2f vel = ((m_p2.get_vel() - m_p1.get_vel())/(m1+m2)).projectedOnto(vec_along_spring);
+    // m_p1.add_spring_acc(-m_damping_factor * m2 * (-vel));
+    // m_p2.add_spring_acc(-m_damping_factor * m1 * (vel));
     m_p1.add_spring_acc(-1.f*m_damping_factor * (v1_along_spring-vel_com_along_spring));
     m_p2.add_spring_acc(-1.f*m_damping_factor * (v2_along_spring-vel_com_along_spring));
 }

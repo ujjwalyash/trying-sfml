@@ -61,10 +61,15 @@ class Particle{
         
         sf::Vector2<float> get_curr_pos() const;
         sf::Vector2<float> get_vel() const;
+        
+        sf::Vector2<float> get_curr_pos_gpu() const;
+        sf::Vector2<float> get_vel_gpu() const;
+
         float get_radius() const;
         float get_mass() const;
         float get_sqrt_mass() const;
         int get_global_id() const;
+        int get_local_id() const;
         float calculate_total_energy();
 
         void add_spring_acc(sf::Vector2f spring_acc);

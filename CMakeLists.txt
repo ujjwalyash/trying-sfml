@@ -46,12 +46,13 @@ target_compile_options(main PRIVATE
 #     -Wextra        # Turns on extra useful warnings
 #     -Wpedantic     # Forces strict adherence to the C++ standard
 #     -Wshadow       # Warns if you accidentally reuse a variable name
-      $<$<COMPILE_LANGUAGE:CXX>: -Wshadow -Wpedantic -Wextra -Wall>
+    $<$<COMPILE_LANGUAGE:CXX>: -Wshadow -Wpedantic -Wextra -Wall>
+    $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas="-v">
     
-    -g
+    # $<$<COMPILE_LANGUAGE:CXX>: -g>
     
-    # -O3
-    # -march=native
+    -O3
+    -march=native
 )
 endif()
 

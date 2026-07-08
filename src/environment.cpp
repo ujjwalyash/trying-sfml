@@ -84,7 +84,7 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
         m_creature = Creature{data.s_muscle_indices, data.s_sensing_points, layer_sizes};
     }
     else{
-        std::cout << "loaded from file: " << file_path << '\n';
+        // std::cout << "loaded from file: " << file_path << '\n';
         
         json j = json::parse(i);
         std::vector<MatrixXdf> weights = j["weights"].get<std::vector<MatrixXdf>>();
@@ -202,6 +202,55 @@ void Environment::render(sf::RenderWindow& window){
         sh.setRadius(r);
         sh.setFillColor(sf::Color::Red);
         window.draw(sh);
+
+}
+
+void Environment::render_gpu(sf::RenderWindow& window){
+        // int j = 0;
+		sf::CircleShape sh;
+		for(int i = 0; i < m_num_particles; i++){
+			// if(j < (int)m_creature.m_sensing_points.size() && i == m_creature.m_sensing_points[j]){
+			// 	j++;
+            //     // if(j != 1 and j != 4) continue;
+
+			// 	sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
+			// 	float r = m_particles[i].get_radius();
+			// 	sh.setPosition({particle_pos.x-r, particle_pos.y-r});
+			// 	sh.setRadius(r);
+			// 	sh.setFillColor(sf::Color::Green);
+			// 	window.draw(sh);
+			// }
+			// else{
+			// 	sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
+			// 	float r = m_particles[i].get_radius();
+			// 	sh.setPosition({particle_pos.x-r, particle_pos.y-r});
+			// 	sh.setRadius(r);
+			// 	sh.setFillColor(sf::Color::White);
+			// 	window.draw(sh);
+			// }
+            sf::Vector2f particle_pos = m_particles[i].get_curr_pos_gpu();
+            float r = m_particles[i].get_radius();
+            sh.setPosition({particle_pos.x-r, particle_pos.y-r});
+            sh.setRadius(r);
+            sh.setFillColor(sf::Color::Blue);
+            window.draw(sh);
+		}
+		for(int i = 0; i < m_num_springs; i++){
+			std::array line = m_springs[i].get_line_gpu();
+			window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
+		}
+		for(int i = 0; i < m_num_muscles; i++){
+			std::array line = m_muscles[i].get_line_gpu();
+			window.draw(line.data(), line.size(), sf::PrimitiveType::Lines);
+		}
+
+        // draw goal
+        sf::Vector2f particle_pos = m_goal_pos;
+        float r = m_goal_radius;
+        sh.setPosition({particle_pos.x-r, particle_pos.y-r});
+        sh.setRadius(r);
+        sh.setFillColor(sf::Color::Red);
+        window.draw(sh);
 }
 
 
@@ -210,51 +259,48 @@ void Environment::step_stage_0(){
     
     // stage 0
 	std::vector<float> observation(env_observation_size);
-    m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
+    m_creature.get_observation_gpu(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
     
     // update muscle lengths
     handle_all_muscle_contraction(m_muscles);
     // stage 0
 
-    check();
+    // check();
 }
 
-// for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
-
-//     for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
-        // launch_first_half_step();
-        
 void Environment::step_stage_1(){	
+    for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
+    
+        for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
             // stage 1
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].first_half_step();
             }			
-            check();
             
             // update acc
-            //todo: move this to gpu
             handle_all_muscle_forces(m_muscles);
-            // check();
-            //todo: move this to gpu
             handle_all_springs(m_springs);
-            check();
+            // check();
             
             handle_all_collisions(m_particles, m_springs, m_muscles);    
             
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].second_half_step();
             }		
+
+            // check();
             // stage 1
-            	
+        }
+    }
 }
             // launch_second_half_step();
 
 void Environment::step_stage_2(){	
     // stage 2
-    m_ball_pos = m_particles[m_goal_center_index].get_curr_pos();
+    m_ball_pos = m_particles[m_goal_center_index].get_curr_pos_gpu();
 
-    float reward = calculate_reward();
+    float reward = calculate_reward_gpu();
     m_reward += reward;
 
     m_num_steps_done++;
@@ -263,7 +309,7 @@ void Environment::step_stage_2(){
         m_episode_end = true;
     // stage 2
 
-    check();
+    // check();
 }
 
 // keeping this cpu only
@@ -320,6 +366,41 @@ float Environment::calculate_reward(){
     float goal_ball_dist = (m_ball_pos-m_goal_pos).length();
     // float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
     float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_ball_pos).length();
+    // float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length();
+
+    // rn balls sinks :|
+    // if(ball_displacement > 5) m_has_touched_ball = true;
+
+    // if(not m_has_touched_ball){
+        // reward -= 1;
+        // reward -= creature_ball_dist/100.f;
+    // }
+    
+    reward -= creature_ball_dist/100.f;    
+    reward -= goal_ball_dist/300.f;
+    reward -= 1; // normal time thing
+
+    // std::cout << "tip speed" << apex_tip_speed << '\n';
+    // std::cout.flush();
+
+    // if present from the beginning this leads to suboptimal policy of just vibrating the tip in place
+    // reward += apex_tip_speed/20;
+
+    if(goal_ball_dist < m_goal_radius){
+        reward += 1000;
+        m_episode_end = 1;
+    }
+
+    return reward;
+}
+
+float Environment::calculate_reward_gpu(){
+    
+    float reward = 0;
+
+    float goal_ball_dist = (m_ball_pos-m_goal_pos).length();
+    // float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
+    float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos_gpu() - m_ball_pos).length();
     // float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length();
 
     // rn balls sinks :|

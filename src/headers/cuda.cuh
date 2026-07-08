@@ -4,12 +4,20 @@
 #include <iostream>
 #include <cassert>
 
+#include <cub/cub.cuh>
 #include "common.hpp"
 
 // constants
-__constant__ float gpu_env_dt;
-__constant__ float gpu_max_x;
-__constant__ float gpu_max_y;
+//* constexpr and __constant__ together doesnt make sense 
+//* it handle by compiler why store in runtime
+//__constant__ constexpr float gpu_env_dt;
+
+constexpr float gpu_env_dt = env_dt;
+constexpr float gpu_max_x = max_x;
+constexpr float gpu_max_y = max_y;
+constexpr float gpu_restitution = restitution;
+constexpr float gpu_coefficient_friction = coefficient_friction;
+constexpr float gpu_min_rel_vel_for_friction = min_rel_vel_for_friction;
 
 // bad every thread in warp will reach diff index everything will be serialized
 // __constant__ float particle_radius[population_size * env_num_particles];
@@ -35,6 +43,18 @@ const int block_sz = env_num_particles;
 const int grid_sz = population_size;
 
 __global__ void big_kernel(GPU_unified_mem gpu_mem);
+
+__device__ void handle_particle_particle_collision(
+    float* s_particles_pos_x, float* s_particles_pos_y,
+    float* s_particles_vel_x, float* s_particles_vel_y,
+    float* s_particles_radius,
+    float m1, float m2,
+    int p1, int p2);
+
+__device__ void handle_boundary(
+    float* s_particles_pos_x, float* s_particles_pos_y,
+    float* s_particles_vel_x, float* s_particles_vel_y,
+    float* s_particles_radius, int idx);
 
 __global__ void first_half_step(GPU_unified_mem gpu_mem);
 

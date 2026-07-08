@@ -18,14 +18,14 @@ namespace{
 	static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
 
 	const int num_episode_per_generation = 1;
-	const int num_generations = 1;
+	const int num_generations = 10;
 
 	const float top_unchanged_percentage = 0.3;
 	const float elimination_percentage = 0.4;
 	
 	const float mutation_rate = 0.6;
 	
-	const bool load_old_gen = true;
+	const bool load_old_gen = false;
 	
 	// other vars
 	int gen;
@@ -54,7 +54,7 @@ namespace{
 
 void * worker(void *){
 	
-	std::cout << "New worker started working \n";
+	// std::cout << "New worker started working \n";
 	// work your whole life
 	while(1){
 
@@ -190,6 +190,7 @@ void* render_current_gen(void *){
 	// COPY
 	int curr_gen = gen;
 	Environment env_used_for_render(get_random_ball_pos(), get_random_goal_pos());
+	// Environment& env_used_for_render = env[0];
 	env_used_for_render.copy_brain(env[rankings[env_rank]]);
 	
 	// YOU cANT copy env -- bc springs have refs not indexes so after copy new env still points to old env's particles
@@ -203,6 +204,14 @@ void* render_current_gen(void *){
 	sf::Font font("/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf");
 	int num_steps_done = 0;
     float reward = 0;
+
+	// for(int i = 0; i < num_episode_per_generation; i++){
+	// 	ball_pos[i] = get_random_ball_pos();
+	// 	goal_pos[i] = get_random_goal_pos();
+	// }
+	
+	// stage = -1;
+	// launch_threads();
 	
 	while ( window.isOpen() )
 	{
@@ -300,6 +309,7 @@ void* render_current_gen(void *){
 		window.clear();
         
         env_used_for_render.render(window);
+        // env_used_for_render.render_gpu(window);
 		
         sf::Text text(font);
 		text.setString(std::format("reward:    {:.1f}\nstps_done: {}\nspd_up:    {}\ncurr_gen:  {}\ncurr_rank: {}", 
@@ -311,7 +321,21 @@ void* render_current_gen(void *){
 
 		window.display();
 		
+		
 		env_used_for_render.step(window, text, render_btw_cycle);
+		
+		// stage = 0;
+		// launch_threads();
+
+		// launch_big_kernel();
+		
+		// stage = 1;
+		// launch_threads();
+		
+		// stage = 2;
+		// launch_threads();
+
+
         reward = env_used_for_render.get_curr_reward();
         num_steps_done++;
 	}
@@ -347,12 +371,12 @@ int main()
 			return rewards[a] > rewards[b];
 	};
 
+	// only creates then, they don't start working until launch_thread called
+	create_workers();
+	
 	// start the rendering thread
 	pthread_t render_thread;
 	pthread_create(&render_thread, NULL, render_current_gen, NULL);
-	
-	// only creates then, they don't start working until launch_thread called
-	create_workers();
 
 	sf::Clock clock;
 	for(gen = 0; gen < num_generations; gen++){
@@ -394,20 +418,7 @@ int main()
 			stage = 0;
 			launch_threads();
 			
-			for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
-				
-				for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
-					
-					// launch_first_half_step();
-					launch_big_kernel();
-					
-					cudaSynchronize();
-					stage = 1;
-					launch_threads();
-					
-					launch_second_half_step();
-				}
-			}
+			launch_big_kernel();
 			
 			cudaSynchronize();
 

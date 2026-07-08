@@ -6,7 +6,7 @@ inline constexpr float max_y = 1080;
 inline constexpr float max_x = 1920;
 
 // since i keep both balanced out anyways just make both 0
-inline constexpr sf::Vector2f gravity = {0, 10};
+inline constexpr sf::Vector2f gravity = {0, 1000};
 inline constexpr float buoyancy_const = 4.f/3.f * 3.141f * 10.f; // DO NOT MAKE DENSITY 1000
 
 inline constexpr float restitution = 0.8f;
@@ -52,22 +52,31 @@ struct GPU_unified_mem{
     CUDA_HOST_DEVICE float* particles_pos_x() const { return ptrs_particle[2]; }
     CUDA_HOST_DEVICE float* particles_pos_y() const { return ptrs_particle[3]; }
 	
-    CUDA_HOST_DEVICE float* particles_spring_acc_x() const { return ptrs_particle[4]; }
-    CUDA_HOST_DEVICE float* particles_spring_acc_y() const { return ptrs_particle[5]; }
+    CUDA_HOST_DEVICE float* particles_net_acc_x() const { return ptrs_particle[4]; }
+    CUDA_HOST_DEVICE float* particles_net_acc_y() const { return ptrs_particle[5]; }
 	
-    CUDA_HOST_DEVICE float* particles_const_acc_x() const { return ptrs_particle[6]; }
-    CUDA_HOST_DEVICE float* particles_const_acc_y() const { return ptrs_particle[7]; }
+    CUDA_HOST_DEVICE float* particles_spring_acc_x() const { return ptrs_particle[6]; }
+    CUDA_HOST_DEVICE float* particles_spring_acc_y() const { return ptrs_particle[7]; }
 	
-    CUDA_HOST_DEVICE float* particles_net_acc_x() const { return ptrs_particle[8]; }
-    CUDA_HOST_DEVICE float* particles_net_acc_y() const { return ptrs_particle[9]; }
+    CUDA_HOST_DEVICE float* particles_const_acc_x() const { return ptrs_particle[8]; }
+    CUDA_HOST_DEVICE float* particles_const_acc_y() const { return ptrs_particle[9]; }
     
-    CUDA_HOST_DEVICE float* particles_radius() const { return ptrs_particle[10]; }
-    CUDA_HOST_DEVICE float* particles_mass() const { return ptrs_particle[11]; }
+    CUDA_HOST_DEVICE float* particles_radius() const { return ptrs_particle[11]; }
+    CUDA_HOST_DEVICE float* particles_mass() const { return ptrs_particle[10]; }
 	
-    float* ptrs_spring[12];
-
+    float* ptrs_spring[9];
+    
     CUDA_HOST_DEVICE float* springs_nat_len() const { return ptrs_spring[0]; }
-    CUDA_HOST_DEVICE float* springs_spr_const() const { return ptrs_spring[1]; }
+    CUDA_HOST_DEVICE float* springs_const() const { return ptrs_spring[1]; }
+    CUDA_HOST_DEVICE float* springs_damping_factor() const { return ptrs_spring[2]; }
+    CUDA_HOST_DEVICE float* springs_viscous_factor() const { return ptrs_spring[3]; }
+    CUDA_HOST_DEVICE float* springs_moi_along_com() const { return ptrs_spring[4]; }
+    CUDA_HOST_DEVICE float* springs_outside_body() const { return ptrs_spring[5]; }
+    CUDA_HOST_DEVICE float* springs_radius() const { return ptrs_spring[6]; }
+    
+    // the local_idx is used for these
+    CUDA_HOST_DEVICE float* springs_p1() const { return ptrs_spring[7]; }
+    CUDA_HOST_DEVICE float* springs_p2() const { return ptrs_spring[8]; }
 	
 };
 

@@ -22,12 +22,16 @@ class Spring{
         
         float m_viscous_factor;
         float m_moment_interia_along_com;
+
+        int m_id;
+        int m_env_id;
         
     public:
 
-        Spring(Particle& p1, Particle& p2, float len, float spring_const, bool outside_body);
+        Spring(Particle& p1, Particle& p2, int env_id, int idx, float len, float spring_const, bool outside_body);
 
         std::array<sf::Vertex, 2> get_line();
+        std::array<sf::Vertex, 2> get_line_gpu();
 
         float calculate_total_energy();
 
