@@ -50,6 +50,7 @@ target_compile_options(main PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas="-v">
     
     # $<$<COMPILE_LANGUAGE:CXX>: -g>
+    # $<$<COMPILE_LANGUAGE:CUDA>: -g -G>
     
     -O3
     -march=native

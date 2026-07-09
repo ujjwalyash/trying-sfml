@@ -190,7 +190,7 @@ void Neural_Net::forward(std::vector<float>& current_activations, std::vector<fl
         activation = activation * m_weights[layer_no] + m_biases[layer_no];
         activation = activation.cwiseMax(0);
     }
-    activation = activation * m_weights[m_weights.size()-1];
+    activation = activation * m_weights[m_weights.size()-1] + m_biases[m_biases.size()-1];
     // approximate sigmoid as x/(1+|x|)
     activation = 0.5f*(1.f + (activation.array()/(1.f+activation.array().abs())));
     

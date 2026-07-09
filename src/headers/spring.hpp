@@ -38,6 +38,8 @@ class Spring{
         void calculate_spring_force();
 
         float get_bounding_box_wall(direction dir);
+
+        void check();
     
     private:
     

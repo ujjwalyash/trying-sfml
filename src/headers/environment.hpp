@@ -37,7 +37,7 @@ class Environment
     public:
         bool m_episode_end = 0;
 
-        Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos);
+        // Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos);
         Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos);
 
         // the state of a environment is just the positions of all the particles in it

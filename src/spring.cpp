@@ -37,6 +37,7 @@ Spring::Spring(Particle& p1, Particle& p2, int env_id, int idx, float len, float
     if(env_id >= 0){
         constexpr int total_springs_per_env = env_num_springs + env_num_muscles;
         gpu_mem.springs_nat_len()[env_id*total_springs_per_env + idx] = m_natural_length;
+        assert(fabs(m_natural_length - (m_p1.get_curr_pos() - m_p2.get_curr_pos()).length()) < 0.1);
         gpu_mem.springs_const()[env_id*total_springs_per_env + idx] = m_spring_constant;
         gpu_mem.springs_damping_factor()[env_id*total_springs_per_env + idx] = m_damping_factor;
         gpu_mem.springs_viscous_factor()[env_id*total_springs_per_env + idx] = m_viscous_factor;
@@ -186,4 +187,26 @@ void handle_all_springs(std::vector<Spring> &springs){
     for(Spring& spring: springs){
         spring.calculate_spring_force();
     }
+}
+
+void Spring::check(){
+    
+    // for debugging
+    auto approx_eq = [&](float a, float b){
+        float perct_error = 1e-4; // pct    
+        float diff = fabs(a - b);
+        bool result = (diff < perct_error) || (diff/fmax(fabs(a), fabs(b)) < perct_error);
+        // result = result * (fabs(a) < 1e-6 || fabs(b/a) < 5);
+    
+        if(!result){
+            std::fprintf(stderr, "\nAssert failed: %f -- %f\n env_id, local_id: %d, %d \n", a, b, m_env_id, m_id);
+            // std::fprintf(stderr, "\nAssert failed: %f -- %f\n env_id, local_id: %d, %d \n", a, b, m_env_id, m_id);
+        }
+    
+        // return true;
+        return result;
+    };
+
+    int x = env_num_muscles + env_num_springs;
+    assert(approx_eq(m_natural_length, gpu_mem.springs_nat_len()[m_env_id * x + m_id]));
 }

@@ -53,19 +53,20 @@ void launch_big_kernel(){
 }
 
 __global__ void big_kernel(GPU_unified_mem gpu_mem){
-
-    // num_parts * env_num
-    int global_offset = env_num_particles * blockIdx.x;
-
+    
     // coords within thread block
     int idx = threadIdx.x;
     int warp_id = threadIdx.x / 32;
-
+    
     constexpr int num_threads = env_num_muscles + env_num_springs;
     static_assert(num_threads >= 2 * env_num_particles, "num_threads < 2 * env_num_particles");
-
+    
     constexpr int NUM_ARRAYS_PAR = 12;
     constexpr int NUM_ARRAYS_SPR = 5;
+    
+    // num_parts * env_num
+    int particle_offset = env_num_particles * blockIdx.x;
+    int spring_offset = num_threads * blockIdx.x;
 
     // decalre everyhting in shared mem
     __shared__ float s_particles_vel_x[env_num_particles];
@@ -92,11 +93,15 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     __shared__ float s_springs_viscous_factor[num_threads];
     __shared__ float s_springs_moi_along_com[num_threads];
    
-    const float* __restrict__ s_springs_outside_body = gpu_mem.springs_outside_body();
-    const float* __restrict__ s_springs_radius = gpu_mem.springs_radius();
-    const float* __restrict__ s_springs_p1 = gpu_mem.springs_p1();
-    const float* __restrict__ s_springs_p2 = gpu_mem.springs_p2();
+    const float* __restrict__ s_springs_outside_body = gpu_mem.springs_outside_body() + spring_offset;
+    const float* __restrict__ s_springs_radius = gpu_mem.springs_radius() + spring_offset;
+    const float* __restrict__ s_springs_p1 = gpu_mem.springs_p1() + spring_offset;
+    const float* __restrict__ s_springs_p2 = gpu_mem.springs_p2() + spring_offset;
 
+    typedef cub::BlockRadixSort<float, num_threads, 1, int> BlockSort;
+    __shared__ typename BlockSort::TempStorage temp_storage;
+    __shared__ float left_wall[env_num_particles];
+    __shared__ int sorted_inds[env_num_particles];
     
     float* global_ptrs[NUM_ARRAYS_PAR + NUM_ARRAYS_SPR] = {
         gpu_mem.particles_vel_x(), gpu_mem.particles_vel_y(),
@@ -150,7 +155,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         if(idx < env_num_particles){
             #pragma unroll // Tells compiler to flatten this loop for max performance
             for (int i = 0; i < NUM_ARRAYS_PAR/2; i++) {
-                shared_ptrs[i][idx] = global_ptrs[i][idx + global_offset];
+                shared_ptrs[i][idx] = global_ptrs[i][idx + particle_offset];
             }
         }
     }
@@ -159,7 +164,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         if(idx - offset < env_num_particles){
             #pragma unroll // Tells compiler to flatten this loop for max performance
             for (int i = NUM_ARRAYS_PAR/2; i < NUM_ARRAYS_PAR; i++) {
-                shared_ptrs[i][idx - offset] = global_ptrs[i][idx - offset + global_offset];
+                shared_ptrs[i][idx - offset] = global_ptrs[i][idx - offset + particle_offset];
             }
         }
     }
@@ -167,12 +172,11 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     // load spring data
     #pragma unroll // Tells compiler to flatten this loop for max performance
     for (int i = 0; i < NUM_ARRAYS_SPR; i++) {
-        shared_ptrs[i+NUM_ARRAYS_PAR][idx] = global_ptrs[i+NUM_ARRAYS_PAR][idx + global_offset];
+        shared_ptrs[i+NUM_ARRAYS_PAR][idx] = global_ptrs[i+NUM_ARRAYS_PAR][idx + spring_offset];
     }
 
     // no need bc in next step if idx < num_part then this idx would have already loaded
     // whats needed in first half step
-    // __syncthreads();
 
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
 				
@@ -188,7 +192,6 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
                 s_particles_pos_y[idx] += s_particles_vel_y[idx] * gpu_env_dt;
             }
             __syncthreads();
-
 
 
 
@@ -263,15 +266,9 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
 
             // no need to sync here bc collision handling wont need the accs
 
-
             //* collision handle
 
             // sort by x
-            typedef cub::BlockRadixSort<float, num_threads, 1, int> BlockSort;
-            __shared__ typename BlockSort::TempStorage temp_storage;
-            __shared__ float left_wall[env_num_particles];
-
-            __shared__ int sorted_inds[env_num_particles];
 
             float thread_key[1];
             int thread_value[1];
@@ -347,7 +344,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         if(idx < env_num_particles){
             #pragma unroll // Tells compiler to flatten this loop for max performance
             for (int i = 0; i < NUM_ARRAYS_PAR/2; i++) {
-                global_ptrs[i][idx + global_offset] = shared_ptrs[i][idx];
+                global_ptrs[i][idx + particle_offset] = shared_ptrs[i][idx];
             }
         }
     }
@@ -356,7 +353,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         if(idx - offset < env_num_particles){
             #pragma unroll // Tells compiler to flatten this loop for max performance
             for (int i = NUM_ARRAYS_PAR/2; i < NUM_ARRAYS_PAR; i++) {
-                global_ptrs[i][idx - offset + global_offset] = shared_ptrs[i][idx - offset];
+                global_ptrs[i][idx - offset + particle_offset] = shared_ptrs[i][idx - offset];
             }
         }
     }
@@ -364,7 +361,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     // sotre spring data
     #pragma unroll // Tells compiler to flatten this loop for max performance
     for (int i = 0; i < NUM_ARRAYS_SPR; i++) {
-        global_ptrs[i+NUM_ARRAYS_PAR][idx + global_offset] = shared_ptrs[i+NUM_ARRAYS_PAR][idx];
+        global_ptrs[i+NUM_ARRAYS_PAR][idx + spring_offset] = shared_ptrs[i+NUM_ARRAYS_PAR][idx];
     }
 
     /*
@@ -381,13 +378,13 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     // #pragma unroll // Tells compiler to flatten this loop for max performance
     // for (int k = 0; k < NUM_ARRAYS_PAR; k++) {
     //     for(int i = 0; i < env_num_particles; i++){
-    //         assert(check(shared_ptrs[k][i], global_ptrs[k][i + global_offset], i, k));
+    //         assert(check(shared_ptrs[k][i], global_ptrs[k][i + particle_offset], i, k));
     //     }
     // }
     // // #pragma unroll // Tells compiler to flatten this loop for max performance
     // for (int k = NUM_ARRAYS_PAR; k < NUM_ARRAYS_SPR + NUM_ARRAYS_PAR; k++) {
     //         for(int i = 0; i < num_threads; i++){
-    //         assert(check(shared_ptrs[k][i], global_ptrs[k][i + global_offset], i, k));
+    //         assert(check(shared_ptrs[k][i], global_ptrs[k][i + particle_offset], i, k));
     //     }
     // }
     // // some threads pass by this and in the dummy test modify shared memeory causing assert to fails

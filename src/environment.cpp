@@ -1,50 +1,6 @@
 #include "headers/environment.hpp"
 #include <iostream>
 
-Environment::Environment(sf::Vector2f ball_pos, sf::Vector2f goal_pos)
-    // m_creature has no default constructor hence need to do this
-    // ensure all function parameter are defined earlier in the CLASS DECLARATION
-{
-    // CREATE THE BALL BEFROE THE CREATURE
-    // if you do afterwords and the vector moves to a bigger size
-    // all the springs which hold references will be invalidated
-    
-    m_id = -1;
-    m_original_ball_pos = ball_pos;
-    m_goal_pos = goal_pos;
-    
-    // after creating football in sperm creation springs vector is resized, the springs break
-    // TODO: temp fix for now -- change refs to index in springs
-    m_particles.reserve(env_num_particles);
-    m_springs.reserve(env_num_springs);
-    m_muscles.reserve(env_num_muscles);
-    
-    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_id);
-    for(int i = 0; i < m_num_particles; i++){
-        m_particles[i].shift_pos(m_original_ball_pos);
-    }
-    
-    // create_high_drag_block(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
-    // create_self_aligning_arrow(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
-    // create_collision_test_rig(m_num_particles, m_particles, m_num_springs, m_springs, env_dt);
-
-    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_id);
-    
-    assert(m_num_particles == env_num_particles);
-    assert(m_num_springs == env_num_springs);
-    assert(m_num_muscles == env_num_muscles);
- 
-    // 20 -- 12 -- 8
-    std::vector<int> layer_sizes{m_num_muscles+env_observation_size, 12, m_num_muscles};
-    // 2 wasteful initliaizations 
-    // once before constructor body starts
-    // once when we create this temp object and copy
-    m_creature = Creature{data.s_muscle_indices, data.s_sensing_points, layer_sizes};
-
-    m_goal_radius = 10;
-}
-
-
 Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // m_creature has no default constructor hence need to do this
     // ensure all function parameter are defined earlier in the CLASS DECLARATION
@@ -79,7 +35,10 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     // loading json
     std::string file_path = std::format("./saved/{}.json", id);
     std::ifstream i(file_path);
-    if(!i){
+    if( ! load_old_gen || (m_id < 0)){
+        m_creature = Creature{data.s_muscle_indices, data.s_sensing_points, layer_sizes};
+    }
+    else if(!i){
         std::cout << "could not load from file: " << file_path << " --> doing random initialization" << '\n';
         m_creature = Creature{data.s_muscle_indices, data.s_sensing_points, layer_sizes};
     }
@@ -128,7 +87,7 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
     m_episode_end = false;
     m_has_touched_ball = false;
 
-    check();
+    // check();
 }
 
 // void Environment::run_episode(){
@@ -138,9 +97,12 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
 // }
 
 void Environment::check(){
-    for(int i = 0; i < m_num_particles; i++){
-        m_particles[i].check();
+    for(int i = 0; i < m_num_springs; i++){
+        m_springs[i].check();
     }
+    // for(int i = 0; i < m_num_particles; i++){
+    //     m_particles[i].check();
+    // }
 }
 
 void Environment::mutate(float mutation_rate){

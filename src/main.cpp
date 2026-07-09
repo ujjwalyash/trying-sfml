@@ -18,14 +18,11 @@ namespace{
 	static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
 
 	const int num_episode_per_generation = 1;
-	const int num_generations = 10;
 
 	const float top_unchanged_percentage = 0.3;
 	const float elimination_percentage = 0.4;
 	
 	const float mutation_rate = 0.6;
-	
-	const bool load_old_gen = false;
 	
 	// other vars
 	int gen;
@@ -189,7 +186,7 @@ void* render_current_gen(void *){
 
 	// COPY
 	int curr_gen = gen;
-	Environment env_used_for_render(get_random_ball_pos(), get_random_goal_pos());
+	Environment env_used_for_render(-1, get_random_ball_pos(), get_random_goal_pos());
 	// Environment& env_used_for_render = env[0];
 	env_used_for_render.copy_brain(env[rankings[env_rank]]);
 	
@@ -356,9 +353,8 @@ int main()
 	allocate_cuda_memory();
 
 	for (int i = 0; i < (int)population_size; ++i) {
-		// if a saved with id does not exist the constructor
-		if(load_old_gen) env.emplace_back(i, get_random_ball_pos(), get_random_goal_pos());
-		else env.emplace_back(get_random_ball_pos(), get_random_goal_pos());
+		env.emplace_back(i, get_random_ball_pos(), get_random_goal_pos());
+		// else env.emplace_back(get_random_ball_pos(), get_random_goal_pos());
 	}
 
     std::vector<float> rewards(population_size, 0);    
@@ -391,21 +387,9 @@ int main()
 		// reset rewards
 		for(int i = 0; i < population_size; i++){
 			env[i].reset_reward();
+			// std::cout << rewards[rankings[i]] << " \n"[i==population_size-1];
 			rewards[i] = 0;
 		}
-		
-		//* everything inside gpu now only rewards come back to cpu at the end
-		//* 1. sort_acc_x coors
-		//*  -- do not update acc till the end only write to shared mem --
-		//* 1.5. load everything needed to shared mem
-		//* 2. handle coll
-		//* 3. update springs
-		//* 4* write back the acc into shared mem
-		//* 5. do second_step -- we have acc in shared mee
-		//* 6. do first_step -- we have acc in shared mem
-		//* 7. copy everything back to global mem
-		//* 8. return
-		
 
 		// resets env
 		stage = -1;

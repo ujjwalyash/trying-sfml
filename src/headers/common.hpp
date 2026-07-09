@@ -6,7 +6,7 @@ inline constexpr float max_y = 1080;
 inline constexpr float max_x = 1920;
 
 // since i keep both balanced out anyways just make both 0
-inline constexpr sf::Vector2f gravity = {0, 1000};
+inline constexpr sf::Vector2f gravity = {0, 10};
 inline constexpr float buoyancy_const = 4.f/3.f * 3.141f * 10.f; // DO NOT MAKE DENSITY 1000
 
 inline constexpr float restitution = 0.8f;
@@ -31,9 +31,10 @@ inline constexpr int env_observation_size = 12;
 inline constexpr int env_num_particles = 148;
 inline constexpr int env_num_springs = 343;
 inline constexpr int env_num_muscles = 8;
-//// const int by deafult have internal linkage -- others have a extern declaration in cpp but this has
-//// in cuda so problems ig
-inline constexpr int population_size = 112;
+
+inline constexpr int population_size = 16 * 7;
+inline constexpr int num_generations = 500;
+inline constexpr bool load_old_gen = true;
 
 #ifdef __CUDACC__
     #define CUDA_HOST_DEVICE __host__ __device__ inline
@@ -77,6 +78,43 @@ struct GPU_unified_mem{
     // the local_idx is used for these
     CUDA_HOST_DEVICE float* springs_p1() const { return ptrs_spring[7]; }
     CUDA_HOST_DEVICE float* springs_p2() const { return ptrs_spring[8]; }
+
+      // one-per-env scalars
+    float* ptrs_env[8];
+    CUDA_HOST_DEVICE float* env_reward()          const { return ptrs_env[0]; }
+    CUDA_HOST_DEVICE float* env_ball_pos_x()      const { return ptrs_env[1]; }
+    CUDA_HOST_DEVICE float* env_ball_pos_y()      const { return ptrs_env[2]; }
+    CUDA_HOST_DEVICE float* env_goal_pos_x()      const { return ptrs_env[3]; }
+    CUDA_HOST_DEVICE float* env_goal_pos_y()      const { return ptrs_env[4]; }
+    CUDA_HOST_DEVICE float* env_num_steps_done()  const { return ptrs_env[5]; }
+    CUDA_HOST_DEVICE float* env_episode_end()     const { return ptrs_env[6]; }
+    CUDA_HOST_DEVICE float* env_goal_center_idx() const { return ptrs_env[7]; }
+
+    // 4 sensing points per env (only sensing_points[0..3] are ever used)
+    float* env_sensing_pts; // size population_size * 4
+
+    // recurrent muscle activation fed back into the net each step
+    float* env_muscle_activation; // size population_size * env_num_muscles
+
+    // neural net weights, laid out per-env contiguous block:
+    // [ W0 (20*12=240) | b0 (12) | W1 (12*8=96) ]  = 348 floats/env
+    static constexpr int nn_in     = env_num_muscles + env_observation_size; // 20
+    static constexpr int nn_hidden = 12;
+    static constexpr int nn_out    = env_num_muscles; // 8
+    static constexpr int nn_floats_per_env = nn_in*nn_hidden + nn_hidden + nn_hidden*nn_out + nn_out; // 348
+    float* env_nn_data; // size population_size * nn_floats_per_env
+
+    CUDA_HOST_DEVICE float* nn_W0(int env) const { return env_nn_data + env*nn_floats_per_env; }
+    CUDA_HOST_DEVICE float* nn_b0(int env) const { return nn_W0(env) + nn_in*nn_hidden; }
+    CUDA_HOST_DEVICE float* nn_W1(int env) const { return nn_b0(env) + nn_hidden; }
+    CUDA_HOST_DEVICE float* nn_b1(int env) const { return nn_W1(env) + nn_out; }
+
+    // muscle "rest" constants -- set once at construction, never mutated by the kernel
+    // (mirrors Muscle's m_rest_length / m_rest_spring_constant / m_contraction_limit / m_max_spring_constant_scaling)
+    float* muscle_rest_nat_len;          // size population_size * env_num_muscles
+    float* muscle_rest_spring_const;     // size population_size * env_num_muscles
+    float* muscle_contraction_limit;     // size population_size * env_num_muscles
+    float* muscle_max_const_scaling;     // size population_size * env_num_muscles
 	
 };
 

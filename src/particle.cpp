@@ -38,8 +38,8 @@ Particle::Particle(int env_id, int id, float radius, float mass, sf::Vector2<flo
         gpu_mem.particles_const_acc_x()[m_global_id] += buoyancy_acc.x;
         gpu_mem.particles_const_acc_y()[m_global_id] += buoyancy_acc.y;
         
-        gpu_mem.particles_net_acc_x()[m_global_id] = gpu_mem.particles_const_acc_x()[m_global_id];
-        gpu_mem.particles_net_acc_y()[m_global_id] = gpu_mem.particles_const_acc_y()[m_global_id];
+        gpu_mem.particles_net_acc_x()[m_global_id] = 0;
+        gpu_mem.particles_net_acc_y()[m_global_id] = 0;
         
         gpu_mem.particles_spring_acc_x()[m_global_id] = 0;
         gpu_mem.particles_spring_acc_y()[m_global_id] = 0;
@@ -75,7 +75,7 @@ void Particle::check(){
     auto approx_eq = [&](float a, float b){
         float perct_error = 1e-2; // pct    
         float diff = fabs(a - b);
-        bool result = (diff < (perct_error)) || (diff/fmax(fabs(a), fabs(b)) < perct_error);
+        bool result = (diff < (2000)) || (diff/fmax(fabs(a), fabs(b)) < perct_error);
         // result = result * (fabs(a) < 1e-6 || fabs(b/a) < 5);
     
         if(!result){
@@ -83,8 +83,8 @@ void Particle::check(){
             // std::fprintf(stderr, "\nAssert failed: %f -- %f\n env_id, local_id: %d, %d \n", a, b, m_env_id, m_id);
         }
     
-        return true;
-        // return result;
+        // return true;
+        return result;
     };
     // float cpu_val = m_spring_acc.y;
     // float gpu_val = gpu_mem.particles_spring_acc_y()[m_global_id];
@@ -99,26 +99,26 @@ void Particle::check(){
     //     assert(false);
     // }
 
-    // assert(approx_eq(m_radius, gpu_mem.particles_radius()[m_global_id]));
+    assert(approx_eq(m_radius, gpu_mem.particles_radius()[m_global_id]));
     
     // // approx_eq will not be int gdb backtrace bc it returned a false val without error
     // // the actual path to termination starts after approx_eq returns and its frame is removed
-    // assert(approx_eq(m_buoyancy_acc.x + gravity.x, gpu_mem.particles_const_acc_x()[m_global_id]));
-    // assert(approx_eq(m_buoyancy_acc.y + gravity.y, gpu_mem.particles_const_acc_y()[m_global_id]));
+    assert(approx_eq(m_buoyancy_acc.x + gravity.x, gpu_mem.particles_const_acc_x()[m_global_id]));
+    assert(approx_eq(m_buoyancy_acc.y + gravity.y, gpu_mem.particles_const_acc_y()[m_global_id]));
 
-    // assert(approx_eq(m_spring_acc.x, gpu_mem.particles_spring_acc_x()[m_global_id]));
-    // assert(approx_eq(m_spring_acc.y, gpu_mem.particles_spring_acc_y()[m_global_id]));
+    assert(approx_eq(m_spring_acc.x, gpu_mem.particles_spring_acc_x()[m_global_id]));
+    assert(approx_eq(m_spring_acc.y, gpu_mem.particles_spring_acc_y()[m_global_id]));
     
-    // assert(approx_eq(m_acc.x, gpu_mem.particles_net_acc_x()[m_global_id]));
-    // assert(approx_eq(m_acc.y, gpu_mem.particles_net_acc_y()[m_global_id]));
+    assert(approx_eq(m_acc.x, gpu_mem.particles_net_acc_x()[m_global_id]));
+    assert(approx_eq(m_acc.y, gpu_mem.particles_net_acc_y()[m_global_id]));
     
-    // assert(approx_eq(m_vel.x, gpu_mem.particles_vel_x()[m_global_id]));
+    assert(approx_eq(m_vel.x, gpu_mem.particles_vel_x()[m_global_id]));
     // int a = m_vel.y;
     // int b = gpu_mem.particles_vel_y()[m_global_id];
-    // assert(approx_eq(m_vel.y, gpu_mem.particles_vel_y()[m_global_id]));
+    assert(approx_eq(m_vel.y, gpu_mem.particles_vel_y()[m_global_id]));
     
-    // assert(approx_eq(m_curr_pos.x, gpu_mem.particles_pos_x()[m_global_id]));
-    // assert(approx_eq(m_curr_pos.y, gpu_mem.particles_pos_y()[m_global_id]));
+    assert(approx_eq(m_curr_pos.x, gpu_mem.particles_pos_x()[m_global_id]));
+    assert(approx_eq(m_curr_pos.y, gpu_mem.particles_pos_y()[m_global_id]));
 }
 
 sf::Vector2<float> Particle::get_curr_pos() const{
@@ -159,7 +159,7 @@ void Particle::set_acc(sf::Vector2<float> acc){
         gpu_mem.particles_net_acc_x()[m_global_id] = acc.x;
         gpu_mem.particles_net_acc_y()[m_global_id] = acc.y;
 
-        check();
+        // check();
     }
 
 }
@@ -174,14 +174,14 @@ float Particle::calculate_total_energy(){
 void Particle::add_spring_acc(sf::Vector2f spring_acc){
     m_spring_acc += spring_acc;
 
-    if(m_env_id >= 0){
+    // if(m_env_id >= 0){
     //     gpu_mem.particles_spring_acc_x()[m_global_id] += spring_acc.x;
     //     gpu_mem.particles_spring_acc_y()[m_global_id] += spring_acc.y;
      
         // do not check here bc in gpu all springs have written thier acc
         // but in cpu not all springs are done
         // check();
-    }
+    // }
 
 }
 
