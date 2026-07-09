@@ -10,20 +10,6 @@
 // to ensure no other file can access these -- ie global vars restricted to this file
 namespace{
 	
-	// 18 threads for 20 core cpu too much
-	const int num_workers = 16;
-	const int env_per_worker = population_size / num_workers;
-
-	// simulation params
-	static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
-
-	const int num_episode_per_generation = 1;
-
-	const float top_unchanged_percentage = 0.3;
-	const float elimination_percentage = 0.4;
-	
-	const float mutation_rate = 0.6;
-	
 	// other vars
 	int gen;
 	std::vector<Environment> env;
@@ -187,8 +173,8 @@ void* render_current_gen(void *){
 	// COPY
 	int curr_gen = gen;
 	Environment env_used_for_render(-1, get_random_ball_pos(), get_random_goal_pos());
-	// Environment& env_used_for_render = env[0];
 	env_used_for_render.copy_brain(env[rankings[env_rank]]);
+	// Environment& env_used_for_render = env[67];
 	
 	// YOU cANT copy env -- bc springs have refs not indexes so after copy new env still points to old env's particles
 	// env_used_for_render.emplace(env[rankings[env_rank]]);
@@ -206,7 +192,7 @@ void* render_current_gen(void *){
 	// 	ball_pos[i] = get_random_ball_pos();
 	// 	goal_pos[i] = get_random_goal_pos();
 	// }
-	
+
 	// stage = -1;
 	// launch_threads();
 	
@@ -299,8 +285,10 @@ void* render_current_gen(void *){
             }
 		}
 
-		if(paused && (!step)) 
+		if(paused && (!step)){
+			sleep(1);
 			continue;
+		}
 		step = false;
 		
 		window.clear();
@@ -321,19 +309,24 @@ void* render_current_gen(void *){
 		
 		env_used_for_render.step(window, text, render_btw_cycle);
 		
-		// stage = 0;
-		// launch_threads();
 
 		// launch_big_kernel();
 		
+		// stage = 0;
+		// launch_threads();
+
 		// stage = 1;
 		// launch_threads();
 		
 		// stage = 2;
 		// launch_threads();
 
+		// env_used_for_render.mutate(mutation_rate);
+		
+		// cudaSynchronize();
 
         reward = env_used_for_render.get_curr_reward();
+        // reward = env_used_for_render.get_curr_reward() - gpu_mem.env_reward()[67];
         num_steps_done++;
 	}
 
@@ -385,34 +378,25 @@ int main()
 		}
 
 		// reset rewards
-		for(int i = 0; i < population_size; i++){
-			env[i].reset_reward();
-			// std::cout << rewards[rankings[i]] << " \n"[i==population_size-1];
-			rewards[i] = 0;
-		}
+		// for(int i = 0; i < population_size; i++){
+		// 	env[i].reset_reward();
+		// 	// std::cout << rewards[rankings[i]] << " \n"[i==population_size-1];
+		// 	rewards[i] = 0;
+		// }
 
 		// resets env
 		stage = -1;
 		launch_threads();
 
-		// only returns after work is done
-		for(int step = 0; step < env_max_steps_per_episode; step++){
-
-			// TODO: think about false sharing among threads working on close by data
-			stage = 0;
-			launch_threads();
-			
-			launch_big_kernel();
-			
-			cudaSynchronize();
-
-			stage = 2;
-			launch_threads();
-		}
+		// TODO: think about false sharing among threads working on close by data
+		
+		launch_big_kernel();
+		cudaSynchronize();
 		
 		// copy rewards before sorting -- probably faster but so negligible compared to the sims 
 		for(int i = 0; i < population_size; i++){
-			rewards[i] = env[i].get_curr_reward();
+			rewards[i] = env[i].get_curr_reward_gpu();
+			// rewards[i] = env[i].get_curr_reward();
 		}
 
 		// sort them
@@ -432,17 +416,21 @@ int main()
 		}
 
 		clock.stop();
-		std::cout << "current generation: " << gen << '\n';
-		std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
-		std::cout << "time taken: " << clock.getElapsedTime().asSeconds() << "s" << '\n';
-		std::cout << '\n';
-		std::cout.flush();
+		if(gen % 64 == 0){
+			std::cout << "current generation: " << gen << '\n';
+			std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
+			std::cout << "time taken: " << clock.getElapsedTime().asSeconds() << "s" << '\n';
+			std::cout << '\n';
+			std::cout.flush();
+		}
 	}
+
 
 	if(num_generations != 0){
 		for(int i = 0; i < population_size; i++){
 			env[rankings[i]].save(i, rewards[rankings[i]]);
 		}
+		std::cout << "saved all envs \n";
 	}
 
 	free_cuda_memory();

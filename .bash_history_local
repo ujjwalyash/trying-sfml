@@ -89,3 +89,13 @@ clear
 ./run.sh
 clear
 ./run.sh
+[A
+./run.sh
+./run.sh > output.txt 
+./run.sh
+./run.sh > output.txt 
+pwd
+ncu --export profile_output --launch-count 10 ./build/bin/main
+sudo ncu --export profile_output --launch-count 10 ./build/bin/main
+ncu --export profile_output --launch-count 10 ./build/bin/main
+./run.sh > output.txt 

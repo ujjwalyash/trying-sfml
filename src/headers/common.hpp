@@ -18,23 +18,46 @@ inline constexpr float coefficient_friction = 0.5;
 // if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
 // this completely destroys the concept of streamlined bodies 
 // // TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
-inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 10; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
+inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 200; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
+// inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 10; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
 
 // env params
 inline constexpr int env_fps = 60;
 inline constexpr int env_num_frames_per_creature_action = (float)env_fps/10; // every 100ms 
 inline constexpr int env_num_iterations_per_frame = 16;
 inline constexpr float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
-inline constexpr int env_max_steps_per_episode = 500;
+inline constexpr int env_max_steps_per_episode = 700;
 inline constexpr int env_observation_size = 12;
 
-inline constexpr int env_num_particles = 148;
-inline constexpr int env_num_springs = 343;
+inline constexpr int env_num_particles = 132;
+inline constexpr int env_num_springs = 311;
 inline constexpr int env_num_muscles = 8;
 
-inline constexpr int population_size = 16 * 7;
-inline constexpr int num_generations = 500;
+// 3 blocks per sm -- total 60 block/wave --> so multiple of 60
+inline constexpr int population_size = 120;
+inline constexpr int num_generations = 30 * 60;
 inline constexpr bool load_old_gen = true;
+
+// 18 threads for 20 core cpu too much
+inline constexpr int num_workers = 12;
+inline constexpr int env_per_worker = population_size / num_workers;
+
+// simulation params
+static_assert((population_size%num_workers == 0), "population_size is not a multiple of num_workers");
+
+inline constexpr int num_episode_per_generation = 1;
+
+inline constexpr float top_unchanged_percentage = 0.3;
+inline constexpr float elimination_percentage = 0.4;
+	
+inline constexpr float mutation_rate = 0.6;
+
+// kernel
+inline constexpr float sperm_length = 180.f;
+inline constexpr float ball_radius = 20.f;
+
+inline constexpr int iter_per_collision_check = 2;
+inline constexpr int iter_per_boundary_check = 8;
 
 #ifdef __CUDACC__
     #define CUDA_HOST_DEVICE __host__ __device__ inline
@@ -80,24 +103,22 @@ struct GPU_unified_mem{
     CUDA_HOST_DEVICE float* springs_p2() const { return ptrs_spring[8]; }
 
       // one-per-env scalars
-    float* ptrs_env[8];
+    float* ptrs_env[5];
     CUDA_HOST_DEVICE float* env_reward()          const { return ptrs_env[0]; }
-    CUDA_HOST_DEVICE float* env_ball_pos_x()      const { return ptrs_env[1]; }
-    CUDA_HOST_DEVICE float* env_ball_pos_y()      const { return ptrs_env[2]; }
-    CUDA_HOST_DEVICE float* env_goal_pos_x()      const { return ptrs_env[3]; }
-    CUDA_HOST_DEVICE float* env_goal_pos_y()      const { return ptrs_env[4]; }
-    CUDA_HOST_DEVICE float* env_num_steps_done()  const { return ptrs_env[5]; }
-    CUDA_HOST_DEVICE float* env_episode_end()     const { return ptrs_env[6]; }
-    CUDA_HOST_DEVICE float* env_goal_center_idx() const { return ptrs_env[7]; }
+    // CUDA_HOST_DEVICE float* env_ball_pos_x()      const { return ptrs_env[1]; }
+    // CUDA_HOST_DEVICE float* env_ball_pos_y()      const { return ptrs_env[2]; }
+    CUDA_HOST_DEVICE float* env_goal_pos_x()      const { return ptrs_env[1]; }
+    CUDA_HOST_DEVICE float* env_goal_pos_y()      const { return ptrs_env[2]; }
+    CUDA_HOST_DEVICE float* env_ball_center_idx() const { return ptrs_env[3]; }
+    CUDA_HOST_DEVICE float* env_sperm_center_idx() const { return ptrs_env[4]; }
+    // CUDA_HOST_DEVICE float* env_num_steps_done()  const { return ptrs_env[3]; }
+    // CUDA_HOST_DEVICE float* env_episode_end()     const { return ptrs_env[4]; }
 
-    // 4 sensing points per env (only sensing_points[0..3] are ever used)
     float* env_sensing_pts; // size population_size * 4
 
-    // recurrent muscle activation fed back into the net each step
+    // muscle activation fed back into the net each step
     float* env_muscle_activation; // size population_size * env_num_muscles
 
-    // neural net weights, laid out per-env contiguous block:
-    // [ W0 (20*12=240) | b0 (12) | W1 (12*8=96) ]  = 348 floats/env
     static constexpr int nn_in     = env_num_muscles + env_observation_size; // 20
     static constexpr int nn_hidden = 12;
     static constexpr int nn_out    = env_num_muscles; // 8
@@ -107,14 +128,13 @@ struct GPU_unified_mem{
     CUDA_HOST_DEVICE float* nn_W0(int env) const { return env_nn_data + env*nn_floats_per_env; }
     CUDA_HOST_DEVICE float* nn_b0(int env) const { return nn_W0(env) + nn_in*nn_hidden; }
     CUDA_HOST_DEVICE float* nn_W1(int env) const { return nn_b0(env) + nn_hidden; }
-    CUDA_HOST_DEVICE float* nn_b1(int env) const { return nn_W1(env) + nn_out; }
+    CUDA_HOST_DEVICE float* nn_b1(int env) const { return nn_W1(env) + nn_hidden*nn_out; }
 
-    // muscle "rest" constants -- set once at construction, never mutated by the kernel
-    // (mirrors Muscle's m_rest_length / m_rest_spring_constant / m_contraction_limit / m_max_spring_constant_scaling)
-    float* muscle_rest_nat_len;          // size population_size * env_num_muscles
-    float* muscle_rest_spring_const;     // size population_size * env_num_muscles
-    float* muscle_contraction_limit;     // size population_size * env_num_muscles
-    float* muscle_max_const_scaling;     // size population_size * env_num_muscles
+    // size population_size * env_num_muscles
+    float* muscle_rest_nat_len;          
+    float* muscle_rest_spring_const;
+    float* muscle_contraction_limit;
+    float* muscle_max_const_scaling;
 	
 };
 

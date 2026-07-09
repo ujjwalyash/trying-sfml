@@ -19,12 +19,17 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     m_springs.reserve(env_num_springs);
     m_muscles.reserve(env_num_muscles);
     
-    m_goal_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_id);
+    m_ball_center_index = create_football(m_num_particles, m_particles, m_num_springs, m_springs, m_id);
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
     Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_id);
-    
+    m_sperm_center_index = data.sperm_center_index;
+
+    if(m_id == 0){
+        printf("part: %i, spr: %i, mus: %i\n", m_num_particles, m_num_springs, m_num_muscles);
+        fflush(stdout);
+    }
     assert(m_num_particles == env_num_particles);
     assert(m_num_springs == env_num_springs);
     assert(m_num_muscles == env_num_muscles);
@@ -59,6 +64,18 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     }
 
     m_goal_radius = 10;
+
+
+    // put things in gpu mem
+    gpu_mem.env_ball_center_idx()[m_id] = m_ball_center_index;
+    gpu_mem.env_sperm_center_idx()[m_id] = m_sperm_center_index;
+    for(int it = 0; it < 4; it++){
+        gpu_mem.env_sensing_pts[m_id*4 + it] = data.s_sensing_points[it];
+    }
+    for(int it = 0; it < env_num_muscles; it++){
+        gpu_mem.env_muscle_activation[m_id*env_num_muscles + it] = 0;
+    }
+    
 }
 
 Creature const& Environment::get_creature() const{
@@ -83,11 +100,34 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
     }
 
     m_num_steps_done = 0;
-    // m_reward = 0;
+    m_reward = 0;
     m_episode_end = false;
     m_has_touched_ball = false;
 
-    // check();
+    if(m_id < 0)
+        return;
+
+    // fill the env variables into gpu mem
+    gpu_mem.env_reward()[m_id] = 0;
+
+    // int ix = gpu_mem.env_ball_center_idx()[m_id];
+    // gpu_mem.particles_pos_x()[m_id * env_num_particles + ix] = m_original_ball_pos.x;
+    // gpu_mem.particles_pos_y()[m_id * env_num_particles + ix] = m_original_ball_pos.y;
+    
+    gpu_mem.env_goal_pos_x()[m_id] = m_goal_pos.x;
+    gpu_mem.env_goal_pos_y()[m_id] = m_goal_pos.y;
+
+    Neural_Net brain = m_creature.get_brain();
+    const std::vector<MatrixXdf> Wcurr = brain.get_weights();
+    const std::vector<VectorXdf> Bcurr = brain.get_biases();
+    memcpy(gpu_mem.nn_W0(m_id), Wcurr[0].data(), (gpu_mem.nn_in*gpu_mem.nn_hidden)*sizeof(float));
+    memcpy(gpu_mem.nn_b0(m_id), Bcurr[0].data(), (gpu_mem.nn_hidden)*sizeof(float));
+    memcpy(gpu_mem.nn_W1(m_id), Wcurr[1].data(), (gpu_mem.nn_hidden*gpu_mem.nn_out)*sizeof(float));
+    memcpy(gpu_mem.nn_b1(m_id), Bcurr[1].data(), (gpu_mem.nn_out)*sizeof(float));
+
+    for(int i = 0; i < m_num_muscles; i++){
+        gpu_mem.env_muscle_activation[m_id*env_num_muscles + i] = 0;
+    }
 }
 
 // void Environment::run_episode(){
@@ -146,6 +186,11 @@ void Environment::render(sf::RenderWindow& window){
             sh.setPosition({particle_pos.x-r, particle_pos.y-r});
             sh.setRadius(r);
             sh.setFillColor(sf::Color::White);
+            
+            if(i == m_sperm_center_index){
+                sh.setRadius(r * 4);
+                sh.setFillColor(sf::Color::Red);
+            }
             window.draw(sh);
 		}
 		for(int i = 0; i < m_num_springs; i++){
@@ -221,8 +266,40 @@ void Environment::step_stage_0(){
     
     // stage 0
 	std::vector<float> observation(env_observation_size);
-    m_creature.get_observation_gpu(observation, m_ball_pos, m_goal_pos, m_particles);
+    m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation);
+
+    // const std::vector<MatrixXdf> Wcurr = m_creature.get_brain().get_weights();
+    // const std::vector<VectorXdf> Bcurr = m_creature.get_brain().get_biases();
+    // memcpy(gpu_mem.nn_W0(m_id), Wcurr[0].data(), (gpu_mem.nn_in*gpu_mem.nn_hidden)*sizeof(float));
+    // memcpy(gpu_mem.nn_b0(m_id), Bcurr[0].data(), (gpu_mem.nn_hidden)*sizeof(float));
+    // memcpy(gpu_mem.nn_W1(m_id), Wcurr[1].data(), (gpu_mem.nn_hidden*gpu_mem.nn_out)*sizeof(float));
+    // memcpy(gpu_mem.nn_b1(m_id), Bcurr[1].data(), (gpu_mem.nn_out)*sizeof(float));
+
+    // auto W_acc = m_creature.get_brain().get_weights();
+    // auto b_acc = m_creature.get_brain().get_biases();
+    // auto equ = [](float a, float b, int l, int i, int j){
+    //     int res = a == b;
+
+    //     if(! res){
+    //         std::fprintf(stderr, "\nAssert failed: %f -- %f\n loc: %d,%d,%d \n", a, b, l, i, j);
+    //     }
+
+    //     assert(res);
+    // };
+
+    // for(int i = 0; i < 20; i++){
+    //     for(int j = 0; j < 12; j++){
+    //         equ(W_acc[0](i, j), gpu_mem.nn_W0(m_id)[i*12 + j], 0, i, j);
+    //         equ(b_acc[0](0, j), gpu_mem.nn_b0(m_id)[j], 0, -1, j);
+    //     }
+    // }
+    // for(int i = 0; i < 12; i++){
+    //     for(int j = 0; j < 8; j++){
+    //         equ(W_acc[1](i, j), gpu_mem.nn_W1(m_id)[i*8 + j], 1, i, j);
+    //         equ(b_acc[1](0, j), gpu_mem.nn_b1(m_id)[j], 1, -1, j);
+    //     }
+    // }
     
     // update muscle lengths
     handle_all_muscle_contraction(m_muscles);
@@ -230,7 +307,6 @@ void Environment::step_stage_0(){
 
     // check();
 }
-
 void Environment::step_stage_1(){	
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
     
@@ -244,11 +320,14 @@ void Environment::step_stage_1(){
             handle_all_muscle_forces(m_muscles);
             handle_all_springs(m_springs);
             // check();
-            
-            handle_all_collisions(m_particles, m_springs, m_muscles);    
+            float creature_ball_dist = (m_particles[m_sperm_center_index].get_curr_pos() - m_ball_pos).length();
+            if(creature_ball_dist < (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+
+                handle_all_collisions(m_particles, m_springs, m_muscles);    
+            }
             
             for(int i = 0; i < m_num_particles; i++){
-                m_particles[i].second_half_step();
+                m_particles[i].second_half_step(iter);
             }		
 
             // check();
@@ -256,13 +335,11 @@ void Environment::step_stage_1(){
         }
     }
 }
-            // launch_second_half_step();
-
 void Environment::step_stage_2(){	
     // stage 2
-    m_ball_pos = m_particles[m_goal_center_index].get_curr_pos_gpu();
+    m_ball_pos = m_particles[m_ball_center_index].get_curr_pos();
 
-    float reward = calculate_reward_gpu();
+    float reward = calculate_reward();
     m_reward += reward;
 
     m_num_steps_done++;
@@ -295,10 +372,16 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
             // update acc
             handle_all_muscle_forces(m_muscles);
             handle_all_springs(m_springs);
-            handle_all_collisions(m_particles, m_springs, m_muscles);    
+
+            float creature_ball_dist = (m_particles[m_sperm_center_index].get_curr_pos() - m_ball_pos).length();
+            if(creature_ball_dist < (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+                std::cout << "collisions active \n";
+                std::cout.flush();
+                handle_all_collisions(m_particles, m_springs, m_muscles);    
+            }
             
             for(int i = 0; i < m_num_particles; i++){
-                m_particles[i].second_half_step();
+                m_particles[i].second_half_step(iter);
             }	
         }
 
@@ -310,7 +393,7 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
         }
     }
 
-    m_ball_pos = m_particles[m_goal_center_index].get_curr_pos();
+    m_ball_pos = m_particles[m_ball_center_index].get_curr_pos();
 
     float reward = calculate_reward();
     m_reward += reward;
@@ -397,4 +480,7 @@ void Environment::reset_reward(){
 
 float Environment::get_curr_reward(){
     return m_reward;
+}
+float Environment::get_curr_reward_gpu(){
+    return gpu_mem.env_reward()[m_id];
 }

@@ -75,7 +75,7 @@ class Particle{
         void add_spring_acc(sf::Vector2f spring_acc);
         
         void first_half_step();
-        void second_half_step();
+        void second_half_step(int iter);
 
         void handle_boundary();
         void reflect(float wall, int axis, int sign);

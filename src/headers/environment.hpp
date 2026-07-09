@@ -27,7 +27,8 @@ class Environment
         sf::Vector2f m_original_ball_pos;
         sf::Vector2f m_ball_pos;
         sf::Vector2f m_goal_pos;
-        int m_goal_center_index;
+        int m_ball_center_index;
+        int m_sperm_center_index;
         float m_goal_radius;
         bool m_has_touched_ball = false;
         
@@ -68,7 +69,8 @@ class Environment
         float calculate_reward();
         float calculate_reward_gpu();
 
-        float get_curr_reward();
+        float get_curr_reward(); 
+        float get_curr_reward_gpu(); 
         void reset_reward();
         Creature const& get_creature() const;
 

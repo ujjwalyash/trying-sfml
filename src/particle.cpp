@@ -72,53 +72,53 @@ void Particle::shift_pos(sf::Vector2<float> shift){
 void Particle::check(){
     
     // for debugging
-    auto approx_eq = [&](float a, float b){
-        float perct_error = 1e-2; // pct    
-        float diff = fabs(a - b);
-        bool result = (diff < (2000)) || (diff/fmax(fabs(a), fabs(b)) < perct_error);
-        // result = result * (fabs(a) < 1e-6 || fabs(b/a) < 5);
+    // auto approx_eq = [&](float a, float b){
+    //     float perct_error = 1e-2; // pct    
+    //     float diff = fabs(a - b);
+    //     bool result = (diff < (2000)) || (diff/fmax(fabs(a), fabs(b)) < perct_error);
+    //     // result = result * (fabs(a) < 1e-6 || fabs(b/a) < 5);
     
-        if(!result){
-            std::fprintf(stderr, "\nAssert failed: %f -- %f\n env_id, local_id: %d, %d \n", a, b, m_env_id, m_id);
-            // std::fprintf(stderr, "\nAssert failed: %f -- %f\n env_id, local_id: %d, %d \n", a, b, m_env_id, m_id);
-        }
+    //     if(!result){
+    //         std::fprintf(stderr, "\nAssert failed: %f -- %f\n env_id, local_id: %d, %d \n", a, b, m_env_id, m_id);
+    //         // std::fprintf(stderr, "\nAssert failed: %f -- %f\n env_id, local_id: %d, %d \n", a, b, m_env_id, m_id);
+    //     }
     
-        // return true;
-        return result;
-    };
-    // float cpu_val = m_spring_acc.y;
-    // float gpu_val = gpu_mem.particles_spring_acc_y()[m_global_id];
+    //     // return true;
+    //     return result;
+    // };
+    // // float cpu_val = m_spring_acc.y;
+    // // float gpu_val = gpu_mem.particles_spring_acc_y()[m_global_id];
 
-    // if (!approx_eq(cpu_val, gpu_val)) {
-    //     // std::cout << "Divergence at Iteration: " << iteration_count << "\n"
-    //     std::cout  << "Particle ID: " << m_global_id << "\n"
-    //               << "CPU Spring Acc: " << cpu_val << "\n"
-    //               << "GPU Spring Acc: " << gpu_val << "\n"
-    //               << "Current Pos (CPU): " << m_curr_pos.x << ", " << m_curr_pos.y << "\n"
-    //               << "Current Pos (GPU): " << gpu_mem.particles_pos_x()[m_global_id] << "\n";
-    //     assert(false);
-    // }
+    // // if (!approx_eq(cpu_val, gpu_val)) {
+    // //     // std::cout << "Divergence at Iteration: " << iteration_count << "\n"
+    // //     std::cout  << "Particle ID: " << m_global_id << "\n"
+    // //               << "CPU Spring Acc: " << cpu_val << "\n"
+    // //               << "GPU Spring Acc: " << gpu_val << "\n"
+    // //               << "Current Pos (CPU): " << m_curr_pos.x << ", " << m_curr_pos.y << "\n"
+    // //               << "Current Pos (GPU): " << gpu_mem.particles_pos_x()[m_global_id] << "\n";
+    // //     assert(false);
+    // // }
 
-    assert(approx_eq(m_radius, gpu_mem.particles_radius()[m_global_id]));
+    // assert(approx_eq(m_radius, gpu_mem.particles_radius()[m_global_id]));
     
-    // // approx_eq will not be int gdb backtrace bc it returned a false val without error
-    // // the actual path to termination starts after approx_eq returns and its frame is removed
-    assert(approx_eq(m_buoyancy_acc.x + gravity.x, gpu_mem.particles_const_acc_x()[m_global_id]));
-    assert(approx_eq(m_buoyancy_acc.y + gravity.y, gpu_mem.particles_const_acc_y()[m_global_id]));
+    // // // approx_eq will not be int gdb backtrace bc it returned a false val without error
+    // // // the actual path to termination starts after approx_eq returns and its frame is removed
+    // assert(approx_eq(m_buoyancy_acc.x + gravity.x, gpu_mem.particles_const_acc_x()[m_global_id]));
+    // assert(approx_eq(m_buoyancy_acc.y + gravity.y, gpu_mem.particles_const_acc_y()[m_global_id]));
 
-    assert(approx_eq(m_spring_acc.x, gpu_mem.particles_spring_acc_x()[m_global_id]));
-    assert(approx_eq(m_spring_acc.y, gpu_mem.particles_spring_acc_y()[m_global_id]));
+    // assert(approx_eq(m_spring_acc.x, gpu_mem.particles_spring_acc_x()[m_global_id]));
+    // assert(approx_eq(m_spring_acc.y, gpu_mem.particles_spring_acc_y()[m_global_id]));
     
-    assert(approx_eq(m_acc.x, gpu_mem.particles_net_acc_x()[m_global_id]));
-    assert(approx_eq(m_acc.y, gpu_mem.particles_net_acc_y()[m_global_id]));
+    // assert(approx_eq(m_acc.x, gpu_mem.particles_net_acc_x()[m_global_id]));
+    // assert(approx_eq(m_acc.y, gpu_mem.particles_net_acc_y()[m_global_id]));
     
-    assert(approx_eq(m_vel.x, gpu_mem.particles_vel_x()[m_global_id]));
-    // int a = m_vel.y;
-    // int b = gpu_mem.particles_vel_y()[m_global_id];
-    assert(approx_eq(m_vel.y, gpu_mem.particles_vel_y()[m_global_id]));
+    // assert(approx_eq(m_vel.x, gpu_mem.particles_vel_x()[m_global_id]));
+    // // int a = m_vel.y;
+    // // int b = gpu_mem.particles_vel_y()[m_global_id];
+    // assert(approx_eq(m_vel.y, gpu_mem.particles_vel_y()[m_global_id]));
     
-    assert(approx_eq(m_curr_pos.x, gpu_mem.particles_pos_x()[m_global_id]));
-    assert(approx_eq(m_curr_pos.y, gpu_mem.particles_pos_y()[m_global_id]));
+    // assert(approx_eq(m_curr_pos.x, gpu_mem.particles_pos_x()[m_global_id]));
+    // assert(approx_eq(m_curr_pos.y, gpu_mem.particles_pos_y()[m_global_id]));
 }
 
 sf::Vector2<float> Particle::get_curr_pos() const{
@@ -205,7 +205,7 @@ void Particle::first_half_step(){
     m_curr_pos += m_vel*env_dt;
 }
 
-void Particle::second_half_step(){
+void Particle::second_half_step(int iter){
     
     // m_acc = gravity + m_buoyancy_acc + m_spring_acc - m_damping_factor*m_vel;
     m_acc = gravity + m_buoyancy_acc + m_spring_acc;
@@ -216,7 +216,8 @@ void Particle::second_half_step(){
     // ? is it needed to check this so often -- it has many if conditions -- jumps -- slow
     // regular checks imp since if particle goes to0 far inside the wall then when finally refelcted it may skip a particles which should have collided
     // ? but how regular
-    handle_boundary();
+    if(iter % iter_per_boundary_check == 0)
+        handle_boundary();
 }
 
 void Particle::handle_boundary(){

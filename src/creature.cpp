@@ -352,25 +352,50 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
 
     // --- 1. DEFINE ORIGINAL CONTROL VERTICES ---
     sf::Vector2f corners[9];
-    corners[0] = {300.0f, 150.0f}; // Head Center Core
-    corners[1] = {300.0f, 124.0f}; // 1. Top Apex
-    corners[2] = {307.5f, 137.0f}; // 2. Top-Right Mid-Wall
-    corners[3] = {315.0f, 150.0f}; // 3. Right Lateral Apex
-    corners[4] = {307.5f, 163.0f}; // 4. Bottom-Right Mid-Wall
-    corners[5] = {300.0f, 176.0f}; // 5. Bottom Apex (Tail Base)
-    corners[6] = {292.5f, 163.0f}; // 6. Bottom-Left Mid-Wall
-    corners[7] = {285.0f, 150.0f}; // 7. Left Lateral Apex
-    corners[8] = {292.5f, 137.0f}; // 8. Top-Left Mid-Wall
+    // corners[0] = {300.0f, 150.0f}; // Head Center Core
+    // corners[1] = {300.0f, 124.0f}; // 1. Top Apex
+    // corners[2] = {307.5f, 137.0f}; // 2. Top-Right Mid-Wall
+    // corners[3] = {315.0f, 150.0f}; // 3. Right Lateral Apex
+    // corners[4] = {307.5f, 163.0f}; // 4. Bottom-Right Mid-Wall
+    // corners[5] = {300.0f, 176.0f}; // 5. Bottom Apex (Tail Base)
+    // corners[6] = {292.5f, 163.0f}; // 6. Bottom-Left Mid-Wall
+    // corners[7] = {285.0f, 150.0f}; // 7. Left Lateral Apex
+    // corners[8] = {292.5f, 137.0f}; // 8. Top-Left Mid-Wall
+// --- TWEAKABLE DIMENSION PARAMETER ---
+    float vertical_length = 25.0f; // Change this to dynamically adjust the height
+
+    // Proportional width scale derived from your original profile ratio (30.0w / 52.0h)
+    float horizontal_length = vertical_length * (30.0f / 52.0f); 
+
+    float half_h = vertical_length / 2.0f;
+    float half_w = horizontal_length / 2.0f;
+    float mid_h  = half_h / 2.0f;
+    float mid_w  = half_w / 2.0f;
+
+    sf::Vector2f center = {300.0f, 150.0f};
+
+    // --- CALCULATED COORDINATES ---
+    corners[0] = center;                                                 // Head Center Core
+    corners[1] = center + sf::Vector2f{ 0.0f,   -half_h };               // 1. Top Apex
+    corners[2] = center + sf::Vector2f{  mid_w,  -mid_h  };              // 2. Top-Right Mid-Wall
+    corners[3] = center + sf::Vector2f{  half_w,  0.0f   };              // 3. Right Lateral Apex
+    corners[4] = center + sf::Vector2f{  mid_w,   mid_h  };              // 4. Bottom-Right Mid-Wall
+    corners[5] = center + sf::Vector2f{  0.0f,    half_h };               // 5. Bottom Apex (Tail Base)
+    corners[6] = center + sf::Vector2f{ -mid_w,   mid_h  };              // 6. Bottom-Left Mid-Wall
+    corners[7] = center + sf::Vector2f{ -half_w,  0.0f   };              // 7. Left Lateral Apex
+    corners[8] = center + sf::Vector2f{ -mid_w,  -mid_h  };              // 8. Top-Left Mid-Wall
 
     // Original guide landmarks for interpolation path
     sf::Vector2f tail_landmarks[] = {
         corners[5],       
-        {300.0f, 205.0f - 10.f}, 
-        {300.0f, 235.0f - 10.f}, 
-        {300.0f, 265.0f - 10.f}, 
-        {300.0f, 295.0f - 10.f}, 
-        {300.0f, 325.0f - 10.f}  
+        {300.0f, 205.0f - 20.f}, 
+        {300.0f, 235.0f - 20.f}, 
+        {300.0f, 265.0f - 20.f}, 
+        {300.0f, 295.0f - 20.f}, 
+        {300.0f, 325.0f - 20.f}  
     };
+
+    assert(sperm_length >= tail_landmarks[5].y - (150-half_h));
     
     float tail_radii[] = {1.2f, 1.6f, 1.4f, 1.2f, 1.0f, 0.8f};
 
@@ -378,13 +403,15 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     std::vector<float> mass;
     std::vector<float> radius;
 
+    float head_part_radius = 0.7f;
+
     // --- 2. GENERATE DENSE HEAD SHELL ---
     positions.push_back(corners[0]);
-    radius.push_back(1.5f);
-    mass.push_back(head_heaviness * b_const * (1.5f * 1.5f * 1.5f)); 
+    radius.push_back(0.75f);
+    mass.push_back(head_heaviness * b_const * (pow(1.5f, 3))); 
 
     int apex_indices[9];
-    const int HEAD_SUBDIVISIONS = 4; 
+    const int HEAD_SUBDIVISIONS = 2; 
 
     for(int i = 1; i <= 8; i++) {
         apex_indices[i] = positions.size(); 
@@ -396,14 +423,16 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         for(int s = 0; s < HEAD_SUBDIVISIONS; s++) {
             float t = (float)s / (float)HEAD_SUBDIVISIONS;
             positions.push_back(pA + t * (pB - pA));
-            radius.push_back(1.4f);
-            mass.push_back(head_heaviness * b_const * (1.4f * 1.4f * 1.4f)); // Preserved 1.2f factor
+            radius.push_back(head_part_radius);
+            mass.push_back(head_heaviness * b_const * (pow(0.7f, 3))); // Preserved 1.2f factor
+            // mass.push_back(head_heaviness * b_const * (pow(head_part_radius, 3))); // Preserved 1.2f factor
         }
     }
 
     // --- 3. GENERATE SLIM ULTRA-THIN DOUBLE-STRAND TAIL ---
     std::vector<int> left_tail_indices;
     std::vector<int> right_tail_indices;
+    int sperm_center_index;
     // const int TAIL_SUBDIVISIONS = 4; 
     std::vector<int> tail_subdivs{6, 6, 6, 6, 8};
 
@@ -421,6 +450,10 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
             float half_width = current_radius * 1.5f; 
 
             float mass_scaling = 1.f;
+
+            if(i == 2 && s == TAIL_SUBDIVISIONS/3){
+                sperm_center_index = positions.size() + id_offset;
+            }
 
             // Left Strand Node
             left_tail_indices.push_back(positions.size());
@@ -445,6 +478,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         // curr_pos.x = vel.x * dt + old_pos.x; curr_pos.y = vel.y * dt + old_pos.y;
         acc = {0.0f, 0.0f};
 
+        
         particles.push_back(Particle(env_id, i + id_offset, radius[i], mass[i], old_pos, vel, structure::creature));
         // particles[particles.size()-1].set_acc(acc);
 
@@ -467,15 +501,6 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         float exact_length = std::sqrt(dx * dx + dy * dy);
         assert(exact_length != 0);
         springs.push_back(Spring(particles[idxA+id_offset], particles[idxB+id_offset], env_id, spring_id, exact_length, stiffness, outside_body));
-        spring_id++;
-    };
-
-    auto add_muscle = [&](int idxA, int idxB, float stiffness, bool outside_body) {
-        float dx = positions[idxA].x - positions[idxB].x;
-        float dy = positions[idxA].y - positions[idxB].y;
-        float exact_length = std::sqrt(dx * dx + dy * dy);
-        assert(exact_length != 0);
-        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], env_id, spring_id, exact_length, stiffness, outside_body));
         spring_id++;
     };
 
@@ -522,16 +547,32 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
             add_spring(left_tail_indices[i], right_tail_indices[i + 1], RIGID_TENDON, false);
             add_spring(right_tail_indices[i], left_tail_indices[i + 1], RIGID_TENDON, false);
 
-            // 3. Selective Actuation Strategy:
-            // Instead of activating all 20 segments, we turn only 4 strategic segments into 
-            // active muscle pairs (ACTUATOR). The remaining 16 segments are turned into 
-            // springy, flexible tendons (FLEXIBLE_SPINE).
-            // This leaves the GA with exactly 4 pairs of muscles to coordinate.
-            // bool is_active_muscle = (i == 0 || i == 6 || i == 12 || i == 18);
+            bool is_active_muscle = (i == 0 || i == 7 || i == 14 || i == 21);
 
-            // std::vector<int> tail_subdivs{6, 6, 6, 6, 8};
-            // *----**----**----**----**------*
-            // 0123456789
+            float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
+
+            if (is_active_muscle) {
+                // add_muscle(right_tail_indices[i], right_tail_indices[i + 1], ACTUATOR * scaling, true);
+                // add_muscle(left_tail_indices[i + 1], left_tail_indices[i], ACTUATOR * scaling, true);
+            } else {
+                add_spring(right_tail_indices[i], right_tail_indices[i + 1], FLEXIBLE_SPINE * scaling, true);
+                add_spring(left_tail_indices[i + 1], left_tail_indices[i], FLEXIBLE_SPINE * scaling, true);
+            }
+        }
+    }
+
+    auto add_muscle = [&](int idxA, int idxB, float stiffness, bool outside_body) {
+        float dx = positions[idxA].x - positions[idxB].x;
+        float dy = positions[idxA].y - positions[idxB].y;
+        float exact_length = std::sqrt(dx * dx + dy * dy);
+        assert(exact_length != 0);
+        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], env_id, spring_id, exact_length, stiffness, outside_body));
+        spring_id++;
+    };
+    
+    for(int i = 0; i < num_tail_segments; i++) {
+        
+        if(i < num_tail_segments - 1) {
             bool is_active_muscle = (i == 0 || i == 7 || i == 14 || i == 21);
 
             float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
@@ -539,9 +580,6 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
             if (is_active_muscle) {
                 add_muscle(right_tail_indices[i], right_tail_indices[i + 1], ACTUATOR * scaling, true);
                 add_muscle(left_tail_indices[i + 1], left_tail_indices[i], ACTUATOR * scaling, true);
-            } else {
-                add_spring(right_tail_indices[i], right_tail_indices[i + 1], FLEXIBLE_SPINE * scaling, true);
-                add_spring(left_tail_indices[i + 1], left_tail_indices[i], FLEXIBLE_SPINE * scaling, true);
             }
         }
     }
@@ -556,7 +594,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         muscle_indices.push_back(i);
     }
 
-    Creature_data data{ muscle_indices, sensing_points };
+    Creature_data data{ muscle_indices, sensing_points, sperm_center_index};
 
     return data;
 }
@@ -569,8 +607,10 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     const sf::Vector2f ball_center = {0.0f, 0.0f}; // Placed perfectly within reach of the sperm
     const float BALL_RADIUS = 20.0f;                  // Scaled size relative to the sperm head
     const int EDGE_POINTS = 50;                       // Evenly distributed points around the rim
-    const float GAP_DISTANCE = 1.f;                  // Explicit tiny gap (in pixels) between edge circles
+    const float GAP_DISTANCE = 0.15f;                  // Explicit tiny gap (in pixels) between edge circles
     const float CENTER_PARTICLE_RADIUS = 1.0f;
+
+    assert(ball_radius == BALL_RADIUS);
 
     // Calculate the precise chord distance between adjacent points along the circle
     float chord_length = 2.0f * BALL_RADIUS * std::sin(3.14159265f / (float)EDGE_POINTS);

@@ -27,6 +27,8 @@ set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 # set(CMAKE_CUDA_ARCHITECTURES 86)
 set(CMAKE_CUDA_ARCHITECTURES native)
 
+set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+
 add_executable(main 
                 src/main.cpp
                 src/particle.cpp
@@ -47,7 +49,7 @@ target_compile_options(main PRIVATE
 #     -Wpedantic     # Forces strict adherence to the C++ standard
 #     -Wshadow       # Warns if you accidentally reuse a variable name
     $<$<COMPILE_LANGUAGE:CXX>: -Wshadow -Wpedantic -Wextra -Wall>
-    $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas="-v">
+    $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas="-v" -maxrregcount=59>
     
     # $<$<COMPILE_LANGUAGE:CXX>: -g>
     # $<$<COMPILE_LANGUAGE:CUDA>: -g -G>

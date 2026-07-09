@@ -8,8 +8,8 @@
 #include <format>
 
 // row vec
-typedef Eigen::Matrix<float, 1, Eigen::Dynamic> VectorXdf;
-typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> MatrixXdf;
+typedef Eigen::Matrix<float, 1, Eigen::Dynamic, Eigen::RowMajor> VectorXdf;
+typedef Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> MatrixXdf;
 
 using json = nlohmann::json;
 namespace Eigen{
@@ -92,6 +92,7 @@ int create_football              (int& num_particles, std::vector<Particle>& par
 struct Creature_data{
     std::vector<int> s_muscle_indices;
     std::vector<int> s_sensing_points;
+    int sperm_center_index;
 };
 
 Creature_data create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, int env_id);
