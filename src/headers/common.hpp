@@ -7,7 +7,7 @@ inline constexpr float max_x = 1920;
 
 // since i keep both balanced out anyways just make both 0
 inline constexpr sf::Vector2f gravity = {0, 10};
-inline constexpr float buoyancy_const = 4.f/3.f * 3.141f * 10.f; // DO NOT MAKE DENSITY 1000
+inline constexpr float buoyancy_const = 4.f/3.f * 3.141f * 14.5f; // DO NOT MAKE DENSITY 1000
 
 inline constexpr float restitution = 0.8f;
 
@@ -26,16 +26,17 @@ inline constexpr int env_fps = 60;
 inline constexpr int env_num_frames_per_creature_action = (float)env_fps/10; // every 100ms 
 inline constexpr int env_num_iterations_per_frame = 16;
 inline constexpr float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
-inline constexpr int env_max_steps_per_episode = 700;
-inline constexpr int env_observation_size = 12;
+inline constexpr int env_max_steps_per_episode = 400;
+inline constexpr int env_observation_size = 18;
 
-inline constexpr int env_num_particles = 132;
-inline constexpr int env_num_springs = 311;
-inline constexpr int env_num_muscles = 8;
+inline constexpr int env_num_particles = 135;
+inline constexpr int env_num_springs = 290;
+// inline constexpr int env_num_springs = 311 + 125;
+inline constexpr int env_num_muscles = 30;
 
 // 3 blocks per sm -- total 60 block/wave --> so multiple of 60
 inline constexpr int population_size = 120;
-inline constexpr int num_generations = 30 * 60;
+inline constexpr int num_generations = 150 * 60;
 inline constexpr bool load_old_gen = true;
 
 // 18 threads for 20 core cpu too much
@@ -48,9 +49,9 @@ static_assert((population_size%num_workers == 0), "population_size is not a mult
 inline constexpr int num_episode_per_generation = 1;
 
 inline constexpr float top_unchanged_percentage = 0.3;
-inline constexpr float elimination_percentage = 0.4;
+inline constexpr float elimination_percentage = 0.3;
 	
-inline constexpr float mutation_rate = 0.6;
+inline constexpr float mutation_rate = 0.4;
 
 // kernel
 inline constexpr float sperm_length = 180.f;
@@ -120,7 +121,7 @@ struct GPU_unified_mem{
     float* env_muscle_activation; // size population_size * env_num_muscles
 
     static constexpr int nn_in     = env_num_muscles + env_observation_size; // 20
-    static constexpr int nn_hidden = 12;
+    static constexpr int nn_hidden = 16;
     static constexpr int nn_out    = env_num_muscles; // 8
     static constexpr int nn_floats_per_env = nn_in*nn_hidden + nn_hidden + nn_hidden*nn_out + nn_out; // 348
     float* env_nn_data; // size population_size * nn_floats_per_env

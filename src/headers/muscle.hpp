@@ -17,7 +17,7 @@ class Muscle : public Spring
 
     public:
 
-        Muscle(Particle& p1, Particle& p2, int env_id, int idx, float len, float spring_const, bool outside_body, float contraction_limit=0.4, float max_spring_constant_scaling=10);
+        Muscle(Particle& p1, Particle& p2, int env_id, int idx, float len, float spring_const, bool outside_body, float contraction_limit=0.5, float max_spring_constant_scaling=25);
         
         void handle_nerve_signal();
         void set_activation(float acti);

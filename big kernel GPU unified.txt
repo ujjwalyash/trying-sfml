@@ -15,7 +15,8 @@ optimizations ---
 7. try to push as much as possible in single kernel since we already have everything loaded theoretical
       minimize cpu gpu copying
   
-  
+8. made bounding circle for sperm and ball -- if intersect then only do collision checks
+      downside no collision checks if sperm tails hits itself
   
   
   

@@ -150,7 +150,8 @@ void launch_threads(){
 
 inline sf::Vector2f get_random_ball_pos(){
 	// sf::Vector2f disp_from_center = {(float)(rand()%(int)(max_x - 120) - 100), (float)(rand()%(int)(max_y/2.f - 60) - 100)};
-	float dist = (float)(rand()%(int)(max_y-60)) + 120;
+	float dist = (float)(rand()%(int)(50)) + 100;
+	// float dist = (float)(rand()%(int)(max_y-60)) + 200;
 	float ang = (float)(rand()%360);
 	sf::Vector2f disp_from_center = {dist, 0};
 	disp_from_center = disp_from_center.rotatedBy(sf::degrees(ang));
@@ -397,6 +398,9 @@ int main()
 		for(int i = 0; i < population_size; i++){
 			rewards[i] = env[i].get_curr_reward_gpu();
 			// rewards[i] = env[i].get_curr_reward();
+			if(std::isnan(rewards[i])){
+				rewards[i] = std::numeric_limits<float>::lowest();
+			}
 		}
 
 		// sort them
@@ -404,8 +408,10 @@ int main()
 		
 		// remove bottom ones, repalce by cross_overs
 		for(int i = population_size-1; i >= (1-elimination_percentage)*population_size; i--){
-			int par_1 = rankings[rand()%(int)((1-elimination_percentage)*population_size)];
-			int par_2 = rankings[rand()%(int)((1-elimination_percentage)*population_size)];
+			int par_1 = rankings[rand()%(int)(top_unchanged_percentage*population_size)];
+			int par_2 = rankings[rand()%(int)(top_unchanged_percentage*population_size)];
+			// int par_1 = rankings[rand()%(int)((1-elimination_percentage)*population_size)];
+			// int par_2 = rankings[rand()%(int)((1-elimination_percentage)*population_size)];
 
 			env[rankings[i]].crossover(env[par_1], env[par_2]);
 		}
@@ -431,6 +437,7 @@ int main()
 			env[rankings[i]].save(i, rewards[rankings[i]]);
 		}
 		std::cout << "saved all envs \n";
+		std::cout.flush();
 	}
 
 	free_cuda_memory();

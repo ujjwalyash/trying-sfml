@@ -7,7 +7,17 @@
 -- Configuring done (0.2s)
 -- Generating done (0.0s)
 -- Build files have been written to: /home/yashujjwal/projects/trying-sfml/build
-[1/3] Building CXX object CMakeFiles/main.dir/src/main.cpp.o
+[1/3] Building CXX object CMakeFiles/main.dir/src/environment.cpp.o
+/home/yashujjwal/projects/trying-sfml/src/environment.cpp: In member function ‘void Environment::mutate(float)’:
+/home/yashujjwal/projects/trying-sfml/src/environment.cpp:148:32: warning: declaration of ‘mutation_rate’ shadows a global declaration [-Wshadow]
+  148 | void Environment::mutate(float mutation_rate){
+      |                          ~~~~~~^~~~~~~~~~~~~
+In file included from /home/yashujjwal/projects/trying-sfml/src/headers/particle.hpp:5,
+                 from /home/yashujjwal/projects/trying-sfml/src/headers/environment.hpp:2,
+                 from /home/yashujjwal/projects/trying-sfml/src/environment.cpp:1:
+/home/yashujjwal/projects/trying-sfml/src/headers/common.hpp:54:24: note: shadowed declaration is here
+   54 | inline constexpr float mutation_rate = 0.6;
+      |                        ^~~~~~~~~~~~~
 [2/3] Building CUDA object CMakeFiles/main.dir/src/cuda.cu.o
 ptxas info    : Overriding maximum register limit 256 for '_ZN3cub16_V_300304_SM_8606detail11EmptyKernelIvEEvv' with  59 of maxrregcount option
 ptxas info    : Overriding maximum register limit 256 for '_Z10big_kernel15GPU_unified_mem' with  59 of maxrregcount option
@@ -16,16 +26,11 @@ ptxas info    : Compiling entry function '_ZN3cub16_V_300304_SM_8606detail11Empt
 ptxas info    : Function properties for _ZN3cub16_V_300304_SM_8606detail11EmptyKernelIvEEvv
     0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
 ptxas info    : Used 4 registers, used 0 barriers, 352 bytes cmem[0]
-ptxas info    : Compile time = 0.932 ms
+ptxas info    : Compile time = 0.886 ms
 ptxas info    : Compiling entry function '_Z10big_kernel15GPU_unified_mem' for 'sm_86'
 ptxas info    : Function properties for _Z10big_kernel15GPU_unified_mem
-    0 bytes stack frame, 0 bytes spill stores, 0 bytes spill loads
-ptxas info    : Used 56 registers, used 1 barriers, 26384 bytes smem, 616 bytes cmem[0]
-ptxas info    : Compile time = 61.704 ms
+    8 bytes stack frame, 8 bytes spill stores, 4 bytes spill loads
+ptxas info    : Used 59 registers, used 1 barriers, 8 bytes cumulative stack size, 25452 bytes smem, 616 bytes cmem[0]
+ptxas info    : Compile time = 63.506 ms
 [3/3] Linking CXX executable bin/main
-part: 132, spr: 311, mus: 8
-current generation: 0
-current best_reward: -3256.23
-time taken: 0.928468s
-
-saved all envs 
+part: 135, spr: 290, mus: 30

@@ -198,8 +198,9 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         
         stage2_then_stage0(
             gpu_mem,
-            s_particles_pos_x, s_particles_pos_y, s_particles_mass,
-            s_springs_nat_len, s_springs_const,
+            s_particles_pos_x, s_particles_pos_y, 
+            s_particles_vel_x, s_particles_vel_y,
+            s_particles_mass, s_springs_nat_len, s_springs_const,
             s_springs_p1, s_springs_p2,
             idx, blockIdx.x, ep_end);
         
@@ -497,6 +498,7 @@ __device__ void handle_boundary(
 __device__ void stage2_then_stage0(
     GPU_unified_mem const& gpu_mem,
     float* s_particles_pos_x, float* s_particles_pos_y,
+    float* s_particles_vel_x, float* s_particles_vel_y,
     float* s_particles_mass,
     float* s_springs_nat_len, float* s_springs_const,
     const float* __restrict__ s_springs_p1, const float* __restrict__ s_springs_p2,
@@ -523,8 +525,12 @@ __device__ void stage2_then_stage0(
 
         float dx_g = ball_x - goal_x, dy_g = ball_y - goal_y;
         float goal_ball_dist = sqrtf(dx_g*dx_g + dy_g*dy_g);
-
-        float reward = -creature_ball_dist/100.f - goal_ball_dist/300.f - 1.f;
+        
+        dx_c = s_particles_vel_x[ball_center_idx];
+        dy_c = s_particles_vel_y[ball_center_idx];
+        float ball_speed = sqrtf(dx_c*dx_c + dy_c*dy_c);
+        
+        float reward = -creature_ball_dist/100.f - goal_ball_dist/300.f - 1.f + ball_speed * 0.1f;
 
         constexpr float goal_radius = 10.f;
         if(goal_ball_dist < goal_radius){
@@ -556,6 +562,7 @@ __device__ void stage2_then_stage0(
             mn = fminf(mn, vals[i]); 
             mx = fmaxf(mx, vals[i]);
         }
+        s_obs[12] = 2*(mn/max_y) - 1;
         float dem = mx - mn;
         for(int i = 0; i < 4; i++) s_obs[i] = 2.f*(vals[i]-mn)/dem - 1.f;
 
@@ -568,14 +575,22 @@ __device__ void stage2_then_stage0(
             mn = fminf(mn, vals[i]);
             mx = fmaxf(mx, vals[i]);
         }
+        s_obs[13] = 2*(mn/max_y) - 1;
         dem = mx - mn;
         for(int i = 4; i < 8; i++) s_obs[i] = 2.f*(vals[i]-mn)/dem - 1.f;
 
         int p0 = (int)sp[0], p3 = (int)sp[3];
         s_obs[8]  = 2.f*(s_particles_pos_x[p0]/max_x) - 1.f;
         s_obs[9]  = 2.f*(s_particles_pos_y[p0]/max_y) - 1.f;
+
         s_obs[10] = 2.f*(s_particles_pos_x[p3]/max_x) - 1.f;
         s_obs[11] = 2.f*(s_particles_pos_y[p3]/max_y) - 1.f;
+
+        s_obs[14] = s_particles_vel_x[p0]/20.f;
+        s_obs[15] = s_particles_vel_y[p0]/20.f;
+
+        s_obs[16] = s_particles_vel_x[p3]/20.f;
+        s_obs[17] = s_particles_vel_y[p3]/20.f;
     }
     
     __syncthreads();
