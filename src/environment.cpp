@@ -374,7 +374,8 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
             handle_all_springs(m_springs);
 
             float creature_ball_dist = (m_particles[m_sperm_center_index].get_curr_pos() - m_ball_pos).length();
-            if(creature_ball_dist < (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+            // if(creature_ball_dist < 1.5f * (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+            if(iter % iter_per_collision_check == 0){
                 // std::cout << "collisions active \n";
                 // std::cout.flush();
                 handle_all_collisions(m_particles, m_springs, m_muscles);    

@@ -304,7 +304,8 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
                 // sort by x
                 float dx = s_particles_pos_x[(int)gpu_mem.env_sperm_center_idx()[blockIdx.x]] - s_particles_pos_x[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
                 float dy = s_particles_pos_y[(int)gpu_mem.env_sperm_center_idx()[blockIdx.x]] - s_particles_pos_y[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
-                if(sqrtf(dx*dx + dy*dy) < (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+                // if(sqrtf(dx*dx + dy*dy) < 1.5f * (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+                if(iter % iter_per_collision_check == 0){
 
                     float thread_key[1];
                     int thread_value[1];

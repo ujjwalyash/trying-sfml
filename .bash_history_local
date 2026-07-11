@@ -101,3 +101,4 @@ ncu --export profile_output --launch-count 10 ./build/bin/main
 ./run.sh > output.txt 
 ./run.sh
 ./run.sh > output.txt 
+./run.sh

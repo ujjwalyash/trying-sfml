@@ -158,16 +158,15 @@ void Neural_Net::mutate(float mutation_rate){
         int in_sz = m_layer_sizes[i];
         int out_sz = m_layer_sizes[i+1];
         
-        MatrixXdf weight_noise = m_mutation_std * Eigen::Rand::normal<MatrixXdf>(in_sz, out_sz, urng);
-        MatrixXdf rand_w_mat    = Eigen::Rand::balanced<MatrixXdf>(in_sz, out_sz, urng);
+        MatrixXdf weight_noise = Eigen::Rand::normal<MatrixXdf>(in_sz, out_sz, urng);
+        MatrixXdf rand_w_mat    = Eigen::Rand::balanced<MatrixXdf>(1, out_sz, urng);
         // rand w mat has [-1, 1] so we use 2*mutation_rate-1 instead of mutations rate
         MatrixXdf weight_mask = (rand_w_mat.array() < 2*mutation_rate-1).cast<float>();
-        m_weights[i] += m_mutation_std * weight_noise.cwiseProduct(weight_mask);
+        m_weights[i] += m_mutation_std * weight_noise.cwiseProduct(weight_mask.replicate(in_sz, 1));
         
-        MatrixXdf bias_noise = m_mutation_std * Eigen::Rand::normal<MatrixXdf>(1, out_sz, urng);
+        MatrixXdf bias_noise = Eigen::Rand::normal<MatrixXdf>(1, out_sz, urng);
         MatrixXdf rand_b_mat  = Eigen::Rand::balanced<MatrixXdf>(1, out_sz, urng);
         MatrixXdf bias_mask = (rand_b_mat.array() < 2*mutation_rate-1).cast<float>();
-
         m_biases[i] += m_mutation_std * bias_noise.cwiseProduct(bias_mask);
     }
 }
@@ -354,7 +353,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // --- CRITICAL PARAMETERS (PRESERVED UNCHANGED) ---
     int id_offset = num_particles;
     int spring_id = num_springs + num_muscles;
-    sf::Vector2f shift = {660, 390};
+    sf::Vector2f shift = {660, 290};
 
     // we cant really make things lighter unless we lower the spring constants
     const float b_const = 4.f / 3.f * 3.141f * 10.f; 
@@ -400,11 +399,11 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // Original guide landmarks for interpolation path
     sf::Vector2f tail_landmarks[] = {
         corners[5],       
-        {300.0f, 205.0f - 20.f}, 
-        {300.0f, 235.0f - 20.f}, 
-        {300.0f, 265.0f - 20.f}, 
-        {300.0f, 295.0f - 20.f}, 
-        {300.0f, 325.0f - 20.f}  
+        {300.0f, 205.0f - 25.f}, 
+        {300.0f, 235.0f - 25.f}, 
+        {300.0f, 265.0f - 25.f}, 
+        {300.0f, 295.0f - 25.f}, 
+        {300.0f, 325.0f - 25.f}  
     };
 
     
@@ -494,7 +493,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     mid_h  = half_h / 2.0f;
     mid_w  = half_w / 2.0f;
     
-    sf::Vector2f downward_shift = {0, 160};
+    sf::Vector2f downward_shift = {0, 155};
     sf::Vector2f b_center = {300.0f, 150.0f + downward_shift.y};
 
     // --- CALCULATED COORDINATES ---
@@ -578,10 +577,10 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     };
 
     // B. ANCHOR TAIL ROOTS TO THE BASE OF THE HEAD
-    int head_left_base = apex_indices[6];  
-    int head_right_base = apex_indices[4]; 
-    int head_left_bottom = apex_indices[6] - 2;  
-    int head_right_bottom = apex_indices[4] + 2; 
+    int head_left_base = apex_indices[6] + 2;  
+    int head_right_base = apex_indices[4] - 2; 
+    int head_left_bottom = apex_indices[6];  
+    int head_right_bottom = apex_indices[4]; 
     int bottom_tip = apex_indices[5]; 
 
     // A. SOLID HEAD SPOKES & OUTER RING
@@ -648,7 +647,8 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
 
             // bool is_active_muscle = (i == 0 || i == 7 || i == 14 || i == 21);
 
-            float scaling = 100;
+            float dist = abs((float)i - (float)num_tail_segments/2);
+            float scaling = 500.f * fmax(dist/((float)num_tail_segments/2), 0.2f);
             // float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
 
             if (i % 2 == 0) {
@@ -675,7 +675,9 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
         if(i < num_tail_segments - 1) {
             // bool is_active_muscle = (i == 0 || i == 7 || i == 14 || i == 21);
 
-            float scaling = 100;
+            // float dist = abs((float)i - (float)num_tail_segments/2);
+            float scaling = 100.f;
+            // float scaling = 200.f * fmax(dist/((float)num_tail_segments/2), 0.5f);
             // float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
 
             if (i % 2 == 0) {

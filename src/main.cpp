@@ -150,7 +150,7 @@ void launch_threads(){
 
 inline sf::Vector2f get_random_ball_pos(){
 	// sf::Vector2f disp_from_center = {(float)(rand()%(int)(max_x - 120) - 100), (float)(rand()%(int)(max_y/2.f - 60) - 100)};
-	float dist = (float)(rand()%(int)(50)) + 100;
+	float dist = (float)(rand()%(int)(50)) + 130;
 	// float dist = (float)(rand()%(int)(max_y-60)) + 200;
 	float ang = (float)(rand()%360);
 	sf::Vector2f disp_from_center = {dist, 0};
@@ -422,11 +422,19 @@ int main()
 		}
 
 		clock.stop();
-		if(gen % 64 == 0){
+		if(gen % 512 == 0){
 			std::cout << "current generation: " << gen << '\n';
 			std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
 			std::cout << "time taken: " << clock.getElapsedTime().asSeconds() << "s" << '\n';
 			std::cout << '\n';
+			std::cout.flush();
+		}
+
+		if(gen % 5000 == 0){
+			for(int i = 0; i < population_size; i++){
+				env[rankings[i]].save(i, rewards[rankings[i]]);
+			}
+			std::cout << "saved all envs \n";
 			std::cout.flush();
 		}
 	}
