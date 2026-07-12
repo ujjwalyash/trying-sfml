@@ -7,7 +7,7 @@ inline constexpr float max_x = 1920;
 
 // since i keep both balanced out anyways just make both 0
 inline constexpr sf::Vector2f gravity = {0, 10};
-inline constexpr float buoyancy_const = 4.f/3.f * 3.141f * 14.5f; // DO NOT MAKE DENSITY 1000
+inline constexpr float buoyancy_const = 4.f/3.f * 3.141f * 14.8f; // DO NOT MAKE DENSITY 1000
 
 inline constexpr float restitution = 0.8f;
 
@@ -18,7 +18,7 @@ inline constexpr float coefficient_friction = 0.5;
 // if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
 // this completely destroys the concept of streamlined bodies 
 // // TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
-inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 200; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
+inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 20; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
 // inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 10; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
 
 // env params
@@ -26,17 +26,19 @@ inline constexpr int env_fps = 60;
 inline constexpr int env_num_frames_per_creature_action = (float)env_fps/10; // every 300ms 
 inline constexpr int env_num_iterations_per_frame = 16;
 inline constexpr float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
-inline constexpr int env_max_steps_per_episode = 500;
+inline constexpr int env_max_steps_per_episode = 200;
 inline constexpr int env_observation_size = 18;
 
 inline constexpr int env_num_particles = 135;
-inline constexpr int env_num_springs = 290;
+inline constexpr int env_num_springs = 288;
 inline constexpr int env_num_muscles = 30;
 
 // 3 blocks per sm -- total 60 block/wave --> so multiple of 60
-inline constexpr int population_size = 240;
-inline constexpr int num_generations = 0;
+inline constexpr int population_size = 120;
+inline constexpr int num_generations = 150 * 60 * 30;
+
 inline constexpr bool load_old_gen = true;
+inline constexpr bool save_new_gen = false;
 
 // 18 threads for 20 core cpu too much
 inline constexpr int num_workers = 12;
@@ -50,7 +52,7 @@ inline constexpr int num_episode_per_generation = 1;
 inline constexpr float top_unchanged_percentage = 0.3;
 inline constexpr float elimination_percentage = 0.3;
 	
-inline constexpr float mutation_rate = 0.4;
+inline constexpr float mutation_rate = 0.2;
 
 // kernel
 inline constexpr float sperm_length = 180.f;

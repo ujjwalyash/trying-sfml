@@ -33,6 +33,7 @@ namespace{
 	// which stage of step are ALL env in right now
 	// tells the workers what to call
 	int stage = 0;
+	bool save = save_new_gen;
 };
 
 void * worker(void *){
@@ -150,7 +151,7 @@ void launch_threads(){
 
 inline sf::Vector2f get_random_ball_pos(){
 	// sf::Vector2f disp_from_center = {(float)(rand()%(int)(max_x - 120) - 100), (float)(rand()%(int)(max_y/2.f - 60) - 100)};
-	float dist = (float)(rand()%(int)(50)) + 130;
+	float dist = (float)(rand()%(int)(80)) + sperm_length/2 + ball_radius + 15;
 	// float dist = (float)(rand()%(int)(max_y-60)) + 200;
 	float ang = (float)(rand()%360);
 	sf::Vector2f disp_from_center = {dist, 0};
@@ -234,6 +235,11 @@ void* render_current_gen(void *){
 
 					window.close();
 					return NULL;
+				}
+				
+				else if (keyPressed->scancode == sf::Keyboard::Scan::S){
+
+					save = true;
 				}
 
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Up){
@@ -422,15 +428,16 @@ int main()
 		}
 
 		clock.stop();
-		if(gen % 512 == 0){
+		if(gen % (num_generations/10) == 0){
 			std::cout << "current generation: " << gen << '\n';
 			std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
 			std::cout << "time taken: " << clock.getElapsedTime().asSeconds() << "s" << '\n';
-			std::cout << '\n';
+			// std::cout << '\n';
 			std::cout.flush();
 		}
 
-		if(gen % 5000 == 0){
+		if(save || (save_new_gen && gen % (num_generations/10) == 0)){
+			save = false;
 			for(int i = 0; i < population_size; i++){
 				env[rankings[i]].save(i, rewards[rankings[i]]);
 			}

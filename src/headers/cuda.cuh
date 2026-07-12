@@ -68,4 +68,4 @@ __device__ void stage2_then_stage0(
     float* s_particles_mass,
     float* s_springs_nat_len, float* s_springs_const,
     const float* __restrict__ s_springs_p1, const float* __restrict__ s_springs_p2,
-    int idx, int env, bool& ep_end);
+    int idx, int env);

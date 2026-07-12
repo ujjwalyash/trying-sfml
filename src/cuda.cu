@@ -192,7 +192,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
 
     // no need bc in next step if idx < num_part then this idx would have already loaded
     // whats needed in first half step
-    bool ep_end = 0;
+    // bool ep_end = 0;
 
     for(int step = 0; step < env_max_steps_per_episode; step++){
         
@@ -202,7 +202,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
             s_particles_vel_x, s_particles_vel_y,
             s_particles_mass, s_springs_nat_len, s_springs_const,
             s_springs_p1, s_springs_p2,
-            idx, blockIdx.x, ep_end);
+            idx, blockIdx.x);
         
         // bad if someone ends then that threads wont be present to barriers below
         // while it itself is waiting for a barrier -- deadlock
@@ -261,33 +261,31 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
                 p2_spring_acc += -(s_springs_damping_factor[idx]) * (m1*(vel_vec));
 
                 //* Spring::calculate_viscous_force()
-                if(s_springs_outside_body[idx]){
-                    //* TRUST that nvcc will inline all this 
-                    float2 v1 = make_float2(s_particles_vel_x[p1], s_particles_vel_y[p1]);
-                    float2 v2 = make_float2(s_particles_vel_x[p2], s_particles_vel_y[p2]);
-                    float2 vel_com = (m1 * v1 + m2 * v2) / (m1 + m2);
-                    float2 vel_com_along_spring = dot(vel_com, rel_pos) * rel_pos;
 
-                    float2 perp_spring = make_float2(-rel_pos.y, rel_pos.x);
+                // +1 reduced warp divergence
+                // if(s_springs_outside_body[idx])
+                {
+                    // reusing vars -- the bottleneck is the in the stage 0, 2 func call so doesnt matter much
+                    float2 v = make_float2(s_particles_vel_x[p1], s_particles_vel_y[p1]);
+                    
+                    float2 v_along_spring = dot(v, rel_pos) * rel_pos;
+                    float2 v_perp_spring = v - v_along_spring;
+                    
+                    float2 acc_parallel = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * v_along_spring;
+                    float2 acc_perp = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * v_perp_spring;
 
-                    float2 perp_viscous_acc = make_float2(0.f, 0.f);
-                    if(dot(vel_com, -perp_spring) > 0.f){
-                        perp_viscous_acc = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * (vel_com - vel_com_along_spring);
-                    }
+                    p1_spring_acc += acc_parallel + acc_perp;
+                    
+                    // for particle 2 -- ik its WET - resuing same code but i dont trust function -- they increase register count
+                    v = make_float2(s_particles_vel_x[p2], s_particles_vel_y[p2]);
+                    
+                    v_along_spring = dot(v, rel_pos) * rel_pos;
+                    v_perp_spring = v - v_along_spring;
+                    
+                    acc_parallel = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * v_along_spring;
+                    acc_perp = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * v_perp_spring;
 
-                    float2 parallel_viscous_acc = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * vel_com_along_spring;
-
-                    float total_mass = m1 + m2;
-                    float angular_acc = length(parallel_viscous_acc) * s_springs_radius[idx] / s_springs_moi_along_com[idx];
-
-                    float2 dir_perp_spring = make_float2(0.f, 0.f);
-                    if(angular_acc != 0.f){
-                        float2 perp_of_parallel = make_float2(-parallel_viscous_acc.y, parallel_viscous_acc.x);
-                        dir_perp_spring = normalize(perp_of_parallel);
-                    }
-
-                    p1_spring_acc += perp_viscous_acc + parallel_viscous_acc + dir_perp_spring * (angular_acc * m2 / total_mass * s_springs_nat_len[idx]);
-                    p2_spring_acc += perp_viscous_acc + parallel_viscous_acc - dir_perp_spring * (angular_acc * m1 / total_mass * s_springs_nat_len[idx]);
+                    p2_spring_acc += acc_parallel + acc_perp;                    
                 }
 
                 // atomic wrtie back for accs
@@ -304,8 +302,8 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
                 // sort by x
                 float dx = s_particles_pos_x[(int)gpu_mem.env_sperm_center_idx()[blockIdx.x]] - s_particles_pos_x[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
                 float dy = s_particles_pos_y[(int)gpu_mem.env_sperm_center_idx()[blockIdx.x]] - s_particles_pos_y[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
-                // if(sqrtf(dx*dx + dy*dy) < 1.5f * (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
-                if(iter % iter_per_collision_check == 0){
+                if(sqrtf(dx*dx + dy*dy) < 1.5f * (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+                // if(iter % iter_per_collision_check == 0){
 
                     float thread_key[1];
                     int thread_value[1];
@@ -503,7 +501,7 @@ __device__ void stage2_then_stage0(
     float* s_particles_mass,
     float* s_springs_nat_len, float* s_springs_const,
     const float* __restrict__ s_springs_p1, const float* __restrict__ s_springs_p2,
-    int idx, int env, bool& ep_end)
+    int idx, int env)
 {
     int ball_center_idx = (int)gpu_mem.env_ball_center_idx()[env];
     const float* sp = gpu_mem.env_sensing_pts + env*4;
@@ -531,12 +529,12 @@ __device__ void stage2_then_stage0(
         dy_c = s_particles_vel_y[ball_center_idx];
         float ball_speed = sqrtf(dx_c*dx_c + dy_c*dy_c);
         
-        float reward = -creature_ball_dist/100.f - goal_ball_dist/300.f - 1.f + ball_speed * 0.1f;
+        float reward = -creature_ball_dist/300.f - goal_ball_dist/200.f - 2.f + ball_speed;
 
         constexpr float goal_radius = 10.f;
         if(goal_ball_dist < goal_radius){
             reward += 1000.f;
-            ep_end = 1;
+            // ep_end = 1;
             // gpu_mem.env_episode_end()[env] = 1.f;
         }
 
@@ -664,103 +662,3 @@ __device__ void stage2_then_stage0(
     }
     __syncthreads(); // all threads must see updated muscle spring params before the physics loop starts
 }
-
-/*
-
-void launch_first_half_step(){
-
-    
-    first_half_step<<<grid_sz, block_sz>>>(gpu_mem);
-
-    checkCudaErrors(cudaGetLastError());
-}
-
-__global__ void first_half_step(GPU_unified_mem gpu_mem){
-
-    int idx = blockDim.x * blockIdx.x + threadIdx.x;
-
-    assert(gpu_env_dt == 1.f/(60 * 16));
-
-    // m_vel += + 0.5f * m_acc * env_dt;
-    if(idx < grid_sz*block_sz){
-        gpu_mem.particles_vel_x()[idx] += 0.5f * gpu_mem.particles_net_acc_x()[idx] * gpu_env_dt;
-        gpu_mem.particles_vel_y()[idx] += 0.5f * gpu_mem.particles_net_acc_y()[idx] * gpu_env_dt;
-        
-        // m_curr_pos += m_vel*env_dt;
-        gpu_mem.particles_pos_x()[idx] += gpu_mem.particles_vel_x()[idx] * gpu_env_dt;
-        gpu_mem.particles_pos_y()[idx] += gpu_mem.particles_vel_y()[idx] * gpu_env_dt;
-    }
-
-}
-
-
-void launch_second_half_step(){
-
-    
-    second_half_step<<<grid_sz, block_sz>>>(gpu_mem);
-
-    checkCudaErrors(cudaGetLastError());
-}
-
-__global__ void second_half_step(GPU_unified_mem gpu_mem){
-
-    int idx = blockDim.x * blockIdx.x + threadIdx.x;
-
-    assert(gpu_env_dt == 1.f/(60 * 16));
-
-    // m_acc = gravity + m_buoyancy_acc + m_spring_acc;
-    // assignemnt not +=
-    if(idx < grid_sz*block_sz){
-
-        gpu_mem.particles_net_acc_x()[idx] = gpu_mem.particles_spring_acc_x()[idx] + gpu_mem.particles_const_acc_x()[idx];
-        gpu_mem.particles_net_acc_y()[idx] = gpu_mem.particles_spring_acc_y()[idx] + gpu_mem.particles_const_acc_y()[idx];
-        
-        gpu_mem.particles_spring_acc_x()[idx] = 0;
-        gpu_mem.particles_spring_acc_y()[idx] = 0;
-        
-        // m_vel += 0.5f * m_acc * env_dt;
-        gpu_mem.particles_vel_x()[idx] += 0.5f * gpu_mem.particles_net_acc_x()[idx] * gpu_env_dt;
-        gpu_mem.particles_vel_y()[idx] += 0.5f * gpu_mem.particles_net_acc_y()[idx] * gpu_env_dt;
-        
-        handle_boundary(gpu_mem, idx);
-    }
-}
-
-__device__ void handle_boundary(GPU_unified_mem gpu_mem, int idx){
-    float radius = gpu_mem.particles_radius()[idx];
-    if(gpu_mem.particles_pos_x()[idx] + radius > gpu_max_x){
-        // reflect(gpu_max_x, 0, 1);
-        // m_curr_pos.x = 2*gpu_max_x - (m_curr_pos.x + radius) - radius;        
-        gpu_mem.particles_pos_x()[idx] = 2*gpu_max_x - (gpu_mem.particles_pos_x()[idx] + radius) - radius;        
-        // m_vel.x = -m_vel.x;
-        gpu_mem.particles_vel_x()[idx] = -gpu_mem.particles_vel_x()[idx];
-    }
-    else if(gpu_mem.particles_pos_x()[idx] - gpu_mem.particles_radius()[idx] < 0){
-        // reflect(0, 0, -1);
-        // m_curr_pos.x = 2*0 - (m_curr_pos.x - radius) + radius;        
-        gpu_mem.particles_pos_x()[idx] = -(gpu_mem.particles_pos_x()[idx] - radius) + radius;        
-        // m_vel.x = -m_vel.x;
-        gpu_mem.particles_vel_x()[idx] = -gpu_mem.particles_vel_x()[idx];
-    }
-    
-    if(gpu_mem.particles_pos_y()[idx] + radius > gpu_max_y){
-        // reflect(gpu_max_y, 1, 1);
-        // m_curr_pos.y = 2*gpu_max_y - (m_curr_pos.y + radius) - radius;        
-        gpu_mem.particles_pos_y()[idx] = 2*gpu_max_y - (gpu_mem.particles_pos_y()[idx] + radius) - radius;        
-        // m_vel.x = -m_vel.x;
-        gpu_mem.particles_vel_y()[idx] = -gpu_mem.particles_vel_y()[idx];
-    }
-    else if(gpu_mem.particles_pos_y()[idx] - radius < 0){
-        // reflect(0, 1, -1);
-        // m_curr_pos.y = 2*0 - (m_curr_pos.y - radius) + radius;        
-        gpu_mem.particles_pos_y()[idx] = -(gpu_mem.particles_pos_y()[idx] - radius) + radius;        
-        // m_vel.y = -m_vel.y;
-        gpu_mem.particles_vel_y()[idx] = -gpu_mem.particles_vel_y()[idx];
-    }
-}
-
-// __global__ void reset(GPU_unified_mem gpu_mem){
-
-// }
-
-*/

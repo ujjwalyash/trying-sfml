@@ -26,7 +26,7 @@ Spring::Spring(Particle& p1, Particle& p2, int env_id, int idx, float len, float
 
     float d = (m_p1.get_mass()-m_p2.get_mass())*m_natural_length / (2*m_mass);
     // dont multiply by mass since damping factor already has mass
-    m_moment_interia_along_com = (m_natural_length*m_natural_length/12 + d*d);
+    m_moment_interia_along_com = (m_natural_length*m_natural_length/12 + d*d) * 0.1f;
     
     float m1 = m_p1.get_mass();
     float m2 = m_p2.get_mass();
@@ -146,9 +146,10 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
     sf::Vector2f vel_com = (m1*m_p1.get_vel() + m2*m_p2.get_vel())/(m1+m2);
     sf::Vector2f vel_com_along_spring = vel_com.projectedOnto(vec_along_spring);
 
-    if(m_present_outside_body){
-        calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
-    }
+    // if(m_present_outside_body){
+    //     calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
+    // }
+    calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
 
     // sf::Vector2f vel = ((m_p2.get_vel() - m_p1.get_vel())/(m1+m2)).projectedOnto(vec_along_spring);
     // m_p1.add_spring_acc(-m_damping_factor * m2 * (-vel));
@@ -159,27 +160,59 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
 
 void Spring::calculate_viscous_force(sf::Vector2f const& vel_com, sf::Vector2f const& vec_along_spring, sf::Vector2f const& vel_com_along_spring, float m1, float m2){
     
-    sf::Vector2f perp_viscous_acc = {0, 0};
-    if(vel_com.dot(-vec_along_spring.perpendicular()) > 0){
-        ////apply perp force too
+    //! wtf is this brother if the vel com is 0 but the spring is rotating then no force???
+    //! let me explain: since a spring is small length we ignore its rotation smth lile that
+    // sf::Vector2f perp_viscous_acc = {0, 0};
+    // if(vel_com.dot(-vec_along_spring.perpendicular()) > 0){
+    //     ////apply perp force too
         
-        // perp to len
-        perp_viscous_acc = -(fminf(1.f/env_dt, 1.f * m_viscous_factor)) * (vel_com - vel_com_along_spring);
+    //     // perp to len
+    //     perp_viscous_acc = -(fminf(1.f/env_dt, 1.f * m_viscous_factor)) * (vel_com - vel_com_along_spring);
         
-    }
-    // additional 0.5f bc only one side will be exposed to the outside
-    sf::Vector2f parallel_viscous_acc = -(fminf(1.f/env_dt, 0.25f * m_viscous_factor)) * vel_com_along_spring;
+    // }
+    // // additional 0.5f bc only one side will be exposed to the outside
+    // sf::Vector2f parallel_viscous_acc = -(fminf(1.f/env_dt, 0.25f * m_viscous_factor)) * vel_com_along_spring;
     
-    float angular_acc = parallel_viscous_acc.length() * m_radius / m_moment_interia_along_com;
+    // float angular_acc = parallel_viscous_acc.length() * m_radius / m_moment_interia_along_com;
     
-    sf::Vector2f dir_perp_spring = {0, 0};
-    if(angular_acc != 0){
-        dir_perp_spring = parallel_viscous_acc.perpendicular().normalized();
-    }
+    // sf::Vector2f dir_perp_spring = {0, 0};
+    // if(angular_acc != 0){
+    //     dir_perp_spring = parallel_viscous_acc.perpendicular().normalized();
+    // }
     
-    m_p1.add_spring_acc(perp_viscous_acc + parallel_viscous_acc + dir_perp_spring * (angular_acc * m2/m_mass * m_natural_length));
-    m_p2.add_spring_acc(perp_viscous_acc + parallel_viscous_acc - dir_perp_spring * (angular_acc * m1/m_mass * m_natural_length));
+    // m_p1.add_spring_acc(perp_viscous_acc + 1.f*parallel_viscous_acc + dir_perp_spring * (angular_acc * m2/m_mass * m_natural_length));
+    // m_p2.add_spring_acc(perp_viscous_acc + 1.f*parallel_viscous_acc - dir_perp_spring * (angular_acc * m1/m_mass * m_natural_length));
     
+    // 1. Ensure we have a normalized direction vector for accurate projection
+    float len = vec_along_spring.length();
+    sf::Vector2f dir_parallel = (len > 0.0001f) ? (vec_along_spring / len) : sf::Vector2f(1, 0);
+
+    // 2. Anisotropic drag multipliers
+    // Slender body theory dictates perpendicular drag is significantly higher
+    float c_parallel = 0.25f * m_viscous_factor;
+    float c_perp = 1.0f * m_viscous_factor; 
+
+    // Helper lambda to apply independent drag to a particle
+    auto apply_anisotropic_drag = [&](Particle& p) {
+        sf::Vector2f v = p.get_vel();
+        
+        // Decompose the particle's velocity
+        float v_dot_dir = v.x * dir_parallel.x + v.y * dir_parallel.y;
+        sf::Vector2f v_parallel = dir_parallel * v_dot_dir;
+        sf::Vector2f v_perp = v - v_parallel;
+        
+        // Calculate drag acceleration.
+        // Because m_viscous_factor is already scaled by 1/m_total, 
+        // applying it directly as an acceleration scales correctly for both masses.
+        sf::Vector2f acc_parallel = -fminf(1.f/env_dt, c_parallel) * v_parallel;
+        sf::Vector2f acc_perp = -fminf(1.f/env_dt, c_perp) * v_perp;
+        
+        p.add_spring_acc(acc_parallel + acc_perp);
+    };
+
+    // 3. Apply the force to both ends independently
+    apply_anisotropic_drag(m_p1);
+    apply_anisotropic_drag(m_p2);
 }
 
 void handle_all_springs(std::vector<Spring> &springs){

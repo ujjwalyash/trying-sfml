@@ -198,6 +198,12 @@ void Neural_Net::forward(std::vector<float>& current_activations, std::vector<fl
     for(int i = 0; i < (int)current_activations.size(); i++){
         current_activations[i] = activation(0, i);
     }
+
+    // for(int i = 0; i < (int)current_activations.size(); i++){
+    //     current_activations[i] = i % 2;
+    //     // if i forget
+    //     assert(num_generations == 0);
+    // }
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -563,8 +569,9 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // const float FLEXIBLE_SPINE = 1e4f;  
     // const float ACTUATOR       = 1e4f;
     const float RIGID_TENDON   = 1e6f;  // Keep for the head structure
-    const float DIAGONAL_BRACE = 5e3f;  // Weak enough to bend, strong enough to hold shape
-    const float FLEXIBLE_SPINE = 5e3f;  // Lower passive resistance
+    const float DIAGONAL_BRACE = 1e3f;  // Weak enough to bend, strong enough to hold shape
+
+    const float FLEXIBLE_SPINE = 2e4f;  // Lower passive resistance
     const float ACTUATOR       = 1e4f;  // 10x stronger than the spine/braces!  
 
     auto add_spring = [&](int idxA, int idxB, float stiffness, bool outside_body) {
@@ -597,8 +604,9 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     
     add_spring(left_tail_indices[0], head_left_base, RIGID_TENDON, true);
     add_spring(head_right_base, right_tail_indices[0], RIGID_TENDON, true);
-    add_spring(head_left_bottom, left_tail_indices[0], RIGID_TENDON, false);
-    add_spring(head_right_bottom, right_tail_indices[0], RIGID_TENDON, false);
+    
+    add_spring(head_left_bottom, left_tail_indices[1], RIGID_TENDON, false);
+    add_spring(head_right_bottom, right_tail_indices[1], RIGID_TENDON, false);
     add_spring(bottom_tip, left_tail_indices[0], RIGID_TENDON, false);
     add_spring(bottom_tip, right_tail_indices[0], RIGID_TENDON, false);
     
@@ -635,20 +643,20 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     int num_tail_segments = left_tail_indices.size();
     for(int i = 0; i < num_tail_segments; i++) {
         
+        float dist = abs((float)i - (float)num_tail_segments/2);
+        float scaling = 500.f * fmax(dist/((float)num_tail_segments/2), 0.2f);
         // 1. Horizontal cross-rungs (Rigidly holds the thin micro-ladder shape profile)
-        add_spring(left_tail_indices[i], right_tail_indices[i], DIAGONAL_BRACE * 2.0f, false);
+        add_spring(left_tail_indices[i], right_tail_indices[i], DIAGONAL_BRACE * 2.0f * scaling, false);
 
         if(i < num_tail_segments - 1) {
-            if(i + 2 < num_tail_segments) {
+            if(i + 3 < num_tail_segments) {
                 // 2. Shear diagonals (Prevents the thin strands from buckling or overlapping)
-                add_spring(left_tail_indices[i], right_tail_indices[i + 2], DIAGONAL_BRACE, false);
-                add_spring(right_tail_indices[i], left_tail_indices[i + 2], DIAGONAL_BRACE, false);
+                add_spring(left_tail_indices[i], right_tail_indices[i + 3], DIAGONAL_BRACE * scaling, false);
+                add_spring(right_tail_indices[i], left_tail_indices[i + 3], DIAGONAL_BRACE * scaling, false);
             }
 
             // bool is_active_muscle = (i == 0 || i == 7 || i == 14 || i == 21);
 
-            float dist = abs((float)i - (float)num_tail_segments/2);
-            float scaling = 500.f * fmax(dist/((float)num_tail_segments/2), 0.2f);
             // float scaling = (1-pow(float(i)/(num_tail_segments-1), 2))*100 + 1;
 
             if (i % 2 == 0) {
