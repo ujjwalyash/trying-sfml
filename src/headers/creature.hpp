@@ -73,6 +73,7 @@ class Creature{
         void get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles);
         void get_observation_gpu(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles);
         int get_apex_tip_index();
+        int get_bottom_tip_index();
 
         Neural_Net const& get_brain() const;
         void crossover(Creature const& par_1, Creature const& par_2);

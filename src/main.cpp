@@ -74,15 +74,15 @@ void * worker(void *){
 					case -1:
 						env[curr_job + job_num].reset(ball_pos[ep_no], goal_pos[ep_no]);
 						break;
-					case 0:
-						env[curr_job + job_num].step_stage_0();
-						break;
-					case 1:
-						env[curr_job + job_num].step_stage_1();
-						break;
-					case 2:
-						env[curr_job + job_num].step_stage_2();
-						break;
+					// case 0:
+					// 	env[curr_job + job_num].step_stage_0();
+					// 	break;
+					// case 1:
+					// 	env[curr_job + job_num].step_stage_1();
+					// 	break;
+					// case 2:
+					// 	env[curr_job + job_num].step_stage_2();
+					// 	break;
 					default:
 						std::cerr << "unknown stage: " << stage << '\n';
 						exit(-1);
@@ -151,7 +151,7 @@ void launch_threads(){
 
 inline sf::Vector2f get_random_ball_pos(){
 	// sf::Vector2f disp_from_center = {(float)(rand()%(int)(max_x - 120) - 100), (float)(rand()%(int)(max_y/2.f - 60) - 100)};
-	float dist = (float)(rand()%(int)(80)) + sperm_length/2 + ball_radius + 15;
+	float dist = (float)(rand()%(int)(300)) + sperm_length/2 + ball_radius + 20;
 	// float dist = (float)(rand()%(int)(max_y-60)) + 200;
 	float ang = (float)(rand()%360);
 	sf::Vector2f disp_from_center = {dist, 0};
@@ -189,6 +189,7 @@ void* render_current_gen(void *){
 	sf::Font font("/usr/share/fonts/adwaita-sans-fonts/AdwaitaSans-Regular.ttf");
 	int num_steps_done = 0;
     float reward = 0;
+	float min_ball_creature_dist = 3000;
 
 	// for(int i = 0; i < num_episode_per_generation; i++){
 	// 	ball_pos[i] = get_random_ball_pos();
@@ -229,6 +230,7 @@ void* render_current_gen(void *){
 					env_used_for_render.reset_reward();
 
                     num_steps_done = 0;
+					min_ball_creature_dist = 3000;
 				}
 
 				else if (keyPressed->scancode == sf::Keyboard::Scan::Q){
@@ -304,8 +306,8 @@ void* render_current_gen(void *){
         // env_used_for_render.render_gpu(window);
 		
         sf::Text text(font);
-		text.setString(std::format("reward:    {:.1f}\nstps_done: {}\nspd_up:    {}\ncurr_gen:  {}\ncurr_rank: {}", 
-                                            reward, num_steps_done, speed_up, curr_gen, env_rank+1)); 
+		text.setString(std::format("reward:    {:.1f}\nmin_dist: {}\nstps_done: {}\nspd_up:    {}\ncurr_gen:  {}\ncurr_rank: {}", 
+                                            reward, min_ball_creature_dist, num_steps_done, speed_up, curr_gen, env_rank+1)); 
 		text.setCharacterSize(24);            
 		text.setFillColor(sf::Color::White); 
 		text.setPosition({0.f, 0.f}); 
@@ -314,7 +316,7 @@ void* render_current_gen(void *){
 		window.display();
 		
 		
-		env_used_for_render.step(window, text, render_btw_cycle);
+		env_used_for_render.step(window, text, min_ball_creature_dist, render_btw_cycle);
 		
 
 		// launch_big_kernel();

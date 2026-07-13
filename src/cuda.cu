@@ -193,7 +193,9 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     // no need bc in next step if idx < num_part then this idx would have already loaded
     // whats needed in first half step
     // bool ep_end = 0;
-
+    
+    // this couses one extra spill into local mem :(
+    float min_ball_creature_dist = 3000;
     for(int step = 0; step < env_max_steps_per_episode; step++){
         
         stage2_then_stage0(
@@ -210,6 +212,18 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         // if(ep_end == 1){
         //     break;
         // } 
+        
+        float ball_x = s_particles_pos_x[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
+        float ball_y = s_particles_pos_y[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
+        int apex_idx = (int)gpu_mem.env_sensing_pts[blockIdx.x*4]; // Creature::get_apex_tip_index() == m_sensing_points[0]
+        float dx_c = s_particles_pos_x[apex_idx] - ball_x;
+        float dy_c = s_particles_pos_y[apex_idx] - ball_y;
+        min_ball_creature_dist = fmin(min_ball_creature_dist, sqrtf(dx_c*dx_c + dy_c*dy_c));
+        
+        int bottom_idx = (int)gpu_mem.env_sensing_pts[blockIdx.x*4 + 3]; // Creature::get_apex_tip_index() == m_sensing_points[0]
+        dx_c = s_particles_pos_x[bottom_idx] - ball_x;
+        dy_c = s_particles_pos_y[bottom_idx] - ball_y;
+        min_ball_creature_dist = fmin(min_ball_creature_dist, sqrtf(dx_c*dx_c + dy_c*dy_c));
 
         for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
                     
@@ -376,6 +390,9 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         }
     }
 
+    //! subtract MIN BALL DIST TO REWARD
+    gpu_mem.env_reward()[blockIdx.x] -= min_ball_creature_dist;
+
     //* write back shared to global 
 
     // some env may end early
@@ -518,25 +535,29 @@ __device__ void stage2_then_stage0(
     if(idx == 0){
 
         int apex_idx = (int)sp[0]; // Creature::get_apex_tip_index() == m_sensing_points[0]
-        float dx_c = s_particles_pos_x[apex_idx] - ball_x;
-        float dy_c = s_particles_pos_y[apex_idx] - ball_y;
-        float creature_ball_dist = sqrtf(dx_c*dx_c + dy_c*dy_c);
+        // float dx_c = s_particles_pos_x[apex_idx] - ball_x;
+        // float dy_c = s_particles_pos_y[apex_idx] - ball_y;
+        // float creature_ball_dist = sqrtf(dx_c*dx_c + dy_c*dy_c);
 
-        float dx_g = ball_x - goal_x, dy_g = ball_y - goal_y;
-        float goal_ball_dist = sqrtf(dx_g*dx_g + dy_g*dy_g);
+        // min_ball_creature_dist = fmin(creature_ball_dist, min_ball_creature_dist);
+
+        // float dx_g = ball_x - goal_x, dy_g = ball_y - goal_y;
+        // float goal_ball_dist = sqrtf(dx_g*dx_g + dy_g*dy_g);
         
-        dx_c = s_particles_vel_x[ball_center_idx];
-        dy_c = s_particles_vel_y[ball_center_idx];
+        float dx_c = s_particles_vel_x[ball_center_idx];
+        float dy_c = s_particles_vel_y[ball_center_idx];
         float ball_speed = sqrtf(dx_c*dx_c + dy_c*dy_c);
         
-        float reward = -creature_ball_dist/300.f - goal_ball_dist/200.f - 2.f + ball_speed;
+        // float reward = -creature_ball_dist/300.f - goal_ball_dist/200.f - 2.f + ball_speed;
+        float reward = ball_speed;
+        
 
-        constexpr float goal_radius = 10.f;
-        if(goal_ball_dist < goal_radius){
-            reward += 1000.f;
-            // ep_end = 1;
-            // gpu_mem.env_episode_end()[env] = 1.f;
-        }
+        // constexpr float goal_radius = 10.f;
+        // if(goal_ball_dist < goal_radius){
+        //     reward += 1000.f;
+        //     // ep_end = 1;
+        //     // gpu_mem.env_episode_end()[env] = 1.f;
+        // }
 
         gpu_mem.env_reward()[env] += reward;
         // gpu_mem.env_num_steps_done()[env] += 1.f;

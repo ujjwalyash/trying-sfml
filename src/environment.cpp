@@ -307,6 +307,7 @@ void Environment::step_stage_0(){
 
     // check();
 }
+/*
 void Environment::step_stage_1(){	
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
     
@@ -350,9 +351,10 @@ void Environment::step_stage_2(){
 
     // check();
 }
+*/
 
 // keeping this cpu only
-void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle){
+void Environment::step(sf::RenderWindow& window, sf::Text& text, float& min_ball_creature_dist, bool render_between_cycle){
     
 	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
@@ -396,7 +398,7 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
 
     m_ball_pos = m_particles[m_ball_center_index].get_curr_pos();
 
-    float reward = calculate_reward();
+    float reward = calculate_reward(min_ball_creature_dist);
     m_reward += reward;
 
     m_num_steps_done++;
@@ -405,7 +407,7 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, bool render_bet
         m_episode_end = true;
 }
 
-float Environment::calculate_reward(){
+float Environment::calculate_reward(float& min_ball_creature_dist){
     
     float reward = 0;
 
@@ -414,30 +416,33 @@ float Environment::calculate_reward(){
     float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_ball_pos).length();
     // float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length();
     float ball_speed = m_particles[m_ball_center_index].get_vel().length();
-
+    
     // rn balls sinks :|
     // if(ball_displacement > 5) m_has_touched_ball = true;
-
+    
     // if(not m_has_touched_ball){
         // reward -= 1;
         // reward -= creature_ball_dist/100.f;
-    // }
-    
-    reward -= creature_ball_dist/100.f;    
-    reward -= goal_ball_dist/300.f;
-    reward -= 1; // normal time thing
-    
-    reward += ball_speed * 0.1f;
+        // }
+        
+        // reward -= creature_ball_dist/100.f;    
+        // reward -= goal_ball_dist/300.f;
+        // reward -= 2; // normal time thing
+        
+    reward += ball_speed * 1.f;
+    float tail_ball_dist = (m_particles[m_creature.get_bottom_tip_index()].get_curr_pos() - m_ball_pos).length();
+    min_ball_creature_dist = fmin(min_ball_creature_dist, creature_ball_dist);
+    min_ball_creature_dist = fmin(min_ball_creature_dist, tail_ball_dist);
     // std::cout << "tip speed" << apex_tip_speed << '\n';
     // std::cout.flush();
 
     // if present from the beginning this leads to suboptimal policy of just vibrating the tip in place
     // reward += apex_tip_speed/20;
 
-    if(goal_ball_dist < m_goal_radius){
-        reward += 1000;
-        m_episode_end = 1;
-    }
+    // if(goal_ball_dist < m_goal_radius){
+    //     reward += 1000;
+    //     m_episode_end = 1;
+    // }
 
     return reward;
 }

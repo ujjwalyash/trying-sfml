@@ -62,11 +62,11 @@ class Environment
         void step_stage_1();
         void step_stage_2();
 
-        void step(sf::RenderWindow& window, sf::Text& text, bool render_between_cycle = false);
+        void step(sf::RenderWindow& window, sf::Text& text, float& min_ball_creature_dist, bool render_between_cycle = false);
 
         // returns the reward for one step
         // checks for end condition
-        float calculate_reward();
+        float calculate_reward(float& min_ball_creature_dist);
         float calculate_reward_gpu();
 
         float get_curr_reward(); 

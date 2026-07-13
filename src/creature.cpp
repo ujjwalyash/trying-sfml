@@ -253,6 +253,10 @@ int Creature::get_apex_tip_index(){
     return m_sensing_points[0];
 }
 
+int Creature::get_bottom_tip_index(){
+    return m_sensing_points[3];
+}
+
 void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation){
     m_brain.forward(m_current_activations, observation);
     for(int i=0; i < (int)m_muscle_index.size(); i++){
@@ -378,7 +382,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // corners[7] = {285.0f, 150.0f}; // 7. Left Lateral Apex
     // corners[8] = {292.5f, 137.0f}; // 8. Top-Left Mid-Wall
 // --- TWEAKABLE DIMENSION PARAMETER ---
-    float head_vertical_length = 25.0f; // Change this to dynamically adjust the height
+    float head_vertical_length = 35.0f; // Change this to dynamically adjust the height
     float vertical_length = head_vertical_length; // Change this to dynamically adjust the height
 
     // Proportional width scale derived from your original profile ratio (30.0w / 52.0h)
@@ -405,11 +409,11 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // Original guide landmarks for interpolation path
     sf::Vector2f tail_landmarks[] = {
         corners[5],       
-        {300.0f, 205.0f - 25.f}, 
-        {300.0f, 235.0f - 25.f}, 
-        {300.0f, 265.0f - 25.f}, 
-        {300.0f, 295.0f - 25.f}, 
-        {300.0f, 325.0f - 25.f}  
+        {300.0f, 205.0f - 20.f}, 
+        {300.0f, 235.0f - 20.f}, 
+        {300.0f, 265.0f - 20.f}, 
+        {300.0f, 295.0f - 20.f}, 
+        {300.0f, 325.0f - 20.f}  
     };
 
     
@@ -730,8 +734,10 @@ int create_football(int& num_particles, std::vector<Particle>& particles, int& n
     const float EDGE_PARTICLE_RADIUS = (chord_length - GAP_DISTANCE) / 2.0f;
 
     // Grab the global buoyancy constant defined in your engine
-    const float b_const = buoyancy_const;
-    // const float b_const = 4.f / 3.f * 3.141f * 15.f;
+    // const float b_const = buoyancy_const;
+    const float b_const = 4.f/3.f * 3.141f * 14.8f;
+    assert(buoyancy_const == 0);
+    
 
     // Track starting index offset if particles already exist in the vectors
     int start_particle_idx = particles.size();
