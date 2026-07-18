@@ -355,6 +355,284 @@ void Creature::get_observation_gpu(std::vector<float>& obs, sf::Vector2f ball_po
     obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos_gpu().y/max_y) - 1.f;
 }
 
+// ============================================================================
+// create_creature_muscle_swimmer
+//
+// Redesign goals vs. the original:
+//  1. Remove the redundant second "head" welded to the tail tip. Real
+//     fish/eel tails taper to a light, flexible tip -- that's where you
+//     want max flexibility and min inertia, not more rigid structure/mass.
+//  2. Fix the stiffness hierarchy so it's *consistent* along the whole tail:
+//         RIGID_TENDON (head)  >>  ACTUATOR  >  RUNG  >  SPINE  >  BRACE
+//     In the original, `FLEXIBLE_SPINE * scaling` could exceed 1e7 -- an
+//     order of magnitude stiffer than the "rigid" head tendon (1e6), and
+//     comparable to or stiffer than the muscle actuator. A muscle can't
+//     bend a passive structure that's stiffer than itself.
+//  3. Taper stiffness DOWN toward the tail tip (was backwards before --
+//     the old `dist`-based scaling made the tail *stiffer* near its ends).
+//     This lets the wave amplify toward the tip, like a real fish tail.
+//  4. Actuate every segment (both rails), not every other segment. This
+//     gives a controller/learner the full space of tail shapes needed to
+//     synthesize a clean traveling wave, instead of half the DOF being
+//     dead weight.
+//  5. Add proprioceptive sensing points along the tail (not just at the
+//     ends) so a learned controller can actually perceive body curvature
+//     / wave phase -- necessary feedback for coordinating an undulation.
+//  6. Slightly leaner head profile (less frontal drag) and a slightly
+//     higher head:tail mass ratio (more stable "keel" so tail thrust
+//     doesn't just spin the body in place).
+// ============================================================================
+
+Creature_data create_creature_muscle_swimmer(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
+                                            , int& num_muscles, std::vector<Muscle>& muscles, int env_id){
+
+    sf::Vector2<float> old_pos, vel, acc;
+
+    // --- CRITICAL PARAMETERS ---
+    int id_offset = num_particles;
+    int spring_id = num_springs + num_muscles;
+    sf::Vector2f shift = {660, 290};
+
+    const float b_const = 4.f / 3.f * 3.141f * 10.f;
+    const float head_heaviness = 4.f; // slightly heavier keel than before (was 3.f)
+
+    // --- 1. HEAD: leaner profile than before (less frontal drag) ---
+    sf::Vector2f corners[9];
+
+    float head_vertical_length = 22.0f;              // was 25.0f -- leaner
+    float horizontal_length = head_vertical_length * (26.0f / 52.0f); // narrower ratio than 30/52
+
+    float half_h = head_vertical_length / 2.0f;
+    float half_w = horizontal_length / 2.0f;
+    float mid_h  = half_h / 2.0f;
+    float mid_w  = half_w / 2.0f;
+
+    sf::Vector2f center = {300.0f, 150.0f};
+
+    corners[0] = center;
+    corners[1] = center + sf::Vector2f{ 0.0f,   -half_h };
+    corners[2] = center + sf::Vector2f{  mid_w,  -mid_h  };
+    corners[3] = center + sf::Vector2f{  half_w,  0.0f   };
+    corners[4] = center + sf::Vector2f{  mid_w,   mid_h  };
+    corners[5] = center + sf::Vector2f{  0.0f,    half_h };
+    corners[6] = center + sf::Vector2f{ -mid_w,   mid_h  };
+    corners[7] = center + sf::Vector2f{ -half_w,  0.0f   };
+    corners[8] = center + sf::Vector2f{ -mid_w,  -mid_h  };
+
+    // --- TAIL GUIDE PATH: 6 landmarks, more pronounced taper than before ---
+    sf::Vector2f tail_landmarks[] = {
+        corners[5],
+        {300.0f, 185.0f},
+        {300.0f, 220.0f},
+        {300.0f, 255.0f},
+        {300.0f, 290.0f},
+        {300.0f, 325.0f}
+    };
+    // Thicker near the head (more muscle leverage / structural support),
+    // thinner at the tip (lower inertia, easier to whip).
+    float tail_radii[] = {1.8f, 1.5f, 1.1f, 0.8f, 0.6f, 0.45f};
+
+    std::vector<sf::Vector2f> positions;
+    std::vector<float> mass;
+    std::vector<float> radius;
+
+    float head_part_radius = 0.7f;
+
+    // --- 2. DENSE HEAD SHELL (unchanged approach, leaner geometry) ---
+    positions.push_back(corners[0]);
+    radius.push_back(0.75f);
+    mass.push_back(head_heaviness * b_const * (pow(1.5f, 3)));
+
+    int apex_indices[9];
+    const int HEAD_SUBDIVISIONS = 2;
+
+    for(int i = 1; i <= 8; i++) {
+        apex_indices[i] = positions.size();
+        int next_corner_idx = (i == 8) ? 1 : i + 1;
+        sf::Vector2f pA = corners[i];
+        sf::Vector2f pB = corners[next_corner_idx];
+        for(int s = 0; s < HEAD_SUBDIVISIONS; s++) {
+            float t = (float)s / (float)HEAD_SUBDIVISIONS;
+            positions.push_back(pA + t * (pB - pA));
+            radius.push_back(head_part_radius);
+            mass.push_back(head_heaviness * b_const * (pow(0.7f, 3)));
+        }
+    }
+
+    // --- 3. TAIL: single tapered flexible double-rail whip, no tip head ---
+    std::vector<int> left_tail_indices;
+    std::vector<int> right_tail_indices;
+    int tail_midpoint_index = -1;
+
+    // 5 spans, 5 subdivisions each = 25 segments. Fewer than the original's
+    // 30, but still enough spatial resolution for a smooth wave, while
+    // keeping the action/observation space a bit more tractable to learn.
+    std::vector<int> tail_subdivs{5, 5, 5, 5, 5};
+    int num_tail_segments = 0;
+    for (int s : tail_subdivs) num_tail_segments += s;
+
+    int seg_counter = 0;
+    for(int i = 0; i < 5; i++) {
+        sf::Vector2f tA = tail_landmarks[i];
+        sf::Vector2f tB = tail_landmarks[i + 1];
+        float rA = tail_radii[i];  float rB = tail_radii[i + 1];
+
+        const int TAIL_SUBDIVISIONS = tail_subdivs[i];
+        for(int s = 1; s <= TAIL_SUBDIVISIONS; s++) {
+            float t = (float)s / (float)TAIL_SUBDIVISIONS;
+            sf::Vector2f center_pos = tA + t * (tB - tA);
+            float current_radius = rA + t * (rB - rA);
+            float half_width = current_radius * 1.4f;
+
+            if (seg_counter == num_tail_segments / 2) {
+                tail_midpoint_index = positions.size() + id_offset;
+            }
+
+            left_tail_indices.push_back(positions.size());
+            positions.push_back(center_pos + sf::Vector2f(-half_width, 0.0f));
+            radius.push_back(current_radius * 0.7f);
+            mass.push_back(b_const * (radius.back() * radius.back() * radius.back()));
+
+            right_tail_indices.push_back(positions.size());
+            positions.push_back(center_pos + sf::Vector2f(half_width, 0.0f));
+            radius.push_back(current_radius * 0.7f);
+            mass.push_back(b_const * (radius.back() * radius.back() * radius.back()));
+
+            seg_counter++;
+        }
+    }
+
+    // --- 4. INSTANTIATE PARTICLES ---
+    std::vector<int> sensing_points;
+    for(int i = 0; i < (int)positions.size(); i++){
+        old_pos = positions[i] + shift;
+        vel = {0.0f, 0.0f};
+        acc = {0.0f, 0.0f};
+        particles.push_back(Particle(env_id, i + id_offset, radius[i], mass[i], old_pos, vel, structure::creature));
+
+        // Orientation landmarks on the head.
+        if(positions[i] == corners[1] or positions[i] == corners[3] or positions[i] == corners[7]) {
+            sensing_points.push_back(particles.size()-1);
+        }
+    }
+    // Proprioceptive sensing along the tail: roughly 1/4, 1/2, 3/4 and tip.
+    // This gives a controller feedback about the body's current curvature /
+    // wave phase, which it needs in order to coordinate an undulation --
+    // the original design only exposed a single point at the (now removed)
+    // second head.
+    for (int frac : {25, 50, 75, 100}) {
+        int idx = std::min((int)left_tail_indices.size() - 1,
+                            (int)((frac / 100.0f) * (left_tail_indices.size() - 1)));
+        sensing_points.push_back(left_tail_indices[idx]);
+        sensing_points.push_back(right_tail_indices[idx]);
+    }
+
+    // --- 5. SPRINGS ---
+    // Stiffness hierarchy is kept globally consistent:
+    //   RIGID_TENDON (head)  >>  ACTUATOR  >  RUNG  >  SPINE  >  BRACE
+    // and this ordering holds at every point along the taper, unlike the
+    // original where scaling could push SPINE above RIGID_TENDON.
+    const float RIGID_TENDON = 1e6f;
+
+    const float RUNG_BASE  = 1.5e4f, RUNG_MIN  = 4.0e3f; // holds ladder width
+    const float SPINE_BASE = 4.0e3f, SPINE_MIN = 1.0e3f; // rail bending resistance
+    const float BRACE_STIFF = 1.0e3f;                    // constant light anti-buckling shear
+    const float ACT_BASE = 3.0e4f, ACT_MIN = 1.2e4f;     // muscle contraction stiffness
+
+    auto add_spring = [&](int idxA, int idxB, float stiffness, bool outside_body) {
+        float dx = positions[idxA].x - positions[idxB].x;
+        float dy = positions[idxA].y - positions[idxB].y;
+        float exact_length = std::sqrt(dx * dx + dy * dy);
+        assert(exact_length != 0);
+        springs.push_back(Spring(particles[idxA+id_offset], particles[idxB+id_offset], env_id, spring_id, exact_length, stiffness, outside_body));
+        spring_id++;
+    };
+
+    auto add_muscle = [&](int idxA, int idxB, float stiffness, bool outside_body) {
+        float dx = positions[idxA].x - positions[idxB].x;
+        float dy = positions[idxA].y - positions[idxB].y;
+        float exact_length = std::sqrt(dx * dx + dy * dy);
+        assert(exact_length != 0);
+        muscles.push_back(Muscle(particles[idxA+id_offset], particles[idxB+id_offset], env_id, spring_id, exact_length, stiffness, outside_body));
+        spring_id++;
+    };
+
+    // 5a. Head spokes & outer ring (unchanged approach -- keep the head rigid).
+    int head_left_base  = apex_indices[6] + 2;
+    int head_right_base = apex_indices[4] - 2;
+    int head_left_bottom  = apex_indices[6];
+    int head_right_bottom = apex_indices[4];
+    int bottom_tip = apex_indices[5];
+
+    for(int i = 1; i < left_tail_indices[0]; i++) {
+        add_spring(0, i, RIGID_TENDON, false);
+        int next_idx = (i == left_tail_indices[0] - 1) ? 1 : i + 1;
+        bool in_gap = (i >= head_right_base && i < head_left_base);
+        add_spring(i, next_idx, RIGID_TENDON, !in_gap);
+    }
+
+    // 5b. Anchor tail root to base of head.
+    add_spring(left_tail_indices[0], head_left_base, RIGID_TENDON, true);
+    add_spring(head_right_base, right_tail_indices[0], RIGID_TENDON, true);
+    add_spring(head_left_bottom, left_tail_indices[1 % left_tail_indices.size()], RIGID_TENDON, false);
+    add_spring(head_right_bottom, right_tail_indices[1 % right_tail_indices.size()], RIGID_TENDON, false);
+    add_spring(bottom_tip, left_tail_indices[0], RIGID_TENDON, false);
+    add_spring(bottom_tip, right_tail_indices[0], RIGID_TENDON, false);
+    add_spring(apex_indices[7], apex_indices[3], RIGID_TENDON, false);
+    add_spring(apex_indices[1], apex_indices[5], RIGID_TENDON, false);
+
+    // 5c. Tail structure: rungs, rails (spine), shear braces -- all tapered
+    // so the tail gets progressively softer toward the tip. No second head:
+    // the final rung spring (left.back()-right.back()) simply closes the tip.
+    for(int i = 0; i < num_tail_segments; i++) {
+        float t = (float)i / (float)(num_tail_segments - 1); // 0 at head, 1 at tip
+
+        float rung_stiff  = RUNG_BASE  - (RUNG_BASE  - RUNG_MIN)  * t;
+        float spine_stiff = SPINE_BASE - (SPINE_BASE - SPINE_MIN) * t;
+
+        // Cross-rung: holds the thin ladder profile width.
+        add_spring(left_tail_indices[i], right_tail_indices[i], rung_stiff, false);
+
+        if (i < num_tail_segments - 1) {
+            // Rails (longitudinal spine) -- always softer than the muscle
+            // that has to bend them.
+            add_spring(left_tail_indices[i], left_tail_indices[i+1], spine_stiff, true);
+            add_spring(right_tail_indices[i], right_tail_indices[i+1], spine_stiff, true);
+        }
+
+        if (i + 3 < num_tail_segments) {
+            // Shear diagonals prevent buckling/overlap; kept light and flat
+            // so they don't dominate the passive stiffness budget.
+            add_spring(left_tail_indices[i], right_tail_indices[i+3], BRACE_STIFF, false);
+            add_spring(right_tail_indices[i], left_tail_indices[i+3], BRACE_STIFF, false);
+        }
+    }
+
+    // 5d. Muscles: EVERY segment gets an antagonist pair (both rails),
+    // tapered so contraction strength eases off toward the tip -- this is
+    // what lets the tip whip with amplified amplitude rather than being
+    // dragged rigidly by a strong distal actuator.
+    for(int i = 0; i < num_tail_segments - 1; i++) {
+        float t = (float)i / (float)(num_tail_segments - 2);
+        float act_stiff = ACT_BASE - (ACT_BASE - ACT_MIN) * t;
+
+        add_muscle(right_tail_indices[i], right_tail_indices[i+1], act_stiff, true);
+        add_muscle(left_tail_indices[i], left_tail_indices[i+1], act_stiff, true);
+    }
+
+    num_particles = particles.size();
+    num_springs = springs.size();
+    num_muscles = muscles.size();
+
+    std::vector<int> muscle_indices;
+    for(int i = 0; i < num_muscles; i++){
+        muscle_indices.push_back(i);
+    }
+
+    Creature_data data{ muscle_indices, sensing_points, tail_midpoint_index };
+    return data;
+}
+
 Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
                                             , int& num_muscles, std::vector<Muscle>& muscles, int env_id){
 
@@ -382,7 +660,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     // corners[7] = {285.0f, 150.0f}; // 7. Left Lateral Apex
     // corners[8] = {292.5f, 137.0f}; // 8. Top-Left Mid-Wall
 // --- TWEAKABLE DIMENSION PARAMETER ---
-    float head_vertical_length = 35.0f; // Change this to dynamically adjust the height
+    float head_vertical_length = 25.0f; // Change this to dynamically adjust the height
     float vertical_length = head_vertical_length; // Change this to dynamically adjust the height
 
     // Proportional width scale derived from your original profile ratio (30.0w / 52.0h)
@@ -614,6 +892,8 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
     add_spring(bottom_tip, left_tail_indices[0], RIGID_TENDON, false);
     add_spring(bottom_tip, right_tail_indices[0], RIGID_TENDON, false);
     
+    add_spring(apex_indices[7], apex_indices[3], RIGID_TENDON, false);
+    add_spring(apex_indices[1], apex_indices[5], RIGID_TENDON, false);
     
     // B. ANCHOR TAIL ROOTS TO THE BASE OF THE TAIL HEAD
     int b_head_left_base = apex_indices_bottom[8];  

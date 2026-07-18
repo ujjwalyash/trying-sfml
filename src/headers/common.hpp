@@ -18,7 +18,7 @@ inline constexpr float coefficient_friction = 0.5;
 // if two particles in a line move along that line then viscous force on back particle must be smaller but here its same as the front one
 // this completely destroys the concept of streamlined bodies 
 // // TODO: make viscous force more accurate ie springs(lines) face it too -- no need to do this for collisions though wont be too hard
-inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 20; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
+inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 50; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
 // inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 10; //// (not any more)*10 bc viscosity is only applied at point masses which have small radius so we scale it
 
 // env params
@@ -29,16 +29,19 @@ inline constexpr float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
 inline constexpr int env_max_steps_per_episode = 300;
 inline constexpr int env_observation_size = 18;
 
-inline constexpr int env_num_particles = 135;
-inline constexpr int env_num_springs = 288;
-inline constexpr int env_num_muscles = 30;
+inline constexpr int env_num_particles = 108;
+inline constexpr int env_num_springs = 257;
+inline constexpr int env_num_muscles = 48;
+// inline constexpr int env_num_particles = 135;
+// inline constexpr int env_num_springs = 290;
+// inline constexpr int env_num_muscles = 30;
 
 // 3 blocks per sm -- total 60 block/wave --> so multiple of 60
-inline constexpr int population_size = 60;
-inline constexpr int num_generations = 4 * 60 * 30;
+inline constexpr int population_size = 240;
+inline constexpr int num_generations = 120 * 60 * 7 * 0;
 
-inline constexpr bool load_old_gen = true;
-inline constexpr bool save_new_gen = true;
+inline constexpr bool load_old_gen = false;
+inline constexpr bool save_new_gen = false;
 
 // 18 threads for 20 core cpu too much
 inline constexpr int num_workers = 12;
@@ -55,11 +58,11 @@ inline constexpr float elimination_percentage = 0.3;
 inline constexpr float mutation_rate = 0.2;
 
 // kernel
-inline constexpr float sperm_length = 180.f + 10.f;
+inline constexpr float sperm_length = 180.f;
 inline constexpr float ball_radius = 20.f;
 
 inline constexpr int iter_per_collision_check = 2;
-inline constexpr int iter_per_boundary_check = 8;
+inline constexpr int iter_per_boundary_check = 16;
 
 #ifdef __CUDACC__
     #define CUDA_HOST_DEVICE __host__ __device__ inline
@@ -105,18 +108,14 @@ struct GPU_unified_mem{
     CUDA_HOST_DEVICE float* springs_p2() const { return ptrs_spring[8]; }
 
       // one-per-env scalars
-    float* ptrs_env[5];
+    float* ptrs_env[3];
     CUDA_HOST_DEVICE float* env_reward()          const { return ptrs_env[0]; }
-    // CUDA_HOST_DEVICE float* env_ball_pos_x()      const { return ptrs_env[1]; }
-    // CUDA_HOST_DEVICE float* env_ball_pos_y()      const { return ptrs_env[2]; }
     CUDA_HOST_DEVICE float* env_goal_pos_x()      const { return ptrs_env[1]; }
     CUDA_HOST_DEVICE float* env_goal_pos_y()      const { return ptrs_env[2]; }
-    CUDA_HOST_DEVICE float* env_ball_center_idx() const { return ptrs_env[3]; }
-    CUDA_HOST_DEVICE float* env_sperm_center_idx() const { return ptrs_env[4]; }
-    // CUDA_HOST_DEVICE float* env_num_steps_done()  const { return ptrs_env[3]; }
-    // CUDA_HOST_DEVICE float* env_episode_end()     const { return ptrs_env[4]; }
 
-    float* env_sensing_pts; // size population_size * 4
+    float* env_sensing_pts; // size == 4
+    float* env_ball_center_idx; // size == 1
+    float* env_sperm_center_idx; // size == 1
 
     // muscle activation fed back into the net each step
     float* env_muscle_activation; // size population_size * env_num_muscles

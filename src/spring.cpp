@@ -146,10 +146,10 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
     sf::Vector2f vel_com = (m1*m_p1.get_vel() + m2*m_p2.get_vel())/(m1+m2);
     sf::Vector2f vel_com_along_spring = vel_com.projectedOnto(vec_along_spring);
 
-    // if(m_present_outside_body){
+    if(m_present_outside_body){
     //     calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
-    // }
-    calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
+        calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
+    }
 
     // sf::Vector2f vel = ((m_p2.get_vel() - m_p1.get_vel())/(m1+m2)).projectedOnto(vec_along_spring);
     // m_p1.add_spring_acc(-m_damping_factor * m2 * (-vel));
@@ -167,10 +167,10 @@ void Spring::calculate_viscous_force(sf::Vector2f const& vel_com, sf::Vector2f c
     //     ////apply perp force too
         
     //     // perp to len
-    //     perp_viscous_acc = -(fminf(1.f/env_dt, 1.f * m_viscous_factor)) * (vel_com - vel_com_along_spring);
         
     // }
-    // // additional 0.5f bc only one side will be exposed to the outside
+    // additional 0.5f bc only one side will be exposed to the outside
+    // sf::Vector2f perp_viscous_acc = -(fminf(1.f/env_dt, 1.f * m_viscous_factor)) * (vel_com - vel_com_along_spring);
     // sf::Vector2f parallel_viscous_acc = -(fminf(1.f/env_dt, 0.25f * m_viscous_factor)) * vel_com_along_spring;
     
     // float angular_acc = parallel_viscous_acc.length() * m_radius / m_moment_interia_along_com;
@@ -182,7 +182,10 @@ void Spring::calculate_viscous_force(sf::Vector2f const& vel_com, sf::Vector2f c
     
     // m_p1.add_spring_acc(perp_viscous_acc + 1.f*parallel_viscous_acc + dir_perp_spring * (angular_acc * m2/m_mass * m_natural_length));
     // m_p2.add_spring_acc(perp_viscous_acc + 1.f*parallel_viscous_acc - dir_perp_spring * (angular_acc * m1/m_mass * m_natural_length));
+    // m_p1.add_spring_acc(perp_viscous_acc + 1.f*parallel_viscous_acc);
+    // m_p2.add_spring_acc(perp_viscous_acc + 1.f*parallel_viscous_acc);
     
+    //* //////////////////////
     // 1. Ensure we have a normalized direction vector for accurate projection
     float len = vec_along_spring.length();
     sf::Vector2f dir_parallel = (len > 0.0001f) ? (vec_along_spring / len) : sf::Vector2f(1, 0);
@@ -213,6 +216,29 @@ void Spring::calculate_viscous_force(sf::Vector2f const& vel_com, sf::Vector2f c
     // 3. Apply the force to both ends independently
     apply_anisotropic_drag(m_p1);
     apply_anisotropic_drag(m_p2);
+
+    // 1. Ensure we have a normalized direction vector for accurate projection
+    // float len = vec_along_spring.length();
+    // sf::Vector2f dir_parallel = (len > 0.0001f) ? (vec_along_spring / len) : sf::Vector2f(1, 0);
+
+    // // 2. Anisotropic drag multipliers
+    // // Slender body theory: perpendicular drag is significantly higher than parallel drag
+    // float c_parallel = 0.25f * m_viscous_factor;
+    // float c_perp = 1.0f * m_viscous_factor; 
+
+    // // 3. Decompose the Center of Mass velocity, NOT individual particle velocity
+    // float v_com_dot_dir = vel_com.x * dir_parallel.x + vel_com.y * dir_parallel.y;
+    // sf::Vector2f v_com_parallel = dir_parallel * v_com_dot_dir;
+    // sf::Vector2f v_com_perp = vel_com - v_com_parallel;
+
+    // // 4. Calculate drag acceleration based on the body's movement through fluid
+    // sf::Vector2f acc_parallel = -fminf(1.f/env_dt, c_parallel) * v_com_parallel;
+    // sf::Vector2f acc_perp = -fminf(1.f/env_dt, c_perp) * v_com_perp;
+    // sf::Vector2f total_viscous_acc = acc_parallel + acc_perp;
+
+    // // 5. Apply the shared fluid resistance acceleration directly to both ends
+    // m_p1.add_spring_acc(total_viscous_acc);
+    // m_p2.add_spring_acc(total_viscous_acc);
 }
 
 void handle_all_springs(std::vector<Spring> &springs){

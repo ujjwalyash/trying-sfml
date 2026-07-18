@@ -23,7 +23,8 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     for(int i = 0; i < m_num_particles; i++){
         m_particles[i].shift_pos(m_original_ball_pos);
     }
-    Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_id);
+    Creature_data data = create_creature_muscle_swimmer(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_id);
+    // Creature_data data = create_creature_muscle_sperm(m_num_particles, m_particles, m_num_springs, m_springs, m_num_muscles, m_muscles, m_id);
     m_sperm_center_index = data.sperm_center_index;
 
     if(m_id == 0){
@@ -67,11 +68,17 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
 
 
     // put things in gpu mem
-    gpu_mem.env_ball_center_idx()[m_id] = m_ball_center_index;
-    gpu_mem.env_sperm_center_idx()[m_id] = m_sperm_center_index;
-    for(int it = 0; it < 4; it++){
-        gpu_mem.env_sensing_pts[m_id*4 + it] = data.s_sensing_points[it];
+
+    // only need to set these once
+    if(m_id == 0){
+        gpu_mem.env_ball_center_idx[0] = m_ball_center_index;
+        gpu_mem.env_sperm_center_idx[0] = m_sperm_center_index;
+        
+        for(int it = 0; it < 4; it++){
+            gpu_mem.env_sensing_pts[it] = data.s_sensing_points[it];
+        }
     }
+    
     for(int it = 0; it < env_num_muscles; it++){
         gpu_mem.env_muscle_activation[m_id*env_num_muscles + it] = 0;
     }

@@ -96,7 +96,9 @@ struct Creature_data{
     int sperm_center_index;
 };
 
+
+Creature_data create_creature_muscle_swimmer(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
+                                            , int& num_muscles, std::vector<Muscle>& muscles, int env_id);
 Creature_data create_creature_muscle_sperm (int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, int env_id);
 
 void create_creature_bacteriophage(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);
-void create_creature_motor_sperm  (Creature& creature, int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int& num_muscles, std::vector<Muscle>& muscles, float dt);

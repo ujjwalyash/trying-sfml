@@ -376,6 +376,9 @@ int main()
 	pthread_t render_thread;
 	pthread_create(&render_thread, NULL, render_current_gen, NULL);
 
+	std::ofstream file("./data.txt");
+	assert(file);
+
 	sf::Clock clock;
 	for(gen = 0; gen < num_generations; gen++){
 
@@ -429,15 +432,28 @@ int main()
 			env[rankings[i]].mutate(mutation_rate);
 		}
 
+		
 		clock.stop();
+
+
+		// if(gen % 10 == 0){
+		// 	for(int i = 0; i < population_size; i++){
+		// 		file << rankings[i] << ",\n"[i == population_size-1];
+		// 	}
+		// 	for(int i = 0; i < population_size; i++){
+		// 		file << rewards[rankings[i]] << ",\n"[i == population_size-1];
+		// 	}
+		// }
+
 		if(gen % (num_generations/10) == 0){
 			std::cout << "current generation: " << gen << '\n';
 			std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
+			std::cout << '\n';
 			std::cout << "time taken: " << clock.getElapsedTime().asSeconds() << "s" << '\n';
 			// std::cout << '\n';
 			std::cout.flush();
 		}
-
+		
 		if(save || (save_new_gen && gen % (num_generations/10) == 0)){
 			save = false;
 			for(int i = 0; i < population_size; i++){

@@ -106,3 +106,9 @@ ncu -c 1 ./build/bin/main
 ./run.sh 
 ncu -c 1 ./build/bin/main
 ./run.sh 
+compute-sanitizer --tool memcheck ./build/bin/main
+./run.sh 
+compute-sanitizer --tool memcheck ./build/bin/main
+./run.sh 
+clear
+./run.sh 

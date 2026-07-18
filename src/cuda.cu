@@ -25,7 +25,10 @@ void allocate_cuda_memory(){
     for(float* & ptr: gpu_mem.ptrs_env){
         checkCudaErrors(cudaMallocManaged(&ptr, population_size*sizeof(float)));
     }
-    checkCudaErrors(cudaMallocManaged(&gpu_mem.env_sensing_pts,        population_size*4*sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&gpu_mem.env_sensing_pts,        4*sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&gpu_mem.env_sperm_center_idx,        sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&gpu_mem.env_ball_center_idx,        sizeof(float)));
+
     checkCudaErrors(cudaMallocManaged(&gpu_mem.env_muscle_activation,  population_size*env_num_muscles*sizeof(float)));
     checkCudaErrors(cudaMallocManaged(&gpu_mem.env_nn_data,            population_size*GPU_unified_mem::nn_floats_per_env*sizeof(float)));
     checkCudaErrors(cudaMallocManaged(&gpu_mem.muscle_rest_nat_len,      population_size*env_num_muscles*sizeof(float)));
@@ -195,7 +198,8 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     // bool ep_end = 0;
     
     // this couses one extra spill into local mem :(
-    float min_ball_creature_dist = 3000;
+    __shared__ float min_ball_creature_dist;
+    if(idx == 0 || idx == 32) min_ball_creature_dist = 3000;
     for(int step = 0; step < env_max_steps_per_episode; step++){
         
         stage2_then_stage0(
@@ -213,17 +217,24 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         //     break;
         // } 
         
-        float ball_x = s_particles_pos_x[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
-        float ball_y = s_particles_pos_y[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
-        int apex_idx = (int)gpu_mem.env_sensing_pts[blockIdx.x*4]; // Creature::get_apex_tip_index() == m_sensing_points[0]
-        float dx_c = s_particles_pos_x[apex_idx] - ball_x;
-        float dy_c = s_particles_pos_y[apex_idx] - ball_y;
-        min_ball_creature_dist = fmin(min_ball_creature_dist, sqrtf(dx_c*dx_c + dy_c*dy_c));
-        
-        int bottom_idx = (int)gpu_mem.env_sensing_pts[blockIdx.x*4 + 3]; // Creature::get_apex_tip_index() == m_sensing_points[0]
-        dx_c = s_particles_pos_x[bottom_idx] - ball_x;
-        dy_c = s_particles_pos_y[bottom_idx] - ball_y;
-        min_ball_creature_dist = fmin(min_ball_creature_dist, sqrtf(dx_c*dx_c + dy_c*dy_c));
+        float ball_x = s_particles_pos_x[(int)gpu_mem.env_ball_center_idx[0]];
+        float ball_y = s_particles_pos_y[(int)gpu_mem.env_ball_center_idx[0]];
+        if(idx == 0){
+
+            int apex_idx = (int)gpu_mem.env_sensing_pts[0]; // Creature::get_apex_tip_index() == m_sensing_points[0]
+            float dx_c = s_particles_pos_x[apex_idx] - ball_x;
+            float dy_c = s_particles_pos_y[apex_idx] - ball_y;
+            min_ball_creature_dist = fmin(min_ball_creature_dist, sqrtf(dx_c*dx_c + dy_c*dy_c));
+        }
+
+        // bad bc 0, 1 in same wrap this will take same time as both in same idx == 0 loop
+        // if(idx == 1){
+        if(idx == 32){
+            int bottom_idx = (int)gpu_mem.env_sensing_pts[3]; // Creature::get_apex_tip_index() == m_sensing_points[0]
+            float dx_c = s_particles_pos_x[bottom_idx] - ball_x;
+            float dy_c = s_particles_pos_y[bottom_idx] - ball_y;
+            min_ball_creature_dist = fmin(min_ball_creature_dist, sqrtf(dx_c*dx_c + dy_c*dy_c));
+        }
 
         for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
                     
@@ -276,8 +287,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
 
                 //* Spring::calculate_viscous_force()
 
-                // +1 reduced warp divergence
-                // if(s_springs_outside_body[idx])
+                if(s_springs_outside_body[idx])
                 {
                     // reusing vars -- the bottleneck is the in the stage 0, 2 func call so doesnt matter much
                     float2 v = make_float2(s_particles_vel_x[p1], s_particles_vel_y[p1]);
@@ -314,8 +324,8 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
                 //* collision handle
 
                 // sort by x
-                float dx = s_particles_pos_x[(int)gpu_mem.env_sperm_center_idx()[blockIdx.x]] - s_particles_pos_x[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
-                float dy = s_particles_pos_y[(int)gpu_mem.env_sperm_center_idx()[blockIdx.x]] - s_particles_pos_y[(int)gpu_mem.env_ball_center_idx()[blockIdx.x]];
+                float dx = s_particles_pos_x[(int)gpu_mem.env_sperm_center_idx[0]] - s_particles_pos_x[(int)gpu_mem.env_ball_center_idx[0]];
+                float dy = s_particles_pos_y[(int)gpu_mem.env_sperm_center_idx[0]] - s_particles_pos_y[(int)gpu_mem.env_ball_center_idx[0]];
                 if(sqrtf(dx*dx + dy*dy) < 1.5f * (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
                 // if(iter % iter_per_collision_check == 0){
 
@@ -391,7 +401,9 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     }
 
     //! subtract MIN BALL DIST TO REWARD
-    gpu_mem.env_reward()[blockIdx.x] -= min_ball_creature_dist;
+    if(idx == 0){
+        gpu_mem.env_reward()[blockIdx.x] -= min_ball_creature_dist;
+    }
 
     //* write back shared to global 
 
@@ -520,8 +532,8 @@ __device__ void stage2_then_stage0(
     const float* __restrict__ s_springs_p1, const float* __restrict__ s_springs_p2,
     int idx, int env)
 {
-    int ball_center_idx = (int)gpu_mem.env_ball_center_idx()[env];
-    const float* sp = gpu_mem.env_sensing_pts + env*4;
+    int ball_center_idx = (int)gpu_mem.env_ball_center_idx[0];
+    const float* sp = gpu_mem.env_sensing_pts;
 
     //* stage_2
 
