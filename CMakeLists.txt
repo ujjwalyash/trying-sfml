@@ -51,11 +51,11 @@ target_compile_options(main PRIVATE
     $<$<COMPILE_LANGUAGE:CXX>: -Wshadow -Wpedantic -Wextra -Wall>
     $<$<COMPILE_LANGUAGE:CUDA>: -Xptxas="-v" -maxrregcount=59>
     
-    # $<$<COMPILE_LANGUAGE:CXX>: -g>
+    $<$<COMPILE_LANGUAGE:CXX>: -g>
     # $<$<COMPILE_LANGUAGE:CUDA>: -g -G>
     
-    -O3
-    -march=native
+    # -O3
+    # -march=native
 )
 endif()
 

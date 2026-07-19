@@ -43,8 +43,8 @@ class Spring{
     
     private:
     
-        void calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2);
-        void calculate_viscous_force(sf::Vector2f const& vel_com, sf::Vector2f const& vec_along_spring, sf::Vector2f const& vel_com_along_spring, float m1, float m2);
+        void calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2);
+        void calculate_viscous_force(sf::Vector2f const& vec_along_spring);
 };
 
 void handle_all_springs(std::vector<Spring> &springs);

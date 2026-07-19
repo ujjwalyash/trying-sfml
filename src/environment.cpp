@@ -28,15 +28,16 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
     m_sperm_center_index = data.sperm_center_index;
 
     if(m_id == 0){
-        printf("part: %i, spr: %i, mus: %i\n", m_num_particles, m_num_springs, m_num_muscles);
+        printf("part: %i, spr: %i, mus: %i, sens: %i\n", m_num_particles, m_num_springs, m_num_muscles, (int)data.s_sensing_points.size());
         fflush(stdout);
     }
     assert(m_num_particles == env_num_particles);
     assert(m_num_springs == env_num_springs);
     assert(m_num_muscles == env_num_muscles);
+    assert(data.s_sensing_points.size() == env_num_sensing_points);
     
     // 20 -- 12 -- 8
-    std::vector<int> layer_sizes{m_num_muscles+env_observation_size, 16, m_num_muscles};
+    std::vector<int> layer_sizes{env_observation_size, 16, m_num_muscles};
 
     // loading json
     std::string file_path = std::format("./saved/{}.json", id);
@@ -55,13 +56,14 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
         std::vector<MatrixXdf> weights = j["weights"].get<std::vector<MatrixXdf>>();
         std::vector<VectorXdf> biases = j["biases"].get<std::vector<VectorXdf>>();
         std::vector<int> lsizes = j["layer_sizes"].get<std::vector<int>>();
+        float freq = j["freq"].get<float>();
         m_reward = j["reward"].get<float>();
         assert(lsizes == layer_sizes);
         // 2 wasteful initliaizations 
         // once before constructor body starts
         // once when we create this temp object and copy
         m_creature = Creature{data.s_muscle_indices, data.s_sensing_points
-                                , weights, biases};
+                                , weights, biases, freq};
     }
 
     m_goal_radius = 10;
@@ -79,8 +81,10 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
         }
     }
     
-    for(int it = 0; it < env_num_muscles; it++){
-        gpu_mem.env_muscle_activation[m_id*env_num_muscles + it] = 0;
+    if(m_id >= 0){
+        for(int it = 0; it < env_num_muscles; it++){
+            gpu_mem.env_muscle_activation[m_id*env_num_muscles + it] = 0;
+        }
     }
     
 }
@@ -166,18 +170,22 @@ void Environment::save(int id, float total_reard){
 }
 
 void Environment::render(sf::RenderWindow& window){
-        // int j = 0;
-		sf::CircleShape sh;
+
+    sf::CircleShape sh;
 		for(int i = 0; i < m_num_particles; i++){
-			// if(j < (int)m_creature.m_sensing_points.size() && i == m_creature.m_sensing_points[j]){
-			// 	j++;
+            
+            // bool gren = false;
+            // for(int j = 0; j<(int)m_creature.m_sensing_points.size(); j++){
+            //     if(i == m_creature.m_sensing_points[j]) gren = true;
+            // }
+            // if(gren){
             //     // if(j != 1 and j != 4) continue;
 
 			// 	sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
 			// 	float r = m_particles[i].get_radius();
 			// 	sh.setPosition({particle_pos.x-r, particle_pos.y-r});
-			// 	sh.setRadius(r);
-			// 	sh.setFillColor(sf::Color::Green);
+			// 	sh.setRadius(4.f);
+			// 	sh.setFillColor(sf::Color::Red);
 			// 	window.draw(sh);
 			// }
 			// else{
@@ -188,6 +196,7 @@ void Environment::render(sf::RenderWindow& window){
 			// 	sh.setFillColor(sf::Color::White);
 			// 	window.draw(sh);
 			// }
+            
             sf::Vector2f particle_pos = m_particles[i].get_curr_pos();
             float r = m_particles[i].get_radius();
             sh.setPosition({particle_pos.x-r, particle_pos.y-r});
@@ -269,12 +278,12 @@ void Environment::render_gpu(sf::RenderWindow& window){
 
 
 // DUPLICATE FUNCTIONS bc you cant give references default params -- try pointer 
-void Environment::step_stage_0(){	
+void Environment::step_stage_0(int t){	
     
     // stage 0
 	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
-    m_creature.act(m_muscles, observation);
+    m_creature.act(m_muscles, observation, t);
 
     // const std::vector<MatrixXdf> Wcurr = m_creature.get_brain().get_weights();
     // const std::vector<VectorXdf> Bcurr = m_creature.get_brain().get_biases();
@@ -361,11 +370,12 @@ void Environment::step_stage_2(){
 */
 
 // keeping this cpu only
-void Environment::step(sf::RenderWindow& window, sf::Text& text, float& min_ball_creature_dist, bool render_between_cycle){
+void Environment::step(sf::RenderWindow& window, sf::Text& text, float& curr_ball_creature_dist, float& min_ball_creature_dist, int t, bool render_between_cycle){
     
 	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
-    m_creature.act(m_muscles, observation);
+    // for(float o: observation) std::cout << o << ' '; std::cout << '\n';
+    m_creature.act(m_muscles, observation, t);
 
     // update muscle lengths
     handle_all_muscle_contraction(m_muscles);
@@ -405,7 +415,7 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, float& min_ball
 
     m_ball_pos = m_particles[m_ball_center_index].get_curr_pos();
 
-    float reward = calculate_reward(min_ball_creature_dist);
+    float reward = calculate_reward(curr_ball_creature_dist, min_ball_creature_dist);
     m_reward += reward;
 
     m_num_steps_done++;
@@ -414,7 +424,7 @@ void Environment::step(sf::RenderWindow& window, sf::Text& text, float& min_ball
         m_episode_end = true;
 }
 
-float Environment::calculate_reward(float& min_ball_creature_dist){
+float Environment::calculate_reward(float& curr_ball_creature_dist, float& min_ball_creature_dist){
     
     float reward = 0;
 
@@ -422,7 +432,8 @@ float Environment::calculate_reward(float& min_ball_creature_dist){
     // float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
     float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_ball_pos).length();
     // float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length();
-    float ball_speed = m_particles[m_ball_center_index].get_vel().length();
+    // float ball_speed = m_particles[m_ball_center_index].get_vel().length();
+    float ball_speed = 0;
     
     // rn balls sinks :|
     // if(ball_displacement > 5) m_has_touched_ball = true;
@@ -440,6 +451,8 @@ float Environment::calculate_reward(float& min_ball_creature_dist){
     float tail_ball_dist = (m_particles[m_creature.get_bottom_tip_index()].get_curr_pos() - m_ball_pos).length();
     min_ball_creature_dist = fmin(min_ball_creature_dist, creature_ball_dist);
     min_ball_creature_dist = fmin(min_ball_creature_dist, tail_ball_dist);
+
+    curr_ball_creature_dist = creature_ball_dist;
     // std::cout << "tip speed" << apex_tip_speed << '\n';
     // std::cout.flush();
 

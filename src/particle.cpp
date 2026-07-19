@@ -194,6 +194,8 @@ float Particle::get_bounding_box_wall(direction dir){
         case direction::right:
             return m_curr_pos.x + m_radius;
     }
+
+    return 0;
 }
 
 void Particle::first_half_step(){

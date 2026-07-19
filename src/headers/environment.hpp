@@ -58,15 +58,15 @@ class Environment
         // we have a set of fixed sequenece of target_pos generated randomly for each
         // generation and step will switch targets too as required
         // EACH STEP DOES 0.1s not 1/60 = 0.016;
-        void step_stage_0();
+        void step_stage_0(int t);
         void step_stage_1();
         void step_stage_2();
 
-        void step(sf::RenderWindow& window, sf::Text& text, float& min_ball_creature_dist, bool render_between_cycle = false);
+        void step(sf::RenderWindow& window, sf::Text& text, float& curr_ball_creature_dist, float& min_ball_creature_dist, int t, bool render_between_cycle = false);
 
         // returns the reward for one step
         // checks for end condition
-        float calculate_reward(float& min_ball_creature_dist);
+        float calculate_reward(float& curr_ball_creature_dist, float& min_ball_creature_dist);
         float calculate_reward_gpu();
 
         float get_curr_reward(); 

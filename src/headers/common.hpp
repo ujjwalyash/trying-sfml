@@ -23,15 +23,16 @@ inline constexpr float viscosity = 4.f * 3.141f * (1e-3) * 50; //// (not any mor
 
 // env params
 inline constexpr int env_fps = 60;
-inline constexpr int env_num_frames_per_creature_action = (float)env_fps/10; // every 300ms 
+inline constexpr int env_num_frames_per_creature_action = (float)env_fps/10; // every 100ms 
 inline constexpr int env_num_iterations_per_frame = 16;
 inline constexpr float env_dt = 1.f/(env_fps*env_num_iterations_per_frame);
 inline constexpr int env_max_steps_per_episode = 300;
-inline constexpr int env_observation_size = 18;
 
 inline constexpr int env_num_particles = 108;
 inline constexpr int env_num_springs = 257;
 inline constexpr int env_num_muscles = 48;
+inline constexpr int env_num_sensing_points = 12;
+inline constexpr int env_observation_size = 19;
 // inline constexpr int env_num_particles = 135;
 // inline constexpr int env_num_springs = 290;
 // inline constexpr int env_num_muscles = 30;

@@ -2,7 +2,14 @@
 #include <iostream>
 
 Eigen::Rand::P8_mt19937_64 urng(42);
+std::random_device rd;
+std::mt19937 gen(rd());
 // Eigen::Rand::P8_mt19937_64 urng(rand()%UINT64_MAX);
+
+// 1 iteration is one wave 
+// total_iters * freq = 2 pi
+const float base_freq = (2.f * 3.141f) / ((float)env_num_iterations_per_frame * (float)env_num_frames_per_creature_action);
+std::normal_distribution<float> dist(0, base_freq / 10.f);
 
 Neural_Net::Neural_Net(std::vector<int> layer_sizes)
     :m_layer_sizes(layer_sizes.begin(), layer_sizes.end())
@@ -16,12 +23,14 @@ Neural_Net::Neural_Net(std::vector<int> layer_sizes)
         m_weights.push_back(Eigen::Rand::balanced<MatrixXdf>(in_sz, out_sz, urng));
         m_biases.push_back(Eigen::Rand::balanced<MatrixXdf>(1, out_sz, urng));
 
+        m_freq = base_freq + dist(gen) * 5.f;
     }
 }
 
-Neural_Net::Neural_Net(std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases)
+Neural_Net::Neural_Net(std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases, float freq)
     :m_weights(weights.begin(), weights.end()),
-     m_biases(biases.begin(), biases.end())
+     m_biases(biases.begin(), biases.end()),
+     m_freq(freq)
 {
     for(MatrixXdf m: m_weights){
         m_layer_sizes.push_back(m.rows());
@@ -34,6 +43,9 @@ std::vector<MatrixXdf> const& Neural_Net::get_weights() const{
 }
 std::vector<VectorXdf> const& Neural_Net::get_biases() const{
     return m_biases;
+}
+float Neural_Net::get_freq() const{
+    return m_freq;
 }
 
 namespace Eigen{
@@ -80,6 +92,7 @@ void Neural_Net::save(int id, float reward){
     data["layer_sizes"] = m_layer_sizes;
     data["weights"] = m_weights;
     data["biases"] = m_biases;
+    data["freq"] = m_freq;
 
     std::string file_path = std::format("./saved/{}.json", id);
     std::ofstream o(file_path);
@@ -94,9 +107,11 @@ void Neural_Net::save(int id, float reward){
 void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
     std::vector<MatrixXdf> const& par_1_w = par_1.get_weights();
     std::vector<VectorXdf> const& par_1_b = par_1.get_biases();
+                            float par_1_f = par_1.get_freq();
     
     std::vector<MatrixXdf> const& par_2_w = par_2.get_weights();
     std::vector<VectorXdf> const& par_2_b = par_2.get_biases();
+                            float par_2_f = par_2.get_freq();
 
     int final_out = m_layer_sizes.back();
     float break_off = float(rand()%(final_out+1))/final_out;
@@ -146,6 +161,12 @@ void Neural_Net::crossover(Neural_Net const& par_1, Neural_Net const& par_2){
         // }
     }
 
+    if(rand() % 2 == 0){
+        m_freq = par_1_f;
+    }
+    else{
+        m_freq = par_2_f;
+    }
     // std::cout << m_weights[0] << "\n\n";
     // std::cout.flush();
 
@@ -168,23 +189,23 @@ void Neural_Net::mutate(float mutation_rate){
         MatrixXdf rand_b_mat  = Eigen::Rand::balanced<MatrixXdf>(1, out_sz, urng);
         MatrixXdf bias_mask = (rand_b_mat.array() < 2*mutation_rate-1).cast<float>();
         m_biases[i] += m_mutation_std * bias_noise.cwiseProduct(bias_mask);
+
+        if(rand()%10 < mutation_rate * 10)
+            m_freq += dist(gen);
     }
 }
 
-void Neural_Net::forward(std::vector<float>& current_activations, std::vector<float>& observation){
+void Neural_Net::forward(std::vector<float>& current_activations, std::vector<float>& observation, int t){
 
     VectorXdf activation(m_layer_sizes[0]);
-    assert(m_layer_sizes[0] == (int)(current_activations.size() + observation.size()));
-    int ind = 0;
-    for(float a: current_activations){
-        activation(0, ind) = 2*a-1;
-        ind++;
-    }
-    for(float o: observation){
-        activation(0, ind) = o;
-        ind++;
-    }
+    assert(m_layer_sizes[0] == (int)(observation.size()));
+    assert(env_observation_size == (int)(observation.size()));
 
+    for(int i=0; i<env_observation_size-1; i++){
+        activation(0, i) = observation[i];
+    }
+    activation(0, env_observation_size-1) = sin(t * m_freq);
+    // std::cout << activation(0, env_observation_size-1) << '\n';
     // std::cout << activation << '\n';
 
     for(int layer_no = 0; layer_no < (int)m_weights.size()-1; layer_no++){
@@ -200,7 +221,7 @@ void Neural_Net::forward(std::vector<float>& current_activations, std::vector<fl
     }
 
     // for(int i = 0; i < (int)current_activations.size(); i++){
-    //     current_activations[i] = i % 2;
+    //     current_activations[i] = 1 - i % 2;
     //     // if i forget
     //     assert(num_generations == 0);
     // }
@@ -221,11 +242,11 @@ Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_point
     m_brain(layer_sizes)
 {}
 
-Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases)
+Creature::Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases, float freq)
     :m_muscle_index(muscle_index.begin(), muscle_index.end()),
     m_current_activations(m_muscle_index.size(), 0),
     m_sensing_points(sensing_points.begin(), sensing_points.end()),
-    m_brain(weights, biases)
+    m_brain(weights, biases, freq)
 {}
 
 Neural_Net const& Creature::get_brain() const{
@@ -236,8 +257,8 @@ void Creature::crossover(Creature const& par_1, Creature const& par_2){
     m_brain.crossover(par_1.get_brain(), par_2.get_brain());
 }
 
-void Creature::mutate(float mutation_rate){
-    m_brain.mutate(mutation_rate);
+void Creature::mutate(float mut_rate){
+    m_brain.mutate(mut_rate);
 }
 
 void Creature::save(int id, float reward){
@@ -250,15 +271,15 @@ void Creature::copy_brain(Creature const& creature){
 }
 
 int Creature::get_apex_tip_index(){
-    return m_sensing_points[0];
+    return m_sensing_points[1];
 }
 
 int Creature::get_bottom_tip_index(){
-    return m_sensing_points[3];
+    return m_sensing_points.back();
 }
 
-void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation){
-    m_brain.forward(m_current_activations, observation);
+void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation, int t){
+    m_brain.forward(m_current_activations, observation, t);
     for(int i=0; i < (int)m_muscle_index.size(); i++){
         muscles[i].set_activation(m_current_activations[i]);
     }
@@ -267,93 +288,93 @@ void Creature::act(std::vector<Muscle>& muscles, std::vector<float>& observation
 void Creature::get_observation(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles){
     
     // use a parameter somewhere instead of hardcoding 12
+    // -1 for the sin thing added later on
     assert(obs.size() == env_observation_size);
-    std::vector<int> vals(12);
+    
     // for ball
-    float mn = 10000;
-    float mx = 0;
-    for(int i = 0; i < 4; i++){
-        vals[i] = (ball_pos-particles[m_sensing_points[i]].get_curr_pos()).length();
-        mn = fmin(mn, vals[i]);
-        mx = fmax(mx, vals[i]);
+    sf::Vector2f vec_head_to_ball = (ball_pos-particles[m_sensing_points[1]].get_curr_pos());
+    float ball_dist = vec_head_to_ball.length();
+    vec_head_to_ball /= ball_dist;
+    
+    sf::Vector2f vec_ctr_apx_tip = (particles[m_sensing_points[1]].get_curr_pos()-particles[m_sensing_points[0]].get_curr_pos());
+    // assert(11.f == vec_ctr_apx_tip.length());
+    vec_ctr_apx_tip = vec_ctr_apx_tip.normalized();
+    
+    obs[0] = ball_dist/700.f;
+    obs[1] = vec_ctr_apx_tip.angleTo(vec_head_to_ball).asDegrees()/180.f;
+    
+    sf::Vector2f head_vel = (particles[m_sensing_points[0]].get_vel());
+    obs[2] = head_vel.dot(vec_head_to_ball);
+    obs[3] = head_vel.dot({-vec_head_to_ball.y, vec_head_to_ball.x});
+    
+    sf::Vector2f rel_goal_pos = (goal_pos-particles[m_sensing_points[1]].get_curr_pos());
+    obs[4] = rel_goal_pos.length()/700.f;
+    obs[5] = rel_goal_pos.angleTo(vec_head_to_ball).asDegrees()/180.f;
+    
+    // tail curvatures
+    // sensing pts are 2-3-4, 5-6-7, 8-9-10, ...
+    int lines = (m_sensing_points.size() - 2) - 2;
+    assert(6+lines+5 == env_observation_size);
+    assert(lines == 8);
+    for(int i = 0; i < lines; i++){
+        sf::Vector2f vec1 = particles[m_sensing_points[2 + i]].get_curr_pos();
+        sf::Vector2f vec2 = particles[m_sensing_points[2 + i+1]].get_curr_pos();
+        sf::Vector2f vec3 = particles[m_sensing_points[2 + i+2]].get_curr_pos();
+        obs[i+6] = (vec2-vec1).angleTo(vec3-vec2).asDegrees()/90.f;
     }
-
-    obs[12] = 2*(mn/max_y) - 1;
-    float dem = mx-mn;
-    for(int i = 0; i < 4; i++){
-        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
-    }
-
-    // for goal
-    mn = 10000;
-    mx = 0;
-    for(int i = 4; i < 8; i++){
-        vals[i] = (goal_pos-particles[m_sensing_points[i-4]].get_curr_pos()).length();
-        mn = fmin(mn, vals[i]);
-        mx = fmax(mx, vals[i]);
-    }
-
-    obs[13] = 2*(mn/max_y) - 1;
-    dem = mx-mn;
-    for(int i = 4; i < 8; i++){
-        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
-    }
-
+    
+    
     // for walls
     // points 0, 3
-    obs[8] = 2.f*(particles[m_sensing_points[0]].get_curr_pos().x/max_x) - 1.f;
-    obs[9] = 2.f*(particles[m_sensing_points[0]].get_curr_pos().y/max_y) - 1.f;
-    
-    obs[10] = 2.f*(particles[m_sensing_points[3]].get_curr_pos().x/max_x) - 1.f;
-    obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos().y/max_y) - 1.f;
+    obs[6+lines+0] = 2.f*(particles[m_sensing_points[0]].get_curr_pos().x/max_x) - 1.f;
+    obs[6+lines+1] = 2.f*(particles[m_sensing_points[0]].get_curr_pos().y/max_y) - 1.f;
+    obs[6+lines+2] = 2.f*(particles[m_sensing_points.back()].get_curr_pos().x/max_x) - 1.f;
+    obs[6+lines+3] = 2.f*(particles[m_sensing_points.back()].get_curr_pos().y/max_y) - 1.f;
 
-    obs[14] = particles[m_sensing_points[0]].get_vel().x/20.f;
-    obs[15] = particles[m_sensing_points[0]].get_vel().y/20.f;
-    
-    obs[16] = particles[m_sensing_points[3]].get_vel().x/20.f;
-    obs[17] = particles[m_sensing_points[3]].get_vel().y/20.f;
+    // obs[10 + 4] = this is for sin wave
+
 }
-void Creature::get_observation_gpu(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles){
+// void Creature::get_observation_gpu(std::vector<float>& obs, sf::Vector2f ball_pos, sf::Vector2f goal_pos, const std::vector<Particle>& particles){
     
-    // use a parameter somewhere instead of hardcoding 12
-    assert(obs.size() == 12);
-    std::vector<int> vals(12);
-    // for ball
-    float mn = 10000;
-    float mx = 0;
-    for(int i = 0; i < 4; i++){
-        vals[i] = (ball_pos-particles[m_sensing_points[i]].get_curr_pos_gpu()).length();
-        mn = fmin(mn, vals[i]);
-        mx = fmax(mx, vals[i]);
-    }
+//     // use a parameter somewhere instead of hardcoding 12
+//     assert(obs.size() == 12);
+//     std::vector<int> vals(12);
+//     // for ball
+//     float mn = 10000;
+//     float mx = 0;
+//     for(int i = 0; i < 4; i++){
+//         vals[i] = (ball_pos-particles[m_sensing_points[i]].get_curr_pos_gpu()).length();
+//         mn = fmin(mn, vals[i]);
+//         mx = fmax(mx, vals[i]);
+//     }
 
-    float dem = mx-mn;
-    for(int i = 0; i < 4; i++){
-        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
-    }
+//     float dem = mx-mn;
+//     for(int i = 0; i < 4; i++){
+//         obs[i] = 2.f*(vals[i]-mn)/dem - 1;
+//     }
 
-    // for goal
-    mn = 10000;
-    mx = 0;
-    for(int i = 4; i < 8; i++){
-        vals[i] = (goal_pos-particles[m_sensing_points[i-4]].get_curr_pos_gpu()).length();
-        mn = fmin(mn, vals[i]);
-        mx = fmax(mx, vals[i]);
-    }
+//     // for goal
+//     mn = 10000;
+//     mx = 0;
+//     for(int i = 4; i < 8; i++){
+//         vals[i] = (goal_pos-particles[m_sensing_points[i-4]].get_curr_pos_gpu()).length();
+//         mn = fmin(mn, vals[i]);
+//         mx = fmax(mx, vals[i]);
+//     }
 
-    dem = mx-mn;
-    for(int i = 4; i < 8; i++){
-        obs[i] = 2.f*(vals[i]-mn)/dem - 1;
-    }
+//     dem = mx-mn;
+//     for(int i = 4; i < 8; i++){
+//         obs[i] = 2.f*(vals[i]-mn)/dem - 1;
+//     }
 
-    // for walls
-    // points 0, 3
-    obs[8] = 2.f*(particles[m_sensing_points[0]].get_curr_pos_gpu().x/max_x) - 1.f;
-    obs[9] = 2.f*(particles[m_sensing_points[0]].get_curr_pos_gpu().y/max_y) - 1.f;
+//     // for walls
+//     // points 0, 3
+//     obs[8] = 2.f*(particles[m_sensing_points[0]].get_curr_pos_gpu().x/max_x) - 1.f;
+//     obs[9] = 2.f*(particles[m_sensing_points[0]].get_curr_pos_gpu().y/max_y) - 1.f;
     
-    obs[10] = 2.f*(particles[m_sensing_points[3]].get_curr_pos_gpu().x/max_x) - 1.f;
-    obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos_gpu().y/max_y) - 1.f;
-}
+//     obs[10] = 2.f*(particles[m_sensing_points[3]].get_curr_pos_gpu().x/max_x) - 1.f;
+//     obs[11] = 2.f*(particles[m_sensing_points[3]].get_curr_pos_gpu().y/max_y) - 1.f;
+// }
 
 // ============================================================================
 // create_creature_muscle_swimmer
@@ -511,7 +532,10 @@ Creature_data create_creature_muscle_swimmer(int& num_particles, std::vector<Par
         particles.push_back(Particle(env_id, i + id_offset, radius[i], mass[i], old_pos, vel, structure::creature));
 
         // Orientation landmarks on the head.
-        if(positions[i] == corners[1] or positions[i] == corners[3] or positions[i] == corners[7]) {
+
+        // only rhe apex tip
+        if(positions[i] == corners[1] || positions[i] == corners[0]) {
+        // if(positions[i] == corners[1] or positions[i] == corners[3] or positions[i] == corners[7]) {
             sensing_points.push_back(particles.size()-1);
         }
     }
@@ -520,11 +544,15 @@ Creature_data create_creature_muscle_swimmer(int& num_particles, std::vector<Par
     // wave phase, which it needs in order to coordinate an undulation --
     // the original design only exposed a single point at the (now removed)
     // second head.
-    for (int frac : {25, 50, 75, 100}) {
+    std::vector<int> fracs;
+    for(int i = 0; i < 10; i++)
+        fracs.push_back(i * 10);
+    
+    for (int frac : fracs) {
         int idx = std::min((int)left_tail_indices.size() - 1,
                             (int)((frac / 100.0f) * (left_tail_indices.size() - 1)));
-        sensing_points.push_back(left_tail_indices[idx]);
-        sensing_points.push_back(right_tail_indices[idx]);
+        // sensing_points.push_back(left_tail_indices[idx]);
+        sensing_points.push_back(id_offset + right_tail_indices[idx]);
     }
 
     // --- 5. SPRINGS ---
@@ -633,6 +661,7 @@ Creature_data create_creature_muscle_swimmer(int& num_particles, std::vector<Par
     return data;
 }
 
+/*
 Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs
                                             , int& num_muscles, std::vector<Muscle>& muscles, int env_id){
 
@@ -993,6 +1022,7 @@ Creature_data create_creature_muscle_sperm(int& num_particles, std::vector<Parti
 
     return data;
 }
+*/
 
 int create_football(int& num_particles, std::vector<Particle>& particles, int& num_springs, std::vector<Spring>& springs, int env_id) {
 

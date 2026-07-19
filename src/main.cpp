@@ -190,6 +190,7 @@ void* render_current_gen(void *){
 	int num_steps_done = 0;
     float reward = 0;
 	float min_ball_creature_dist = 3000;
+	float curr_ball_creature_dist = 3000;
 
 	// for(int i = 0; i < num_episode_per_generation; i++){
 	// 	ball_pos[i] = get_random_ball_pos();
@@ -306,8 +307,8 @@ void* render_current_gen(void *){
         // env_used_for_render.render_gpu(window);
 		
         sf::Text text(font);
-		text.setString(std::format("reward:    {:.1f}\nmin_dist: {}\nstps_done: {}\nspd_up:    {}\ncurr_gen:  {}\ncurr_rank: {}", 
-                                            reward, min_ball_creature_dist, num_steps_done, speed_up, curr_gen, env_rank+1)); 
+		text.setString(std::format("reward:    {:.1f}\ncurr_dist: {}\nmin_dist: {}\nstps_done: {}\nspd_up:    {}\ncurr_gen:  {}\ncurr_rank: {}", 
+                                            reward, curr_ball_creature_dist, min_ball_creature_dist, num_steps_done, speed_up, curr_gen, env_rank+1)); 
 		text.setCharacterSize(24);            
 		text.setFillColor(sf::Color::White); 
 		text.setPosition({0.f, 0.f}); 
@@ -316,7 +317,7 @@ void* render_current_gen(void *){
 		window.display();
 		
 		
-		env_used_for_render.step(window, text, min_ball_creature_dist, render_btw_cycle);
+		env_used_for_render.step(window, text, curr_ball_creature_dist, min_ball_creature_dist, num_steps_done, render_btw_cycle);
 		
 
 		// launch_big_kernel();
@@ -352,7 +353,9 @@ int main()
 
 	// now ok. this also prevents copy of the big envi objects when resized
 	env.reserve(population_size);
+	
 	allocate_cuda_memory();
+	cudaSynchronize();
 
 	for (int i = 0; i < (int)population_size; ++i) {
 		env.emplace_back(i, get_random_ball_pos(), get_random_goal_pos());

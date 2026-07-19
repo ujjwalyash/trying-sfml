@@ -30,16 +30,19 @@ class Neural_Net
         std::vector<int> m_layer_sizes;
         std::vector<MatrixXdf> m_weights; // supposed to be keep on multiplied to the right 
         std::vector<VectorXdf> m_biases; // supposed to be keep on multiplied to the right 
+        float m_freq;
 
     public:
 
         Neural_Net(std::vector<int> layer_sizes);    
-        Neural_Net(std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases);    
+        Neural_Net(std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases, float freq);    
         // takes current activations and changes them
-        void forward(std::vector<float>& current_activations, std::vector<float>& observation);
+        void forward(std::vector<float>& current_activations, std::vector<float>& observation, int t);
 
         std::vector<MatrixXdf> const& get_weights() const;
         std::vector<VectorXdf> const& get_biases() const;
+        float get_freq() const;
+
         void crossover(Neural_Net const& par_1, Neural_Net const& par_2);
         void mutate(float mutation_rate);
 
@@ -55,18 +58,18 @@ class Creature{
         
         std::vector<int> m_muscle_index; // indicies in the springs array 
         std::vector<float> m_current_activations; // ordered according to muslces_index
-        std::vector<int> m_sensing_points;
         
         Neural_Net m_brain; // ordered according to muslces_index
-
+        
     public:
+        std::vector<int> m_sensing_points;
 
         // idk if i should allow this but it here to make environment constructor better
         Creature();
 
         Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<int> layer_sizes);
-        Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases);
-        void act(std::vector<Muscle>& muscles, std::vector<float>& observation);    
+        Creature(std::vector<int> muscle_index, std::vector<int> sensing_points, std::vector<MatrixXdf>& weights, std::vector<VectorXdf>& biases, float freq);
+        void act(std::vector<Muscle>& muscles, std::vector<float>& observation, int t);    
 
         // will be moved to the derived class
         // passing the entire particles array not a good practice(maybe)

@@ -53,19 +53,19 @@ Spring::Spring(Particle& p1, Particle& p2, int env_id, int idx, float len, float
 std::array<sf::Vertex, 2> Spring::get_line(){
 
     sf::Color color = sf::Color::White;
-    sf::Vector2f spring_vector = m_p2.get_curr_pos() - m_p1.get_curr_pos();
-    sf::Vector2f vel_com = (m_p2.get_vel() * m_p2.get_mass() + m_p1.get_vel() * m_p1.get_mass()) / (m_p1.get_mass() + m_p2.get_mass());
-
-    if(m_present_outside_body){
-        // this flipped bc y axis is downward .perpendicualar rotates 90 deg clockwise not anti clock
-        if(vel_com.dot(-spring_vector.perpendicular()) > 0){
-        // if(vel_com.dot(spring_vector.perpendicular()) > 0){
-            color = sf::Color::Red;
-        }
-        else{
-            color = sf::Color::Green;
-        }
-    }
+    
+    // sf::Vector2f spring_vector = m_p2.get_curr_pos() - m_p1.get_curr_pos();
+    // sf::Vector2f vel_com = (m_p2.get_vel() * m_p2.get_mass() + m_p1.get_vel() * m_p1.get_mass()) / (m_p1.get_mass() + m_p2.get_mass());
+    // if(m_present_outside_body){
+    //     // this flipped bc y axis is downward .perpendicualar rotates 90 deg clockwise not anti clock
+    //     if(vel_com.dot(-spring_vector.perpendicular()) > 0){
+    //     // if(vel_com.dot(spring_vector.perpendicular()) > 0){
+    //         color = sf::Color::Red;
+    //     }
+    //     else{
+    //         color = sf::Color::Green;
+    //     }
+    // }
 
     std::array<sf::Vertex, 2> line =
     {
@@ -132,13 +132,13 @@ void Spring::calculate_spring_force(){
     float m1 = m_p1.get_mass();
     float m2 = m_p2.get_mass();
 
-    calculate_damping_force(rel_pos, m1, m2, m_p1.get_sqrt_mass(), m_p2.get_sqrt_mass());
+    calculate_damping_force(rel_pos, m1, m2);
 
     m_p1.add_spring_acc(deformation * (rel_pos/rel_pos_length) * (m_spring_constant/m1));
     m_p2.add_spring_acc(deformation * (-rel_pos/rel_pos_length) * (m_spring_constant/m2));
 }
 
-void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2, float sqrt_m1, float sqrt_m2){
+void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, float m2){
 
     sf::Vector2f v1_along_spring = m_p1.get_vel().projectedOnto(vec_along_spring);
     sf::Vector2f v2_along_spring = m_p2.get_vel().projectedOnto(-vec_along_spring);
@@ -148,7 +148,7 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
 
     if(m_present_outside_body){
     //     calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
-        calculate_viscous_force(vel_com, vec_along_spring, vel_com_along_spring, m1, m2);
+        calculate_viscous_force(vec_along_spring);
     }
 
     // sf::Vector2f vel = ((m_p2.get_vel() - m_p1.get_vel())/(m1+m2)).projectedOnto(vec_along_spring);
@@ -158,7 +158,7 @@ void Spring::calculate_damping_force(sf::Vector2f vec_along_spring, float m1, fl
     m_p2.add_spring_acc(-1.f*m_damping_factor * (v2_along_spring-vel_com_along_spring));
 }
 
-void Spring::calculate_viscous_force(sf::Vector2f const& vel_com, sf::Vector2f const& vec_along_spring, sf::Vector2f const& vel_com_along_spring, float m1, float m2){
+void Spring::calculate_viscous_force(sf::Vector2f const& vec_along_spring){
     
     //! wtf is this brother if the vel com is 0 but the spring is rotating then no force???
     //! let me explain: since a spring is small length we ignore its rotation smth lile that
