@@ -76,7 +76,7 @@ Environment::Environment(int id, sf::Vector2f ball_pos, sf::Vector2f goal_pos)
         gpu_mem.env_ball_center_idx[0] = m_ball_center_index;
         gpu_mem.env_sperm_center_idx[0] = m_sperm_center_index;
         
-        for(int it = 0; it < 4; it++){
+        for(int it = 0; it < env_num_sensing_points; it++){
             gpu_mem.env_sensing_pts[it] = data.s_sensing_points[it];
         }
     }
@@ -120,17 +120,18 @@ void Environment::reset(sf::Vector2f ball_pos, sf::Vector2f goal_pos){
 
     // fill the env variables into gpu mem
     gpu_mem.env_reward()[m_id] = 0;
-
+    
     // int ix = gpu_mem.env_ball_center_idx()[m_id];
     // gpu_mem.particles_pos_x()[m_id * env_num_particles + ix] = m_original_ball_pos.x;
     // gpu_mem.particles_pos_y()[m_id * env_num_particles + ix] = m_original_ball_pos.y;
     
     gpu_mem.env_goal_pos_x()[m_id] = m_goal_pos.x;
     gpu_mem.env_goal_pos_y()[m_id] = m_goal_pos.y;
-
+    
     Neural_Net brain = m_creature.get_brain();
     const std::vector<MatrixXdf> Wcurr = brain.get_weights();
     const std::vector<VectorXdf> Bcurr = brain.get_biases();
+    gpu_mem.nn_freq()[m_id] = brain.get_freq();
     memcpy(gpu_mem.nn_W0(m_id), Wcurr[0].data(), (gpu_mem.nn_in*gpu_mem.nn_hidden)*sizeof(float));
     memcpy(gpu_mem.nn_b0(m_id), Bcurr[0].data(), (gpu_mem.nn_hidden)*sizeof(float));
     memcpy(gpu_mem.nn_W1(m_id), Wcurr[1].data(), (gpu_mem.nn_hidden*gpu_mem.nn_out)*sizeof(float));
@@ -284,51 +285,15 @@ void Environment::step_stage_0(int t){
 	std::vector<float> observation(env_observation_size);
     m_creature.get_observation(observation, m_ball_pos, m_goal_pos, m_particles);
     m_creature.act(m_muscles, observation, t);
-
-    // const std::vector<MatrixXdf> Wcurr = m_creature.get_brain().get_weights();
-    // const std::vector<VectorXdf> Bcurr = m_creature.get_brain().get_biases();
-    // memcpy(gpu_mem.nn_W0(m_id), Wcurr[0].data(), (gpu_mem.nn_in*gpu_mem.nn_hidden)*sizeof(float));
-    // memcpy(gpu_mem.nn_b0(m_id), Bcurr[0].data(), (gpu_mem.nn_hidden)*sizeof(float));
-    // memcpy(gpu_mem.nn_W1(m_id), Wcurr[1].data(), (gpu_mem.nn_hidden*gpu_mem.nn_out)*sizeof(float));
-    // memcpy(gpu_mem.nn_b1(m_id), Bcurr[1].data(), (gpu_mem.nn_out)*sizeof(float));
-
-    // auto W_acc = m_creature.get_brain().get_weights();
-    // auto b_acc = m_creature.get_brain().get_biases();
-    // auto equ = [](float a, float b, int l, int i, int j){
-    //     int res = a == b;
-
-    //     if(! res){
-    //         std::fprintf(stderr, "\nAssert failed: %f -- %f\n loc: %d,%d,%d \n", a, b, l, i, j);
-    //     }
-
-    //     assert(res);
-    // };
-
-    // for(int i = 0; i < 20; i++){
-    //     for(int j = 0; j < 12; j++){
-    //         equ(W_acc[0](i, j), gpu_mem.nn_W0(m_id)[i*12 + j], 0, i, j);
-    //         equ(b_acc[0](0, j), gpu_mem.nn_b0(m_id)[j], 0, -1, j);
-    //     }
-    // }
-    // for(int i = 0; i < 12; i++){
-    //     for(int j = 0; j < 8; j++){
-    //         equ(W_acc[1](i, j), gpu_mem.nn_W1(m_id)[i*8 + j], 1, i, j);
-    //         equ(b_acc[1](0, j), gpu_mem.nn_b1(m_id)[j], 1, -1, j);
-    //     }
-    // }
     
-    // update muscle lengths
     handle_all_muscle_contraction(m_muscles);
-    // stage 0
-
-    // check();
 }
-/*
+
 void Environment::step_stage_1(){	
     for(int cycle = 0; cycle < env_num_frames_per_creature_action; cycle++){
-    
+
         for(int iter = 0; iter < env_num_iterations_per_frame; iter++){
-            // stage 1
+
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].first_half_step();
             }			
@@ -336,38 +301,35 @@ void Environment::step_stage_1(){
             // update acc
             handle_all_muscle_forces(m_muscles);
             handle_all_springs(m_springs);
-            // check();
-            float creature_ball_dist = (m_particles[m_sperm_center_index].get_curr_pos() - m_ball_pos).length();
-            if(creature_ball_dist < (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
 
+            float creature_ball_dist = (m_particles[m_sperm_center_index].get_curr_pos() - m_ball_pos).length();
+            if(creature_ball_dist < 1.5f * (sperm_length/2 + ball_radius) && iter % iter_per_collision_check == 0){
+            // if(iter % iter_per_collision_check == 0){
+                // std::cout << "collisions active \n";
+                // std::cout.flush();
                 handle_all_collisions(m_particles, m_springs, m_muscles);    
             }
             
             for(int i = 0; i < m_num_particles; i++){
                 m_particles[i].second_half_step(iter);
-            }		
-
-            // check();
-            // stage 1
+            }	
         }
     }
 }
-void Environment::step_stage_2(){	
-    // stage 2
+
+void Environment::step_stage_2(float& curr_ball_creature_dist, float& min_ball_creature_dist){	
+
     m_ball_pos = m_particles[m_ball_center_index].get_curr_pos();
 
-    float reward = calculate_reward();
+    float reward = calculate_reward(curr_ball_creature_dist, min_ball_creature_dist);
     m_reward += reward;
 
     m_num_steps_done++;
 
     if(m_num_steps_done > env_max_steps_per_episode)
         m_episode_end = true;
-    // stage 2
-
-    // check();
 }
-*/
+
 
 // keeping this cpu only
 void Environment::step(sf::RenderWindow& window, sf::Text& text, float& curr_ball_creature_dist, float& min_ball_creature_dist, int t, bool render_between_cycle){
@@ -432,8 +394,8 @@ float Environment::calculate_reward(float& curr_ball_creature_dist, float& min_b
     // float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
     float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos() - m_ball_pos).length();
     // float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length();
-    // float ball_speed = m_particles[m_ball_center_index].get_vel().length();
-    float ball_speed = 0;
+    float ball_speed = m_particles[m_ball_center_index].get_vel().length();
+    // float ball_speed = 0;
     
     // rn balls sinks :|
     // if(ball_displacement > 5) m_has_touched_ball = true;
@@ -467,40 +429,40 @@ float Environment::calculate_reward(float& curr_ball_creature_dist, float& min_b
     return reward;
 }
 
-float Environment::calculate_reward_gpu(){
+// float Environment::calculate_reward_gpu(){
     
-    float reward = 0;
+//     float reward = 0;
 
-    float goal_ball_dist = (m_ball_pos-m_goal_pos).length();
-    // float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
-    float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos_gpu() - m_ball_pos).length();
-    // float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length();
+//     float goal_ball_dist = (m_ball_pos-m_goal_pos).length();
+//     // float ball_displacement = (m_original_ball_pos-m_ball_pos).length();
+//     float creature_ball_dist = (m_particles[m_creature.get_apex_tip_index()].get_curr_pos_gpu() - m_ball_pos).length();
+//     // float apex_tip_speed = m_particles[m_creature.get_apex_tip_index()].get_vel().length();
 
-    // rn balls sinks :|
-    // if(ball_displacement > 5) m_has_touched_ball = true;
+//     // rn balls sinks :|
+//     // if(ball_displacement > 5) m_has_touched_ball = true;
 
-    // if(not m_has_touched_ball){
-        // reward -= 1;
-        // reward -= creature_ball_dist/100.f;
-    // }
+//     // if(not m_has_touched_ball){
+//         // reward -= 1;
+//         // reward -= creature_ball_dist/100.f;
+//     // }
     
-    reward -= creature_ball_dist/100.f;    
-    reward -= goal_ball_dist/300.f;
-    reward -= 1; // normal time thing
+//     reward -= creature_ball_dist/100.f;    
+//     reward -= goal_ball_dist/300.f;
+//     reward -= 1; // normal time thing
 
-    // std::cout << "tip speed" << apex_tip_speed << '\n';
-    // std::cout.flush();
+//     // std::cout << "tip speed" << apex_tip_speed << '\n';
+//     // std::cout.flush();
 
-    // if present from the beginning this leads to suboptimal policy of just vibrating the tip in place
-    // reward += apex_tip_speed/20;
+//     // if present from the beginning this leads to suboptimal policy of just vibrating the tip in place
+//     // reward += apex_tip_speed/20;
 
-    if(goal_ball_dist < m_goal_radius){
-        reward += 1000;
-        m_episode_end = 1;
-    }
+//     if(goal_ball_dist < m_goal_radius){
+//         reward += 1000;
+//         m_episode_end = 1;
+//     }
 
-    return reward;
-}
+//     return reward;
+// }
 
 void Environment::reset_reward(){
     m_reward = 0;

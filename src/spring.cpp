@@ -41,7 +41,7 @@ Spring::Spring(Particle& p1, Particle& p2, int env_id, int idx, float len, float
         gpu_mem.springs_const()[env_id*total_springs_per_env + idx] = m_spring_constant;
         gpu_mem.springs_damping_factor()[env_id*total_springs_per_env + idx] = m_damping_factor;
         gpu_mem.springs_viscous_factor()[env_id*total_springs_per_env + idx] = m_viscous_factor;
-        gpu_mem.springs_moi_along_com()[env_id*total_springs_per_env + idx] = m_moment_interia_along_com;
+        // gpu_mem.springs_moi_along_com()[env_id*total_springs_per_env + idx] = m_moment_interia_along_com;
         gpu_mem.springs_outside_body()[env_id*total_springs_per_env + idx] = m_present_outside_body;
         gpu_mem.springs_radius()[env_id*total_springs_per_env + idx] = m_radius;
 
@@ -77,20 +77,20 @@ std::array<sf::Vertex, 2> Spring::get_line(){
 }
 std::array<sf::Vertex, 2> Spring::get_line_gpu(){
 
-    sf::Color color = sf::Color::White;
-    sf::Vector2f spring_vector = m_p2.get_curr_pos_gpu() - m_p1.get_curr_pos_gpu();
-    sf::Vector2f vel_com = (m_p2.get_vel_gpu() * m_p2.get_mass() + m_p1.get_vel_gpu() * m_p1.get_mass()) / (m_p1.get_mass() + m_p2.get_mass());
-
-    if(m_present_outside_body){
-        // this flipped bc y axis is downward .perpendicualar rotates 90 deg clockwise not anti clock
-        if(vel_com.dot(-spring_vector.perpendicular()) > 0){
-        // if(vel_com.dot(spring_vector.perpendicular()) > 0){
-            color = sf::Color::Red;
-        }
-        else{
-            color = sf::Color::Green;
-        }
-    }
+    sf::Color color = sf::Color::Blue;
+    
+    // sf::Vector2f spring_vector = m_p2.get_curr_pos_gpu() - m_p1.get_curr_pos_gpu();
+    // sf::Vector2f vel_com = (m_p2.get_vel_gpu() * m_p2.get_mass() + m_p1.get_vel_gpu() * m_p1.get_mass()) / (m_p1.get_mass() + m_p2.get_mass());
+    // if(m_present_outside_body){
+    //     // this flipped bc y axis is downward .perpendicualar rotates 90 deg clockwise not anti clock
+    //     if(vel_com.dot(-spring_vector.perpendicular()) > 0){
+    //     // if(vel_com.dot(spring_vector.perpendicular()) > 0){
+    //         color = sf::Color::Red;
+    //     }
+    //     else{
+    //         color = sf::Color::Green;
+    //     }
+    // }
 
     std::array<sf::Vertex, 2> line =
     {

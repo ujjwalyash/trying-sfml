@@ -25,7 +25,7 @@ void allocate_cuda_memory(){
     for(float* & ptr: gpu_mem.ptrs_env){
         checkCudaErrors(cudaMallocManaged(&ptr, population_size*sizeof(float)));
     }
-    checkCudaErrors(cudaMallocManaged(&gpu_mem.env_sensing_pts,        4*sizeof(float)));
+    checkCudaErrors(cudaMallocManaged(&gpu_mem.env_sensing_pts,        env_num_sensing_points*sizeof(float)));
     checkCudaErrors(cudaMallocManaged(&gpu_mem.env_sperm_center_idx,        sizeof(float)));
     checkCudaErrors(cudaMallocManaged(&gpu_mem.env_ball_center_idx,        sizeof(float)));
 
@@ -81,7 +81,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     static_assert(num_threads >= 2 * env_num_particles, "num_threads < 2 * env_num_particles");
     
     constexpr int NUM_ARRAYS_PAR = 12;
-    constexpr int NUM_ARRAYS_SPR = 5;
+    constexpr int NUM_ARRAYS_SPR = 4;
     
     // num_parts * env_num
     int particle_offset = env_num_particles * blockIdx.x;
@@ -110,7 +110,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     __shared__ float s_springs_const[num_threads];
     __shared__ float s_springs_damping_factor[num_threads];
     __shared__ float s_springs_viscous_factor[num_threads];
-    __shared__ float s_springs_moi_along_com[num_threads];
+    // __shared__ float s_springs_moi_along_com[num_threads];
    
     const float* __restrict__ s_springs_outside_body = gpu_mem.springs_outside_body() + spring_offset;
     const float* __restrict__ s_springs_radius = gpu_mem.springs_radius() + spring_offset;
@@ -136,7 +136,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         gpu_mem.springs_const(),
         gpu_mem.springs_damping_factor(),
         gpu_mem.springs_viscous_factor(),
-        gpu_mem.springs_moi_along_com(),
+        // gpu_mem.springs_moi_along_com(),
         
         // gpu_mem.springs_outside_body(),
         // gpu_mem.springs_radius(),
@@ -157,7 +157,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         s_springs_const,
         s_springs_damping_factor,
         s_springs_viscous_factor, 
-        s_springs_moi_along_com, 
+        // s_springs_moi_along_com, 
         // s_springs_outside_body,
         // s_springs_radius,
         // s_springs_p1, s_springs_p2
@@ -208,7 +208,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
             s_particles_vel_x, s_particles_vel_y,
             s_particles_mass, s_springs_nat_len, s_springs_const,
             s_springs_p1, s_springs_p2,
-            idx, blockIdx.x);
+            idx, blockIdx.x, step);
         
         // bad if someone ends then that threads wont be present to barriers below
         // while it itself is waiting for a barrier -- deadlock
@@ -230,7 +230,7 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
         // bad bc 0, 1 in same wrap this will take same time as both in same idx == 0 loop
         // if(idx == 1){
         if(idx == 32){
-            int bottom_idx = (int)gpu_mem.env_sensing_pts[3]; // Creature::get_apex_tip_index() == m_sensing_points[0]
+            int bottom_idx = (int)gpu_mem.env_sensing_pts[env_num_sensing_points-1]; // Creature::get_apex_tip_index() == m_sensing_points[0]
             float dx_c = s_particles_pos_x[bottom_idx] - ball_x;
             float dy_c = s_particles_pos_y[bottom_idx] - ball_y;
             min_ball_creature_dist = fmin(min_ball_creature_dist, sqrtf(dx_c*dx_c + dy_c*dy_c));
@@ -295,8 +295,8 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
                     float2 v_along_spring = dot(v, rel_pos) * rel_pos;
                     float2 v_perp_spring = v - v_along_spring;
                     
-                    float2 acc_parallel = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * v_along_spring;
-                    float2 acc_perp = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * v_perp_spring;
+                    float2 acc_parallel = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * v_along_spring;
+                    float2 acc_perp = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * v_perp_spring;
 
                     p1_spring_acc += acc_parallel + acc_perp;
                     
@@ -306,8 +306,8 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
                     v_along_spring = dot(v, rel_pos) * rel_pos;
                     v_perp_spring = v - v_along_spring;
                     
-                    acc_parallel = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * v_along_spring;
-                    acc_perp = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * v_perp_spring;
+                    acc_parallel = -(fminf(1.f / gpu_env_dt, 0.25f * s_springs_viscous_factor[idx])) * v_along_spring;
+                    acc_perp = -(fminf(1.f / gpu_env_dt, 1.f * s_springs_viscous_factor[idx])) * v_perp_spring;
 
                     p2_spring_acc += acc_parallel + acc_perp;                    
                 }
@@ -401,9 +401,9 @@ __global__ void big_kernel(GPU_unified_mem gpu_mem){
     }
 
     //! subtract MIN BALL DIST TO REWARD
-    if(idx == 0){
-        gpu_mem.env_reward()[blockIdx.x] -= min_ball_creature_dist;
-    }
+    // if(idx == 0){
+    //     gpu_mem.env_reward()[blockIdx.x] -= min_ball_creature_dist;
+    // }
 
     //* write back shared to global 
 
@@ -523,6 +523,13 @@ __device__ void handle_boundary(
     }
 }
 
+// SFML's angleTo(a -> b) = atan2(cross(a,b), dot(a,b)), in degrees
+__device__ __forceinline__ float angle_to_deg(float ax, float ay, float bx, float by) {
+    float cross = ax * by - ay * bx;
+    float dot   = ax * bx + ay * by;
+    return atan2f(cross, dot) * (180.f / 3.14159265f);
+}
+
 __device__ void stage2_then_stage0(
     GPU_unified_mem const& gpu_mem,
     float* s_particles_pos_x, float* s_particles_pos_y,
@@ -530,7 +537,7 @@ __device__ void stage2_then_stage0(
     float* s_particles_mass,
     float* s_springs_nat_len, float* s_springs_const,
     const float* __restrict__ s_springs_p1, const float* __restrict__ s_springs_p2,
-    int idx, int env)
+    int idx, int env, int t)
 {
     int ball_center_idx = (int)gpu_mem.env_ball_center_idx[0];
     const float* sp = gpu_mem.env_sensing_pts;
@@ -580,49 +587,68 @@ __device__ void stage2_then_stage0(
     //* stage 0
 
     // get obs
-    __shared__ float s_obs[env_observation_size];
-    // warp 1 does this 
-    if(idx == 32){
+    __shared__ float s_layer_in[env_observation_size];
 
-        float vals[8];
-        float mn = 10000.f, mx = 0.f;
-        for(int i = 0; i < 4; i++){
-            int p = (int)sp[i];
-            float dx = ball_x - s_particles_pos_x[p];
-            float dy = ball_y - s_particles_pos_y[p];
-            vals[i] = sqrtf(dx*dx + dy*dy);
-            mn = fminf(mn, vals[i]); 
-            mx = fmaxf(mx, vals[i]);
+    if (idx == 32) {
+
+        // --- head/apex reference points ---
+        const int p_ctr = (int)sp[0]; // center (used for head velocity + wall pt 0)
+        const int p_tip = (int)sp[1]; // apex/nose tip (used for ball/goal vectors)
+
+        const float ctr_x = s_particles_pos_x[p_ctr], ctr_y = s_particles_pos_y[p_ctr];
+        const float tip_x = s_particles_pos_x[p_tip], tip_y = s_particles_pos_y[p_tip];
+
+        // vec_head_to_ball = ball - tip, normalized
+        float htb_x = ball_x - tip_x;
+        float htb_y = ball_y - tip_y;
+        const float ball_dist = sqrtf(htb_x * htb_x + htb_y * htb_y);
+        htb_x /= ball_dist; htb_y /= ball_dist;
+
+        // vec_ctr_apx_tip = tip - ctr, normalized
+        float cat_x = tip_x - ctr_x;
+        float cat_y = tip_y - ctr_y;
+        const float cat_len = sqrtf(cat_x * cat_x + cat_y * cat_y);
+        cat_x /= cat_len; cat_y /= cat_len;
+
+        s_layer_in[0] = ball_dist / 700.f;
+        s_layer_in[1] = angle_to_deg(cat_x, cat_y, htb_x, htb_y) / 180.f;
+
+        // head velocity sampled at the CENTER point, not the tip
+        const float hv_x = s_particles_vel_x[p_ctr];
+        const float hv_y = s_particles_vel_y[p_ctr];
+        s_layer_in[2] = hv_x * htb_x + hv_y * htb_y;                 // along heading
+        s_layer_in[3] = hv_x * (-htb_y) + hv_y * htb_x;               // perpendicular
+
+        // goal vector, also measured from the tip
+        const float rgp_x = goal_x - tip_x;
+        const float rgp_y = goal_y - tip_y;
+        const float goal_dist = sqrtf(rgp_x * rgp_x + rgp_y * rgp_y);
+        s_layer_in[4] = goal_dist / 700.f;
+        s_layer_in[5] = angle_to_deg(rgp_x, rgp_y, htb_x, htb_y) / 180.f;
+
+        // --- tail curvatures: sliding window over sp[2..11] (8 triplets) ---
+        #pragma unroll
+        for (int i = 0; i < 8; i++) {
+            const int p1 = (int)sp[2 + i];
+            const int p2 = (int)sp[3 + i];
+            const int p3 = (int)sp[4 + i];
+
+            const float v1x = s_particles_pos_x[p2] - s_particles_pos_x[p1];
+            const float v1y = s_particles_pos_y[p2] - s_particles_pos_y[p1];
+            const float v2x = s_particles_pos_x[p3] - s_particles_pos_x[p2];
+            const float v2y = s_particles_pos_y[p3] - s_particles_pos_y[p2];
+
+            s_layer_in[6 + i] = angle_to_deg(v1x, v1y, v2x, v2y) / 90.f;
         }
-        s_obs[12] = 2*(mn/max_y) - 1;
-        float dem = mx - mn;
-        for(int i = 0; i < 4; i++) s_obs[i] = 2.f*(vals[i]-mn)/dem - 1.f;
 
-        mn = 10000.f; mx = 0.f;
-        for(int i = 4; i < 8; i++){
-            int p = (int)sp[i-4];
-            float dx = goal_x - s_particles_pos_x[p];
-            float dy = goal_y - s_particles_pos_y[p];
-            vals[i] = sqrtf(dx*dx + dy*dy);
-            mn = fminf(mn, vals[i]);
-            mx = fmaxf(mx, vals[i]);
-        }
-        s_obs[13] = 2*(mn/max_y) - 1;
-        dem = mx - mn;
-        for(int i = 4; i < 8; i++) s_obs[i] = 2.f*(vals[i]-mn)/dem - 1.f;
+        // --- wall coords: sp[0] and sp.back() = sp[11] ---
+        const int p_last = (int)sp[11];
+        s_layer_in[14] = 2.f * (ctr_x / max_x) - 1.f;
+        s_layer_in[15] = 2.f * (ctr_y / max_y) - 1.f;
+        s_layer_in[16] = 2.f * (s_particles_pos_x[p_last] / max_x) - 1.f;
+        s_layer_in[17] = 2.f * (s_particles_pos_y[p_last] / max_y) - 1.f;
 
-        int p0 = (int)sp[0], p3 = (int)sp[3];
-        s_obs[8]  = 2.f*(s_particles_pos_x[p0]/max_x) - 1.f;
-        s_obs[9]  = 2.f*(s_particles_pos_y[p0]/max_y) - 1.f;
-
-        s_obs[10] = 2.f*(s_particles_pos_x[p3]/max_x) - 1.f;
-        s_obs[11] = 2.f*(s_particles_pos_y[p3]/max_y) - 1.f;
-
-        s_obs[14] = s_particles_vel_x[p0]/20.f;
-        s_obs[15] = s_particles_vel_y[p0]/20.f;
-
-        s_obs[16] = s_particles_vel_x[p3]/20.f;
-        s_obs[17] = s_particles_vel_y[p3]/20.f;
+        s_layer_in[18] = sinf(t * gpu_mem.nn_freq()[env]);
     }
     
     __syncthreads();
@@ -630,14 +656,15 @@ __device__ void stage2_then_stage0(
     //forward pass
     constexpr int nn_in = GPU_unified_mem::nn_in, nn_hidden = GPU_unified_mem::nn_hidden, nn_out = GPU_unified_mem::nn_out;
 
-    __shared__ float s_layer_in[nn_in];
+    static_assert(nn_in == env_observation_size);
+    // __shared__ float s_layer_in[nn_in];
     __shared__ float s_hidden[nn_hidden];
     __shared__ float s_new_activation[nn_out];
 
-    float* prev_activation = gpu_mem.env_muscle_activation + env*env_num_muscles;
+    // float* prev_activation = gpu_mem.env_muscle_activation + env*env_num_muscles;
 
-    if(idx < env_num_muscles)             s_layer_in[idx] = 2.f*prev_activation[idx] - 1.f;
-    if(idx >= env_num_muscles && idx < nn_in) s_layer_in[idx] = s_obs[idx - env_num_muscles];
+    // if(idx < env_num_muscles)             s_layer_in[idx] = 2.f*prev_activation[idx] - 1.f;
+    // if(idx < nn_in) s_layer_in[idx] = s_layer_in[idx];
     __syncthreads();
 
     const float* W0 = gpu_mem.nn_W0(env); // row-major [nn_in x nn_hidden]
@@ -661,7 +688,7 @@ __device__ void stage2_then_stage0(
     }
     __syncthreads();
 
-    if(idx < env_num_muscles) prev_activation[idx] = s_new_activation[idx];
+    // if(idx < env_num_muscles) prev_activation[idx] = s_new_activation[idx];
 
     //Muscle::handle_nerve_signal()
     // muscle m lives at spring-array slot (env_num_springs + m)

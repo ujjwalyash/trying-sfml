@@ -176,7 +176,7 @@ void* render_current_gen(void *){
 	int curr_gen = gen;
 	Environment env_used_for_render(-1, get_random_ball_pos(), get_random_goal_pos());
 	env_used_for_render.copy_brain(env[rankings[env_rank]]);
-	// Environment& env_used_for_render = env[67];
+	// Environment& env_used_for_render = env[env_rank];
 	
 	// YOU cANT copy env -- bc springs have refs not indexes so after copy new env still points to old env's particles
 	// env_used_for_render.emplace(env[rankings[env_rank]]);
@@ -322,9 +322,13 @@ void* render_current_gen(void *){
 
 		// launch_big_kernel();
 		
+		// env_used_for_render.step_stage_0(0);
+		// env_used_for_render.step_stage_1();
+		// env_used_for_render.step_stage_2(curr_ball_creature_dist, min_ball_creature_dist);
+		
 		// stage = 0;
 		// launch_threads();
-
+		
 		// stage = 1;
 		// launch_threads();
 		
@@ -336,7 +340,7 @@ void* render_current_gen(void *){
 		// cudaSynchronize();
 
         reward = env_used_for_render.get_curr_reward();
-        // reward = env_used_for_render.get_curr_reward() - gpu_mem.env_reward()[67];
+        // reward = env_used_for_render.get_curr_reward() - gpu_mem.env_reward()[env_rank];
         num_steps_done++;
 	}
 
@@ -392,13 +396,6 @@ int main()
 			goal_pos[i] = get_random_goal_pos();
 		}
 
-		// reset rewards
-		// for(int i = 0; i < population_size; i++){
-		// 	env[i].reset_reward();
-		// 	// std::cout << rewards[rankings[i]] << " \n"[i==population_size-1];
-		// 	rewards[i] = 0;
-		// }
-
 		// resets env
 		stage = -1;
 		launch_threads();
@@ -448,7 +445,7 @@ int main()
 		// 	}
 		// }
 
-		if(gen % (num_generations/10) == 0){
+		if(gen % (num_generations/64) == 0){
 			std::cout << "current generation: " << gen << '\n';
 			std::cout << "current best_reward: " << rewards[rankings[0]] << '\n';
 			std::cout << '\n';
@@ -457,7 +454,7 @@ int main()
 			std::cout.flush();
 		}
 		
-		if(save || (save_new_gen && gen % (num_generations/10) == 0)){
+		if(save || (save_new_gen && gen % (num_generations/100) == 0)){
 			save = false;
 			for(int i = 0; i < population_size; i++){
 				env[rankings[i]].save(i, rewards[rankings[i]]);

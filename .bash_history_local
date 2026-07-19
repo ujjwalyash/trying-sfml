@@ -112,3 +112,9 @@ compute-sanitizer --tool memcheck ./build/bin/main
 ./run.sh 
 clear
 ./run.sh 
+clear
+./run.sh 
+clear
+./run.sh 
+clear
+./run.sh 

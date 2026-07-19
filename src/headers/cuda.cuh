@@ -61,6 +61,8 @@ __global__ void first_half_step(GPU_unified_mem gpu_mem);
 __global__ void second_half_step(GPU_unified_mem gpu_mem);
 __device__ void handle_boundary(GPU_unified_mem gpu_mem, int idx);
 
+__device__ __forceinline__ float angle_to_deg(float ax, float ay, float bx, float by);
+
 __device__ void stage2_then_stage0(
     GPU_unified_mem const& gpu_mem,
     float* s_particles_pos_x, float* s_particles_pos_y,
@@ -68,4 +70,4 @@ __device__ void stage2_then_stage0(
     float* s_particles_mass,
     float* s_springs_nat_len, float* s_springs_const,
     const float* __restrict__ s_springs_p1, const float* __restrict__ s_springs_p2,
-    int idx, int env);
+    int idx, int env, int t);

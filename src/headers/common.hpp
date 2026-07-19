@@ -42,7 +42,7 @@ inline constexpr int population_size = 240;
 inline constexpr int num_generations = 120 * 60 * 7 * 0;
 
 inline constexpr bool load_old_gen = false;
-inline constexpr bool save_new_gen = false;
+inline constexpr bool save_new_gen = true;
 
 // 18 threads for 20 core cpu too much
 inline constexpr int num_workers = 12;
@@ -94,34 +94,35 @@ struct GPU_unified_mem{
     CUDA_HOST_DEVICE float* particles_radius() const { return ptrs_particle[11]; }
     CUDA_HOST_DEVICE float* particles_mass() const { return ptrs_particle[10]; }
 	
-    float* ptrs_spring[9];
+    float* ptrs_spring[8];
     
     CUDA_HOST_DEVICE float* springs_nat_len() const { return ptrs_spring[0]; }
     CUDA_HOST_DEVICE float* springs_const() const { return ptrs_spring[1]; }
     CUDA_HOST_DEVICE float* springs_damping_factor() const { return ptrs_spring[2]; }
     CUDA_HOST_DEVICE float* springs_viscous_factor() const { return ptrs_spring[3]; }
-    CUDA_HOST_DEVICE float* springs_moi_along_com() const { return ptrs_spring[4]; }
-    CUDA_HOST_DEVICE float* springs_outside_body() const { return ptrs_spring[5]; }
-    CUDA_HOST_DEVICE float* springs_radius() const { return ptrs_spring[6]; }
+    // CUDA_HOST_DEVICE float* springs_moi_along_com() const { return ptrs_spring[4]; }
+    CUDA_HOST_DEVICE float* springs_outside_body() const { return ptrs_spring[4]; }
+    CUDA_HOST_DEVICE float* springs_radius() const { return ptrs_spring[5]; }
     
     // the local_idx is used for these
-    CUDA_HOST_DEVICE float* springs_p1() const { return ptrs_spring[7]; }
-    CUDA_HOST_DEVICE float* springs_p2() const { return ptrs_spring[8]; }
+    CUDA_HOST_DEVICE float* springs_p1() const { return ptrs_spring[6]; }
+    CUDA_HOST_DEVICE float* springs_p2() const { return ptrs_spring[7]; }
 
       // one-per-env scalars
-    float* ptrs_env[3];
+    float* ptrs_env[4];
     CUDA_HOST_DEVICE float* env_reward()          const { return ptrs_env[0]; }
     CUDA_HOST_DEVICE float* env_goal_pos_x()      const { return ptrs_env[1]; }
     CUDA_HOST_DEVICE float* env_goal_pos_y()      const { return ptrs_env[2]; }
+    CUDA_HOST_DEVICE float* nn_freq()             const { return ptrs_env[3]; }
 
-    float* env_sensing_pts; // size == 4
+    float* env_sensing_pts; // size == env_num_sensing_point
     float* env_ball_center_idx; // size == 1
     float* env_sperm_center_idx; // size == 1
 
     // muscle activation fed back into the net each step
     float* env_muscle_activation; // size population_size * env_num_muscles
 
-    static constexpr int nn_in     = env_num_muscles + env_observation_size; // 20
+    static constexpr int nn_in     = env_observation_size;
     static constexpr int nn_hidden = 16;
     static constexpr int nn_out    = env_num_muscles; // 8
     static constexpr int nn_floats_per_env = nn_in*nn_hidden + nn_hidden + nn_hidden*nn_out + nn_out; // 348
